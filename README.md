@@ -12,22 +12,11 @@ A project demonstrating fine-tuning of a base Qwen 2.5-1.5B-Instruct model on th
 
 1. [Repository Structure](#repository-structure)  
 2. [Prerequisites](#prerequisites)  
-3. [Setup & Installation](#setup--installation)  
-4. [Data](#data)  
-5. [Training](#training)  
+3. [Data](#data)  
+4. [Training](#training)  
    1. [Model Arguments (Common)](#model-arguments-common)  
-   2. [GRPO Trainer Configuration](#grpo-trainer-configuration)  
-   3. [SFT Trainer Configuration](#sft-trainer-configuration)  
-   4. [Running GRPO](#running-grpo)  
-   5. [Running SFT](#running-sft)  
-6. [Inference](#inference)  
-   1. [Inference Script Overview](#inference-script-overview)  
-   2. [How to Run Inference](#how-to-run-inference)  
-7. [Model Checkpoints & Hugging Face Links](#model-checkpoints--hugging-face-links)  
-8. [Configuration Files (YAML)](#configuration-files-yaml)  
-9. [Notes & Troubleshooting](#notes--troubleshooting)  
-10. [Citation](#citation)  
-11. [License](#license)  
+5. [Citation](#citation)  
+6. [License](#license)  
 
 ---
 
@@ -37,9 +26,10 @@ A project demonstrating fine-tuning of a base Qwen 2.5-1.5B-Instruct model on th
 ```text
 Chain-of-Thought-Traces/
 ├── Math220k/
-│   ├── GRPO/                           # Contains logs and checkpoints for GRPO fine-tuning
-│   └── SFT/                            # Contains logs and checkpoints for SFT fine-tuning
+│   ├── GRPO/                          # Contains checkpoint inference for GRPO fine-tuning
+│   └── SFT/                           # Contains checkpoint inference for SFT fine-tuning
 ├── README.md                          # ← This file
+├── LICENSE                            # License info
 ├── inference.py                       # Script to run inference across saved checkpoints
 └── yaml/                              # (Optional) Folder for YAML configuration files
 ```
@@ -135,11 +125,11 @@ Detailed training configurations are available within the yaml folder.
 
 If you use this work or the methodology in your own research, please cite as follows:
 
-Olivia G. d’Aliberti and Manoel Horta Ribeiro, “Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k,” unpublished workshop, June 2025.
+Liv G. d’Aliberti and Manoel Horta Ribeiro, “Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k,” unpublished workshop, June 2025.
 
 \begin{verbatim}
 @misc{daliberti2025cot,
-  author       = {Olivia G. d’Aliberti and Manoel Horta Ribeiro},
+  author       = {Liv G. d’Aliberti and Manoel Horta Ribeiro},
   title        = {Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k},
   year         = {2025},
   month        = jun,

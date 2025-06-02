@@ -31,6 +31,7 @@ Chain-of-Thought-Traces/
 ├── README.md                          # ← This file
 ├── LICENSE                            # License info
 ├── inference.py                       # Script to run inference across saved checkpoints
+├── judgement.py                       # Script to run evaluate model accuracy during training via gpt-4o
 └── yaml/                              # (Optional) Folder for YAML configuration files
 ```
 

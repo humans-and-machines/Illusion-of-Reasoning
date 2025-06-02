@@ -128,7 +128,7 @@ If you use this work or the methodology in your own research, please cite as fol
 
 Liv G. d’Aliberti and Manoel Horta Ribeiro, “Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k,” unpublished workshop, June 2025.
 
-\begin{verbatim}
+```bibtex
 @misc{daliberti2025cot,
   author       = {Liv G. d’Aliberti and Manoel Horta Ribeiro},
   title        = {Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k},
@@ -136,7 +136,7 @@ Liv G. d’Aliberti and Manoel Horta Ribeiro, “Chain-of-Thought Traces: Fine-T
   month        = jun,
   note         = {Unpublished workshop. \url{https://github.com/liv-daliberti/Chain-of-Thought-Traces}}
 }
-\end{verbatim}
+```
 
 ## License
 

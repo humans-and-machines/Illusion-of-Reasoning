@@ -1,4 +1,4 @@
-# Chain-of-Thought-Traces: The Illusion of Insight in Reasoning Models
+# The Illusion of Insight in Reasoning Models
 
 **Owner:** liv-daliberti  
 **Author:** Liv G. d’Aliberti, Manoel Horta Ribeiro  
@@ -144,12 +144,12 @@ Detailed training configurations are available within the yaml folder.
 
 If you use this work or the methodology in your own research, please cite as follows:
 
-Liv G. d’Aliberti and Manoel Horta Ribeiro, “Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k,” unpublished workshop, June 2025.
+Liv G. d’Aliberti and Manoel Horta Ribeiro, “The Illusion of Insight in Reasoning Models,” unpublished workshop, June 2025.
 
 ```bibtex
 @misc{daliberti2025cot,
   author       = {Liv G. d’Aliberti and Manoel Horta Ribeiro},
-  title        = {Chain-of-Thought Traces: Fine-Tuning Qwen 2.5-1.5B with GRPO \& SFT on Math 220k},
+  title        = {The Illusion of Insight in Reasoning Models},
   year         = {2025},
   month        = jun,
   note         = {Unpublished workshop. \url{https://github.com/liv-daliberti/Chain-of-Thought-Traces}}

@@ -1,0 +1,103 @@
+# Bytecode / cache artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+.coverage
+coverage.*
+htmlcov/
+.cache/
+.ipynb_checkpoints/
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+*.manifest
+*.spec
+
+# Virtual environments
+.env
+.env.*
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+.conda_envs/
+.conda_pkgs/
+.local/
+
+# Editor / OS cruft
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Experiment artifacts & datasets
+data/
+datasets_cache/
+hf_datasets/
+wandb/
+logs/
+results/
+results2/
+eval_results/
+outputs/
+checkpoints/
+gpfs/
+models/
+car_park_data/
+crossword_data/
+llvm-project/
+.tmp/
+tmp/
+temp/
+
+# OpenR1 project caches (when mirroring upstream)
+open-r1/
+open-r1/data/
+open-r1/datasets_cache/
+open-r1/hf_datasets/
+open-r1/logs/
+open-r1/results/
+open-r1/results2/
+open-r1/gpfs/
+open-r1/models/
+open-r1/wandb/
+open-r1/wandb_cache/
+
+# Model / weight artifacts
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.gguf
+*.onnx
+*.tflite
+*.npz
+*.npy
+*.pkl
+
+# Cluster outputs
+slurm-*.out
+
+# Hugging Face / auth tokens
+huggingface/
+huggingface/token*
+*.token

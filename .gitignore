@@ -25,6 +25,8 @@ dist/
 pip-wheel-metadata/
 *.manifest
 *.spec
+_build/
+docs/_build/
 
 # Virtual environments
 .env
@@ -40,6 +42,17 @@ venv.bak/
 .conda_pkgs/
 .local/
 /openr1/
+.pip/
+.pip_cache/
+.hf_home/
+.hf_cache/
+.xdg_cache/
+.cuda_cache/
+.torch_cache/
+.torchinductor/
+.triton/
+.wandb/
+.wandb_cache/
 
 # Editor / OS cruft
 .vscode/

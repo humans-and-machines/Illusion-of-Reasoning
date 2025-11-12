@@ -1,4 +1,0 @@
-[http]
-        sslVerify = true
-        sslCAPath = /n/fs/similarity/Illusion-of-Reasoning/openr1/ssl/cacert.pem
-        sslCAInfo = /n/fs/similarity/Illusion-of-Reasoning/openr1/ssl/cacert.pem

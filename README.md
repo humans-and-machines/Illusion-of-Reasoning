@@ -4,17 +4,20 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 
 ## Quick Start
 
+- **Pin all caches to the repo:** `source tools/local_env.sh` (exports `CONDA_*`, `PIP_CACHE_DIR`, `TMPDIR`, `HF_*`, `WANDB_*`, etc.) so every installer reads/writes strictly inside `$(pwd)`. `make conda-local` also drops the same hook under `openr1/etc/conda/activate.d`, so simply running `conda activate ./openr1` reapplies the local-path policy automatically.
 - **Environment:** `make conda-local && conda activate ./openr1`
+- **Existing env?** `make conda-local-hook` reinstalls the activation hook if you already have `./openr1` and pulled the repo.
+- **Local storage policy:** Run commands from the repo root; `make conda-local` plus the env hook keep conda, pip, Hugging Face, wandb, and temporary artifacts under this directory (see `.condarc`, `tools/local_env_body.sh`, and the ignored cache folders). `echo $PIP_CACHE_DIR` should always resolve to `$(pwd)/.pip_cache`.
 - **Install (core):** `pip install -e .`
 - **Install (dev):** `pip install -e .[dev]`
 - **Authenticate with Hugging Face:** `huggingface-cli login` or `export HF_TOKEN=<token>` so gated assets are accessible inside Slurm jobs.
 - **Train on Slurm (recommended):**
   ```bash
-  sbatch slurm/train.slurm --model Qwen2.5-1.5B-Instruct --task grpo --config math --accelerator zero3
+  sbatch maxent-grpo/scripts/train.slurm --model Qwen2.5-1.5B-Instruct --task grpo --config math --accelerator zero3
   ```
-- **MaxEnt task:** Use `--task maxent` to launch `src/maxent-grpo.py`.
+- **MaxEnt task:** `sbatch maxent-grpo/scripts/train-maxent.slurm --model Qwen2.5-1.5B-Instruct --config math --accelerator zero3` launches the MaxEnt GRPO variant.
 - **Extra trainer flags:** Pass overrides with `--args "--run_name demo --report_to wandb"`.
-- **More knobs:** Run `sbatch slurm/train.slurm --help` to inspect dp/tp splits, port overrides, and accelerator settings.
+- **More knobs:** Run `sbatch maxent-grpo/scripts/train.slurm --help` to inspect dp/tp splits, port overrides, and accelerator settings.
 
 A project demonstrating fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset using two methodologies—Guided Reinforcement Preference Optimization (GRPO) and Supervised Fine-Tuning (SFT). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. This repository also contains inference scripts to evaluate model performance on a subset of 500 Math 220k problems.
 

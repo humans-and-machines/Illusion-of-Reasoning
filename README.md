@@ -1,6 +1,6 @@
 # The Illusion of Insight in Reasoning Models
 
-Do reasoning models have ''Aha!'' moments? Prior work suggests that models like DeepSeek-R1-Zero undergo sudden realizations that lead to accurate outputs. Yet it remains unclear whether such shifts in reasoning strategy actually improve performance. In this paper, we formalize intrinsic ''Aha!'' events and instrument training runs to detect them across multiple tasks. We find that reasoning shifts are rare, do not become more frequent with training, and seldom improve accuracy. However, their effect varies according to model uncertainty. Building on this finding, we show that artificially triggering shifts under high entropy improves accuracy. Overall, our results challenge the perception that reasoning models' problem-solving capabilities stem from mid-reasoning shifts, although these shifts can be exploited to improve performance.
+Do reasoning models have ''Aha!'' moments? Prior work suggests that models like DeepSeek-R1-Zero undergo sudden realizations that lead to accurate outputs. Yet it remains unclear whether such shifts in reasoning strategy actually improve performance. In this paper, we formalize intrinsic ''Aha!'' events and instrument training runs (GRPO only) to detect them across multiple tasks. We find that reasoning shifts are rare, do not become more frequent with training, and seldom improve accuracy. However, their effect varies according to model uncertainty. Building on this finding, we show that artificially triggering shifts under high entropy improves accuracy. Overall, our results challenge the perception that reasoning models' problem-solving capabilities stem from mid-reasoning shifts, although these shifts can be exploited to improve performance.
 
 ## Quick Start
 
@@ -11,7 +11,7 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 - **Authenticate for gated assets:** `huggingface-cli login` or `export HF_TOKEN=<token>`.
 - **Run jobs:** ready-to-use launchers live under `scripts/inference/` (e.g., `bash scripts/inference/training-math-grpo.sh`); cluster specs live in `scripts/slurm/`.
 
-A project demonstrating fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset using two methodologies—Guided Reinforcement Preference Optimization (GRPO) and Supervised Fine-Tuning (SFT). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. This repository also contains inference scripts to evaluate model performance on a subset of 500 Math 220k problems.
+This repository demonstrates GRPO fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset (plus crossword and Rush Hour generators). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. SFT scaffolding exists in the codebase but was not used for the paper’s results.
 
 ---
 
@@ -34,9 +34,9 @@ A project demonstrating fine-tuning of a base Qwen 2.5-1.5B-Instruct model on th
 ```text
 Illusion-of-Reasoning/
 ├── configs/         # env templates (conda, accelerate), linting, dotenv examples
-├── recipes/         # task/model YAMLs for GRPO, MaxEnt-GRPO, and SFT
+├── recipes/         # task/model YAMLs for GRPO (MaxEnt-GRPO variants)
 ├── data/            # task data (car_park, crossword) + human assessment prompts
-├── src/open_r1/     # training/generation entrypoints (grpo.py, sft.py, generate.py, rlif.py, rewards*)
+├── src/open_r1/     # training/generation entrypoints (grpo.py, generate.py, rlif.py, rewards*; sft.py present but not used for paper)
 ├── scripts -> src/scripts/  # launchers for inference/training, annotation, analysis, viz, utils, slurm
 ├── results/, artifacts/, models/  # experiment outputs and checkpoints
 ├── tools/           # local cache helpers and conda hook installers
@@ -76,7 +76,6 @@ Illusion-of-Reasoning/
 
 An authenticated Hugging Face token with write permissions to push to the hubs:
 
-- `od2961/Qwen2.5-1.5B-Instruct-SFT`
 - `od2961/Qwen2.5-1.5B-Instruct-GRPO`
 
 ## Data
@@ -91,7 +90,7 @@ with modifications to enable **bfloat16**, **flash_attention_2**, and appropriat
 
 ### Model Arguments (Common)
 
-These arguments are shared between GRPO and SFT:
+These arguments are shared across GRPO training runs:
 
 ```yaml
 model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct

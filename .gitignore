@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *.so
+data/**/__pycache__/
+data/**/*.py[cod]
 
 # Project metadata
 .pdm.toml
@@ -68,10 +70,15 @@ eval_results/
 results/*
 !results/README.md
 # Keep code in data/ checked in; ignore only generated artifacts.
-data/*
+data/**
+!data/
 !data/**/*.py
-!data/README.md
+!data/**/*.sh
+!data/**/README.md
 !data/human_assessment_questions.txt
+# But still ignore caches and generated outputs inside data
+data/**/__pycache__/
+data/**/rush*-balanced/
 llvm-project/
 llm_verify_cache/
 datasets_cache/
@@ -137,3 +144,7 @@ models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1/
 models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07/
 models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1/
 models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b/
+
+# Dataset outputs
+rush*-balanced/
+*.jsonl

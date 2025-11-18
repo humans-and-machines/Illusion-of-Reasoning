@@ -29,8 +29,6 @@ aiofiles>=24.1.0
 ruff>=0.9.0
 isort>=5.12.0
 flake8>=6.0.0
-pylint>=3.2.0
-pre-commit>=3.8.0
 pytest
 parameterized>=0.9.0
 math-verify==0.5.2
@@ -41,12 +39,6 @@ python-dotenv
 morphcloud==0.1.67
 pandas>=2.2.3
 aiofiles>=24.1.0
-sphinx>=7.2
-sphinx-rtd-theme>=1.3
-
-[docs]
-sphinx>=7.2
-sphinx-rtd-theme>=1.3
 
 [eval]
 lighteval@ git+https://github.com/huggingface/lighteval.git@d3da6b9bbf38104c8b5e1acc86f83541f9a502d1
@@ -56,8 +48,6 @@ math-verify==0.5.2
 ruff>=0.9.0
 isort>=5.12.0
 flake8>=6.0.0
-pylint>=3.2.0
-pre-commit>=3.8.0
 
 [tests]
 pytest

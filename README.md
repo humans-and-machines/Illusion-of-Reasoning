@@ -5,8 +5,7 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 ## Quick Start
 
 - **Keep caches local (optional):** `source tools/local_env.sh` pins conda/pip/HF/tmp/W&B caches inside the repo.
-- **Create env:** `make install` (uses `uv` to build `./openr1` with Python 3.11 and install `.[dev]`), then `source openr1/bin/activate`.
-- **Conda alternative:** `conda env create -f configs/environment.yml && conda activate openr1`.
+- **Create env (conda, local to repo):** `conda env create -f configs/environment.yml -p ./openr1 || conda env update -f configs/environment.yml -p ./openr1`, then `conda activate ./openr1`, then `make install` (installs dev extras in the same env).
 - **Install only runtime deps:** `pip install -e .`; dev extras: `pip install -e .[dev]`.
 - **Authenticate for gated assets:** `huggingface-cli login` or `export HF_TOKEN=<token>`.
 - **Run jobs:** ready-to-use launchers live under `scripts/inference/` (e.g., `bash scripts/inference/training-math-grpo.sh`); cluster specs live in `scripts/slurm/`.

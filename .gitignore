@@ -4,6 +4,10 @@ __pycache__/
 *.so
 data/**/__pycache__/
 data/**/*.py[cod]
+# Global guardrails for caches/artifacts
+**/__pycache__/
+**/*.jsonl
+**/rush*-balanced/
 
 # Project metadata
 .pdm.toml
@@ -28,6 +32,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+openr1/
 
 # Spyder project settings
 .spyderproject

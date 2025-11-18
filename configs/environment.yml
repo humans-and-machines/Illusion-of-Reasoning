@@ -26,4 +26,4 @@ dependencies:
   - pkg-config
   - pip:
       # Install this repository in editable mode (minimal core deps via setup.py)
-      - -e .
+      - -e ..

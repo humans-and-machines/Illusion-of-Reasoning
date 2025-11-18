@@ -79,6 +79,19 @@ This will also install PyTorch `v2.6.0` and it is **very important** to use this
 GIT_LFS_SKIP_SMUDGE=1 uv pip install -e ".[dev]"
 ```
 
+## Project Structure & Config
+
+- `configs/` — shared settings; per-model YAMLs; `.env.example` for endpoints (no secrets tracked).
+- `src/` — all Python code (helpers + runnable scripts via `scripts` symlink):
+  - `llm_client.py`, `prompts.py`, `prefilter.py`, `analysis/`.
+  - `scripts/annotate/` (judge/recheck), `scripts/analysis/` (stats), `scripts/inference/` (generation + GRPO + Slurm), `scripts/viz/`, `scripts/utils/`.
+- `data/` — static inputs (prompts/manifests); task data lives here; caches go in `datasets_cache/`.
+- `results/` — canonical outputs. Layout: `results/{domain}/{model}/{checkpoint}/{split}/t{temp}/step{checkpoint}_{split}.jsonl` + `*_shifted.jsonl`, `*_recheck.jsonl`, `*_analysis.jsonl`, `figures/`, `tables/`. Legacy runs live under `results/legacy/`.
+- `artifacts/` — optional staging for large zips/checkpoints you want to keep but not ship.
+- `logs/` — Slurm/stdout logs.
+- Configure Azure/OpenAI via `.env` (see `.env.example`) or `configs/azure.yml` (see `configs/azure.example.yml`); keep secrets out of code.
+- Models/checkpoints: keep under `models/open-r1/*` (gitignored); scripts default to these local paths.
+
 Next, log into your Hugging Face and Weights and Biases accounts as follows:
 
 ```shell

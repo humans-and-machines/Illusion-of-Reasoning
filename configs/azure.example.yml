@@ -1,0 +1,14 @@
+# Example Azure/OpenAI config (copy to configs/azure.yml and edit).
+# This file is NOT used automatically; pass values via CLI flags or env vars
+# (see .env.example). Keep secrets out of version control.
+
+endpoint: https://your-azure-resource.openai.azure.com/
+api_key: your-azure-api-key
+deployment: gpt-4o
+api_version: 2024-12-01-preview
+use_v1: true           # prefer Responses API (/v1); set false to force chat.completions
+
+# Judge / annotation defaults
+judge_deployment: gpt-4o
+temperature: 0.0
+max_tokens: 500

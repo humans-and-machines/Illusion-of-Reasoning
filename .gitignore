@@ -62,11 +62,14 @@ cython_debug/
 .pypirc
 
 # Temp / Output folders
-data/
 wandb/
 logs/
 eval_results/
-results/
+results/*
+!results/README.md
+data/*
+!data/README.md
+!data/human_assessment_questions.txt
 llvm-project/
 llm_verify_cache/
 datasets_cache/
@@ -79,14 +82,17 @@ lighteval/
 .conda_envs/
 .conda_pkgs/
 .condarc
-.hf_cache
-openr1/
 .wandb/
 .wandb_cache/
 .triton/
 .triton_cache/
 .local/
 .pip_cache/
+.pip/
+.hf_home/
+.cuda_cache/
+.torch_cache/
+.xdg_cache/
 car_park_data/
 crossword_data/ 
 
@@ -119,3 +125,13 @@ Thumbs.db
 *.bin
 *.onnx
 *.gguf
+artifacts/
+.env
+.env.*
+configs/azure.yml
+
+# Local fine-tuned Open-R1 checkpoints (kept off git)
+models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1/
+models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07/
+models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1/
+models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b/

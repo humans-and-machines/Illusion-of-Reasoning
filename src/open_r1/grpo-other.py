@@ -30,6 +30,7 @@ import random
 import re
 import sys
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 # ───────────────────────── third-party ────────────────────────────
@@ -89,7 +90,8 @@ _orig_load = torch.load
 torch.load = functools.partial(_orig_load, weights_only=False)  # type: ignore[arg-type]
 
 # ─────────────────── NLTK data path (WordNet) ───────────────────────────
-os.environ.setdefault("NLTK_DATA", "/n/fs/similarity/open-r1/openr1/nltk_data")
+NLTK_DATA_DEFAULT = Path(__file__).resolve().parents[2] / ".nltk_data"
+os.environ.setdefault("NLTK_DATA", str(NLTK_DATA_DEFAULT))
 # os.environ.setdefault("EASY_DATASET_NAME", "od2961/mini-crosswords")
 
 logger = logging.getLogger(__name__)

@@ -1,0 +1,44 @@
+# cov_type: cluster
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:           correct_at_2   No. Observations:                  131
+Model:                            GLM   Df Residuals:                      103
+Model Family:                Binomial   Df Model:                           27
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -70.067
+Date:                Mon, 06 Oct 2025   Deviance:                       140.13
+Time:                        19:07:52   Pearson chi2:                     133.
+No. Iterations:                     5   Pseudo R-squ. (CS):             0.1868
+Covariance Type:              cluster                                         
+=======================================================================================================================================================
+                                                                                          coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+Intercept                                                                              -1.3927      0.701     -1.985      0.047      -2.768      -0.018
+C(entropy_bin_label)[T.Q1 [0.0834907,1.11315)]                                          0.9335      0.838      1.115      0.265      -0.708       2.575
+C(entropy_bin_label)[T.Q3 [1.52422,1.94124)]                                            1.0251      1.043      0.982      0.326      -1.020       3.070
+C(entropy_bin_label)[T.Q2 [1.11315,1.52412)]                                            0.3066      0.861      0.356      0.722      -1.382       1.995
+C(problem)[T.problem:Big cat found in stalLION (4)]                                     0.2269      0.157      1.442      0.149      -0.081       0.535
+C(problem)[T.problem:Celebrity from stare losing tail (4)]                             -0.8117      0.859     -0.945      0.345      -2.495       0.872
+C(problem)[T.problem:Charm from PRUNE missing head (4)]                                 0.3930      0.279      1.407      0.159      -0.154       0.940
+C(problem)[T.problem:Computer part: Central Processing Unit initially (3)]              1.3673      0.237      5.780      0.000       0.904       1.831
+C(problem)[T.problem:Contest from sBRACE missing head (4)]                             -0.0737      0.152     -0.486      0.627      -0.371       0.223
+C(problem)[T.problem:Couple, by the sound of 'to' (3)]                                 -0.5592      0.105     -5.325      0.000      -0.765      -0.353
+C(problem)[T.problem:Educate; rail vehicles (5)]                                       -0.3921      0.141     -2.772      0.006      -0.669      -0.115
+C(problem)[T.problem:Evil when broadcast comes back (4)]                                0.8962      0.368      2.438      0.015       0.176       1.617
+C(problem)[T.problem:Front of ship; bend (3)]                                          -1.5822      0.408     -3.875      0.000      -2.382      -0.782
+C(problem)[T.problem:Fruit found in auTO MATOn (6)]                                     0.8439      0.441      1.913      0.056      -0.021       1.709
+C(problem)[T.problem:Indoors — at home with team (6)]                                  -1.9315      0.495     -3.899      0.000      -2.903      -0.961
+C(problem)[T.problem:Kind found in sILK (3)]                                            0.2402      0.509      0.472      0.637      -0.758       1.238
+C(problem)[T.problem:Laptop; writer’s pad (8)]                                         -0.0405      0.285     -0.142      0.887      -0.600       0.519
+C(problem)[T.problem:Metal found in iRON AGE (4)]                                       0.5434      0.241      2.259      0.024       0.072       1.015
+C(problem)[T.problem:Month; walk smartly (5)]                                          -0.7472      0.195     -3.835      0.000      -1.129      -0.365
+C(problem)[T.problem:Navigator, initially: Global Positioning System (3)]              -0.1739      0.379     -0.459      0.646      -0.916       0.568
+C(problem)[T.problem:Object to light; ignite (5)]                                       0.9148      0.065     14.005      0.000       0.787       1.043
+C(problem)[T.problem:Pet found in deliCATe (3)]                                         0.2496      0.323      0.772      0.440      -0.384       0.883
+C(problem)[T.problem:Rowing tool, by the sound of 'ore' (3)]                           -0.8027      0.463     -1.733      0.083      -1.711       0.105
+C(problem)[T.problem:Shoe liner at home on fish (6)]                                   -0.7298      0.909     -0.803      0.422      -2.512       1.052
+C(problem)[T.problem:Tell — about tardy (6)]                                            0.0074      0.165      0.045      0.964      -0.316       0.331
+C(problem)[T.problem:Warrior, by the sound of 'night' (6)]                             -1.3565      0.210     -6.445      0.000      -1.769      -0.944
+C(problem)[T.problem:What scientists love: Download All The Archives initially (4)]     0.8481      0.232      3.652      0.000       0.393       1.303
+correct_at_1                                                                            1.6919      0.903      1.873      0.061      -0.078       3.462
+=======================================================================================================================================================

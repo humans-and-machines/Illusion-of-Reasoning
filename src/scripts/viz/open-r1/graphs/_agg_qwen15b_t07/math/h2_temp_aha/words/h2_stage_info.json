@@ -1,0 +1,23 @@
+{
+  "aha_mode": "words",
+  "glm_headline": {
+    "formula": "correct ~ C(problem) + step_std + temp_low + aha_words + temp_low:aha_words",
+    "N": 22272,
+    "coef_temp_low": 0.22073868252790804,
+    "p_temp_low": 0.015172295478980422,
+    "coef_aha": -1.1503685714522507,
+    "p_aha": 0.00039269989957676035,
+    "coef_interaction": -0.9086008873300602,
+    "p_interaction": 1.8449956418661655e-07
+  },
+  "stage_interaction_headline": {
+    "formula": "correct ~ C(problem) + step_std + temp_low + C(stage) + aha_words + temp_low:aha_words + temp_low:C(stage) + aha_words:C(stage)",
+    "N": 22272,
+    "coef_temp_low": 0.2272260712569716,
+    "p_temp_low": 0.06939792418693251,
+    "coef_aha": -0.6344339530405565,
+    "p_aha": 0.05212034891444891,
+    "coef_temp_low_x_aha": -0.9234416756933675,
+    "p_temp_low_x_aha": 4.733828781554776e-07
+  }
+}

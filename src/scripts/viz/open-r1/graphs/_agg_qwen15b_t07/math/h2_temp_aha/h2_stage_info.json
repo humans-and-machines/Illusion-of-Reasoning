@@ -1,0 +1,22 @@
+{
+  "keys_used": [
+    "problem",
+    "step",
+    "sample_idx"
+  ],
+  "n_overlap_units_per_run": 11124,
+  "n_combined_rows": 22272,
+  "root_high": "results/GRPO-1.5B",
+  "root_low": "results/GRPO-1.5B-low-temp",
+  "stage_info": {
+    "mode": "quantile",
+    "quantiles": [
+      0.33,
+      0.66
+    ],
+    "cutpoints": [
+      545,
+      1040
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+python build_rush_small_balanced.py \
+  --sizes 4 5 6 \
+  --out_dir ./rush4-5-6-balanced \
+  --limit_per_size 200000 \
+  --sample_sizes 6 \
+  --target_per_size "6:200000" \
+  --max_pieces_per_size "4:8,5:10,6:12" \
+  --min_empties_per_size "4:1,5:2,6:3" \
+  --max_nodes 500000 \
+  --num_workers 60 \
+  --difficulty_scheme fixed \
+  --fixed_thresholds "3,5" \
+  --balance_per_size \
+  --split 0.8,0.1,0.1 \
+  --dataset_id od2961/rush4-5-balanced \
+  --push_to_hub

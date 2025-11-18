@@ -67,7 +67,9 @@ logs/
 eval_results/
 results/*
 !results/README.md
+# Keep code in data/ checked in; ignore only generated artifacts.
 data/*
+!data/**/*.py
 !data/README.md
 !data/human_assessment_questions.txt
 llvm-project/

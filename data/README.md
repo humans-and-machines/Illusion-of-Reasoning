@@ -7,6 +7,12 @@ This tree contains the code to build curated datasets used in the project. Gener
 - `car_park/`: Rush Hour dataset builder (`build_rush_small_balanced.py`).
 - `crossword/`: Crossword dataset builders (`make_hf_crossword_dataset.py`, `csv_to_hf_crossword_dataset.py`) and helpers.
 
+## How this ties to the paper
+The Illusion-of-Reasoning study probes mid-trace “Aha!” shifts across three lenses: representational change (cryptic crosswords), symbolic reasoning (math), and spatial planning (Rush Hour). This folder generates the datasets for those benchmarks:
+- Cryptic crosswords: normalize/push clue–answer pairs for shift detection and entropy-based interventions.
+- Math: canonicalize openR1/MATH-style problems so traces can be scored automatically.
+- Rush Hour: synthesize and optimally solve $4{\times}4/5{\times}5/6{\times}6$ boards, bucketed by difficulty, to study mid-move reconsideration.
+
 ## Prerequisites
 - Python 3.9+ with the dependencies from `environment.yml` (or install the minimal runtime dependencies below).
 - For Hugging Face pushes: a valid `HF_TOKEN` or authenticated `huggingface_hub` login.

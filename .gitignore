@@ -1,117 +1,121 @@
-# Bytecode / cache artifacts
+# Python-related
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
 *.so
-.pytest_cache/
-.mypy_cache/
-.pyre/
-.pytype/
-.ruff_cache/
-.dmypy.json
-dmypy.json
-.coverage
-coverage.*
-htmlcov/
-.cache/
-.ipynb_checkpoints/
 
-# Build outputs
-build/
-dist/
-*.egg-info/
-.eggs/
-pip-wheel-metadata/
-*.manifest
-*.spec
-_build/
-docs/_build/
+# Project metadata
+.pdm.toml
+.pdm-python
+.pdm-build/
 
-# Virtual environments
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
 .env
-.env.*
-.venv/
-venv/
+.venv
 env/
+venv/
 ENV/
 env.bak/
 venv.bak/
-.conda/
-.conda_envs/
-.conda_pkgs/
-.local/
-/openr1/
-.pip/
-.pip_cache/
-.hf_home/
-.hf_cache/
-.xdg_cache/
-.cuda_cache/
-.torch_cache/
-.torchinductor/
-.triton/
-.wandb/
-.wandb_cache/
 
-# Editor / OS cruft
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
+# Spyder project settings
+.spyderproject
+.spyproject
 
-# Experiment artifacts & datasets
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
+
+# PyPI configuration file
+.pypirc
+
+# Temp / Output folders
 data/
-datasets_cache/
-hf_datasets/
 wandb/
 logs/
-results/
-results2/
 eval_results/
-outputs/
-checkpoints/
-gpfs/
-models/
-car_park_data/
-crossword_data/
+results/
 llvm-project/
+llm_verify_cache/
+datasets_cache/
+lighteval/
+.vscode/
 .tmp/
-tmp/
-temp/
+.hf_cache/
+.cache/
+.conda_cache/
+.conda_envs/
+.conda_pkgs/
+.condarc
+.hf_cache
+openr1/
+.wandb/
+.wandb_cache/
+.triton/
+.triton_cache/
+.local/
+.pip_cache/
+car_park_data/
+crossword_data/ 
 
-# OpenR1 project caches (when mirroring upstream)
-open-r1/
-open-r1/data/
-open-r1/datasets_cache/
-open-r1/hf_datasets/
-open-r1/logs/
-open-r1/results/
-open-r1/results2/
-open-r1/gpfs/
-open-r1/models/
-open-r1/wandb/
-open-r1/wandb_cache/
+# Hugging Face cache
+~/.cache/huggingface/
+huggingface/token*
+*.token
 
-# Model / weight artifacts
+# Model artifacts
+*.pt
+*.ckpt
+*.bin
+*.safetensors
+*.onnx
+*.tflite
+*.pkl
+*.npz
+*.npy
+
+# Editor & system junk
+.DS_Store
+Thumbs.db
+# Never push big artifacts
+*.csv
+*.jsonl
 *.pt
 *.pth
 *.ckpt
 *.safetensors
 *.bin
-*.gguf
 *.onnx
-*.tflite
-*.npz
-*.npy
-*.pkl
-
-# Cluster outputs
-slurm-*.out
-
-# Hugging Face / auth tokens
-huggingface/
-huggingface/token*
-*.token
+*.gguf

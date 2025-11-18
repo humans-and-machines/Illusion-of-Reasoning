@@ -1,0 +1,95 @@
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+model_revision: main
+torch_dtype: bfloat16
+attn_implementation: sdpa
+dataset_name: od2961/rush4-5-6-balanced
+dataset_prompt_column: messages
+dataset_solution_column: solution
+dataset_train_split: train
+dataset_validation_split: validation
+dataset_test_split: test
+system_prompt: "You are an expert Rush Hour ({N}\xD7{N}) solver.\nINPUTS\n\u2022 Board\
+  \ (row-major string with 'o','A','B'..'Z', optional 'x')\n\u2022 Board size (e.g.,\
+  \ 4\xD74/5\xD75/6\xD76)\n\u2022 Optimum moves {moves}\nOUTPUT\n\u2022 Exactly ONE\
+  \ optimal sequence in <answer> only.\n\u2022 Token = <PIECE><DIR><STEPS> (e.g.,\
+  \ A>2,B<1,Cv3)\n\u2022 DIR: '<' left, '>' right, '^' up, 'v' down\n\u2022 No spaces/prose/extra\
+  \ lines in <answer>.\nGOAL\n\u2022 Right end of 'A' reaches the right edge.\nOPTIMALITY\
+  \ & TIE-BREAK\n\u2022 Use exactly {moves} tokens.\n\u2022 If multiple optimal, choose\
+  \ lexicographically smallest ASCII comma-list.\nVALIDATION\n\u2022 REGEX: ^[A-Z][<>^v]\\\
+  d+(,[A-Z][<>^v]\\d+)*$\n\u2022 AXES: A is 2-long horizontal; others length 2/3,\
+  \ fixed H or V.\n\u2022 COLLISION: no overlaps; 'x' is immovable.\n\u2022 GOAL:\
+  \ applying all tokens reaches the goal.\n\u2022 LENGTH: #tokens = {moves} (when\
+  \ provided).\nRETHINK\n1) In <think>, propose S1 and run all VALIDATION checks.\n\
+  2) If any fail, name the failure, propose S2, re-check.\n3) If any fail, propose\
+  \ S3, re-check. Repeat as needed.\n4) Put ONLY the final passing sequence in <answer>.\n\
+  EXAMPLE (guidance only)\n\u2022 Board 4\xD74: oAABCooBCoooDDoo, {moves}=2\n<think>\n\
+  S1: A>1 \u2192 GOAL\u2717 (blocked by B). Wait, hang on\nS2: Bv2,A>1 \u2192 all\
+  \ \u2713.\n</think>\n<answer>\nBv2,A>1\n</answer>\n"
+bf16: true
+use_vllm: true
+do_eval: false
+gradient_accumulation_steps: 64
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+hub_model_id: od2961/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1
+output_dir: data/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1
+hub_strategy: every_save
+learning_rate: 5.0e-06
+adam_beta2: 0.99
+adam_epsilon: 1.0e-06
+log_completions: true
+log_level: info
+logging_first_step: true
+logging_steps: 1
+logging_strategy: steps
+lr_scheduler_type: cosine
+max_reason_tokens: 240
+return_reason: true
+max_prompt_length: 3000
+max_completion_length: 300
+max_steps: -1
+num_generations: 4
+num_train_epochs: 3
+overwrite_output_dir: true
+per_device_eval_batch_size: 8
+per_device_train_batch_size: 4
+push_to_hub: false
+report_to:
+- wandb
+reward_funcs:
+- rush_solution_shaped
+reward_weights:
+- 1.0
+kl_target: 0.07
+init_kl_coeff: 3.0
+kl_horizon: 50000
+kl_ctl_step_size: 0.15
+max_grad_norm: 0.15
+vf_coef: 0.25
+advantage_normalization: running
+horizon: 1024
+save_strategy: steps
+save_steps: 50
+evaluation_strategy: steps
+eval_steps: 10000000
+save_total_limit: 1000
+seed: 42
+warmup_ratio: 0.2
+reward_normalization: true
+gamma: 0.99
+gae_lambda: 0.95
+log_grad_norm_after_clip: true
+log_kl_per_token: true
+reward_clip:
+- 0
+- 1
+advantage_clip:
+- -1
+- 1
+clip_range: 0.05
+clip_range_vf: 0.5
+callbacks:
+- replay_buffer_callback
+- caching_callback
+- push_to_hub_revision

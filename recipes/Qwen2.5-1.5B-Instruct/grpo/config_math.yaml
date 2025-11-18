@@ -1,0 +1,106 @@
+# Model arguments
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+model_revision: main
+overwrite_output_dir: false
+resume_from_checkpoint: true
+torch_dtype: bfloat16
+attn_implementation: sdpa
+
+# Data training arguments
+dataset_name: open-r1/OpenR1-Math-220k
+dataset_prompt_column: problem
+system_prompt: "You are an expert *mathematics problem-solver*.
+
+  Every time you receive a problem you must:
+  • Analyse it thoroughly.  
+    – Pinpoint the **goal** (what quantity/set/form is requested).  
+    – Pinpoint the **givens/constraints** (domains, integrality, non-negativity, geometric conditions).  
+    – Choose the **methods** to apply (algebraic manipulation, factorization, inequalities, counting, modular arithmetic, geometry, calculus, etc.).  
+    – Write out the full derivation that leads to the final result.
+
+  • Check that the result satisfies all original constraints (no extraneous roots, correct domain, simplified form, exact arithmetic).
+
+  • Respond in **exactly** the tag-based format shown below – no greeting, no commentary outside the tags.  
+    – The final answer goes inside `<answer>` **only**.  
+    – Use **exact** math (fractions, radicals, π, e). Avoid unnecessary decimals.  
+    – Canonical forms: integers as plain numbers; reduced fractions a/b with b>0; simplified radicals; rationalized denominators; sets/tuples with standard notation; intervals in standard notation.  
+    – If there is **no solution**, write `NO SOLUTION`. If the problem is **underdetermined**, write `I DON'T KNOW`.
+
+  • You have a hard cap of **750 output tokens**. Be concise but complete.
+
+  ------------------------------------------------------------
+  TAG TEMPLATE (copy this shape for every problem)
+  <think>
+  YOUR reasoning process goes here:  
+  1. quote the relevant bits of the problem  
+  2. name the mathematical tool(s) you apply  
+  3. show each intermediate step until the result is reached  
+     
+  If you spot an error or an unmet constraint, iterate, repeating steps 1–3 as many
+  times as necessary until you are confident in your result. Finish by verifying the
+  result satisfies the original conditions exactly (substitution/checks).
+  </think>
+  <answer>
+  THEANSWER
+  </answer>
+  "
+# GRPO trainer config
+bf16: true
+use_vllm: true
+do_eval: false
+gradient_accumulation_steps: 64
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+hub_model_id: od2961/Qwen2.5-1.5B-Open-R1-GRPO-math-v1
+hub_strategy: every_save
+learning_rate: 5e-6
+adam_beta2: 0.99
+adam_epsilon: 1e-06
+log_completions: true
+log_level: info
+logging_first_step: true
+logging_steps: 1
+logging_strategy: steps
+lr_scheduler_type: cosine
+max_prompt_length: 512
+max_completion_length: 750
+max_steps: -1
+num_generations: 4
+num_train_epochs: 3
+output_dir: data/Qwen2.5-1.5B-Open-R1-GRPO-math-v1
+overwrite_output_dir: true
+per_device_eval_batch_size: 8
+per_device_train_batch_size: 8
+push_to_hub: true
+report_to:
+- wandb
+reward_funcs:
+- pure_accuracy_math
+reward_weights:
+- 1
+kl_target:        0.07       # was 0.05 → aim for ≈40 % of previous KL
+init_kl_coeff:    3.00        # was 0.10 → 2× stronger penalty out of the gate
+kl_horizon:       50000    # was 100 000 → controller adapts in ~½ the steps
+kl_ctl_step_size: 0.15      # was 0.05 → gentler per‑update β adjustments
+max_grad_norm: 0.15
+vf_coef: 0.25
+advantage_normalization: running 
+horizon: 1024      
+save_strategy: steps
+save_steps: 50
+evaluation_strategy: steps
+eval_steps: 100
+evaluation_strategy: "no"       # <-- no eval
+save_total_limit: 1000
+seed: 42
+warmup_ratio: 0.2
+reward_normalization: true
+gamma: 0.99
+gae_lambda: 0.95
+log_grad_norm_after_clip: true
+log_kl_per_token: true    
+reward_clip: [-6.0, 6.0]          
+advantage_clip: [-2.5, 2.5]       
+clip_range:     0.05          # keep or lower to 0.08
+clip_range_vf:  0.5           # tighten critic clipping

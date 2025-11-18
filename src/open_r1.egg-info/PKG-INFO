@@ -1,0 +1,259 @@
+Metadata-Version: 2.4
+Name: open-r1
+Version: 0.1.0.dev0
+Summary: Open R1
+Home-page: https://github.com/huggingface/open-r1
+Author: The Hugging Face team (past and future)
+Author-email: lewis@huggingface.co
+License: Apache-2.0
+Keywords: llm inference-time compute reasoning
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.10.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: accelerate==1.4.0
+Requires-Dist: bitsandbytes>=0.43.0
+Requires-Dist: einops>=0.8.0
+Requires-Dist: datasets>=3.2.0
+Requires-Dist: deepspeed==0.16.8
+Requires-Dist: hf_transfer>=0.1.4
+Requires-Dist: huggingface-hub[cli,hf_xet]<1.0,>=0.30.2
+Requires-Dist: langdetect
+Requires-Dist: latex2sympy2_extended>=1.0.6
+Requires-Dist: math-verify==0.5.2
+Requires-Dist: liger-kernel>=0.5.10
+Requires-Dist: packaging>=23.0
+Requires-Dist: safetensors>=0.3.3
+Requires-Dist: sentencepiece>=0.1.99
+Requires-Dist: transformers==4.52.3
+Requires-Dist: trl[vllm]==0.18.0
+Requires-Dist: wandb>=0.19.1
+Requires-Dist: async-lru>=2.0.5
+Provides-Extra: tests
+Requires-Dist: pytest; extra == "tests"
+Requires-Dist: parameterized>=0.9.0; extra == "tests"
+Requires-Dist: math-verify==0.5.2; extra == "tests"
+Requires-Dist: jieba; extra == "tests"
+Provides-Extra: torch
+Requires-Dist: torch==2.6.0; extra == "torch"
+Provides-Extra: quality
+Requires-Dist: ruff>=0.9.0; extra == "quality"
+Requires-Dist: isort>=5.12.0; extra == "quality"
+Requires-Dist: flake8>=6.0.0; extra == "quality"
+Requires-Dist: pylint>=3.2.0; extra == "quality"
+Requires-Dist: pre-commit>=3.8.0; extra == "quality"
+Provides-Extra: docs
+Requires-Dist: sphinx>=7.2; extra == "docs"
+Requires-Dist: sphinx-rtd-theme>=1.3; extra == "docs"
+Provides-Extra: code
+Requires-Dist: e2b-code-interpreter>=1.0.5; extra == "code"
+Requires-Dist: python-dotenv; extra == "code"
+Requires-Dist: morphcloud==0.1.67; extra == "code"
+Requires-Dist: jieba; extra == "code"
+Requires-Dist: pandas>=2.2.3; extra == "code"
+Requires-Dist: aiofiles>=24.1.0; extra == "code"
+Provides-Extra: eval
+Requires-Dist: lighteval@ git+https://github.com/huggingface/lighteval.git@d3da6b9bbf38104c8b5e1acc86f83541f9a502d1 ; extra == "eval"
+Requires-Dist: math-verify==0.5.2; extra == "eval"
+Provides-Extra: dev
+Requires-Dist: ruff>=0.9.0; extra == "dev"
+Requires-Dist: isort>=5.12.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: pylint>=3.2.0; extra == "dev"
+Requires-Dist: pre-commit>=3.8.0; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: parameterized>=0.9.0; extra == "dev"
+Requires-Dist: math-verify==0.5.2; extra == "dev"
+Requires-Dist: jieba; extra == "dev"
+Requires-Dist: lighteval@ git+https://github.com/huggingface/lighteval.git@d3da6b9bbf38104c8b5e1acc86f83541f9a502d1 ; extra == "dev"
+Requires-Dist: math-verify==0.5.2; extra == "dev"
+Requires-Dist: e2b-code-interpreter>=1.0.5; extra == "dev"
+Requires-Dist: python-dotenv; extra == "dev"
+Requires-Dist: morphcloud==0.1.67; extra == "dev"
+Requires-Dist: jieba; extra == "dev"
+Requires-Dist: pandas>=2.2.3; extra == "dev"
+Requires-Dist: aiofiles>=24.1.0; extra == "dev"
+Requires-Dist: sphinx>=7.2; extra == "dev"
+Requires-Dist: sphinx-rtd-theme>=1.3; extra == "dev"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: license-file
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# The Illusion of Insight in Reasoning Models
+
+Do reasoning models have ''Aha!'' moments? Prior work suggests that models like DeepSeek-R1-Zero undergo sudden realizations that lead to accurate outputs. Yet it remains unclear whether such shifts in reasoning strategy actually improve performance. In this paper, we formalize intrinsic ''Aha!'' events and instrument training runs to detect them across multiple tasks. We find that reasoning shifts are rare, do not become more frequent with training, and seldom improve accuracy. However, their effect varies according to model uncertainty. Building on this finding, we show that artificially triggering shifts under high entropy improves accuracy. Overall, our results challenge the perception that reasoning models' problem-solving capabilities stem from mid-reasoning shifts, although these shifts can be exploited to improve performance.
+
+## Quick Start
+
+- **Pin all caches to the repo:** `source tools/local_env.sh` (exports `CONDA_*`, `PIP_CACHE_DIR`, `TMPDIR`, `HF_*`, `WANDB_*`, etc.) so every installer reads/writes strictly inside `$(pwd)`. `make conda-local` also drops the same hook under `openr1/etc/conda/activate.d`, so simply running `conda activate ./openr1` reapplies the local-path policy automatically.
+- **Environment:** `make conda-local && conda activate ./openr1`
+- **Existing env?** `make conda-local-hook` reinstalls the activation hook if you already have `./openr1` and pulled the repo.
+- **Local storage policy:** Run commands from the repo root; `make conda-local` plus the env hook keep conda, pip, Hugging Face, wandb, and temporary artifacts under this directory (see `.condarc`, `tools/local_env_body.sh`, and the ignored cache folders). `echo $PIP_CACHE_DIR` should always resolve to `$(pwd)/.pip_cache`.
+- **Install (core):** `pip install -e .`
+- **Install (dev):** `pip install -e .[dev]`
+- **Authenticate with Hugging Face:** `huggingface-cli login` or `export HF_TOKEN=<token>` so gated assets are accessible inside Slurm jobs.
+- **Train on Slurm (recommended):**
+  ```bash
+  sbatch maxent-grpo/scripts/train.slurm --model Qwen2.5-1.5B-Instruct --task grpo --config math --accelerator zero3
+  ```
+- **MaxEnt task:** `sbatch maxent-grpo/scripts/train-maxent.slurm --model Qwen2.5-1.5B-Instruct --config math --accelerator zero3` launches the MaxEnt GRPO variant.
+- **Extra trainer flags:** Pass overrides with `--args "--run_name demo --report_to wandb"`.
+- **More knobs:** Run `sbatch maxent-grpo/scripts/train.slurm --help` to inspect dp/tp splits, port overrides, and accelerator settings.
+
+A project demonstrating fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset using two methodologies—Guided Reinforcement Preference Optimization (GRPO) and Supervised Fine-Tuning (SFT). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. This repository also contains inference scripts to evaluate model performance on a subset of 500 Math 220k problems.
+
+---
+
+## Table of Contents
+
+1. [Quick Start](#quick-start)  
+2. [Repository Structure](#repository-structure)  
+3. [Prerequisites](#prerequisites)  
+4. [Data](#data)  
+5. [Training](#training)  
+   1. [Model Arguments (Common)](#model-arguments-common)  
+6. [Citation](#citation)  
+7. [License](#license)  
+
+---
+
+
+## Repository Structure
+
+```text
+Chain-of-Thought-Traces/
+├── Math220k/
+│   ├── GRPO/                          # Contains checkpoint inference for GRPO fine-tuning
+│   └── SFT/                           # Contains checkpoint inference for SFT fine-tuning
+├── README.md                          # ← This file
+├── LICENSE                            # License info
+├── inference.py                       # Script to run inference across saved checkpoints
+├── judgement.py                       # Script to run evaluate model accuracy during training via gpt-4o
+└── yaml/                              # (Optional) Folder for YAML configuration files
+```
+
+- **Math220k/GRPO/**  
+  Output directories and model checkpoints are stored every 50 steps under the Hugging Face hub (`Qwen2.5-1.5B-Instruct-GRPO`).
+
+- **Math220k/SFT/**  
+  Output directories and model checkpoints are stored every 50 steps under the Hugging Face hub (`Qwen2.5-1.5B-Instruct-SFT`).
+
+- **inference.py**  
+  Python script that loads each saved revision (SHA) and runs inference on a fixed subset of 500 Math 220k examples, logging chain-of-thought traces into JSONL files.
+
+- **yaml/** (optional)  
+  Folder containing YAML files for GRPO and SFT configuration (trainer arguments, hyperparameters, etc.).
+
+---
+
+## Prerequisites
+
+### Hardware
+
+- GPU-equipped machine with CUDA 12.4 (or higher) for both training and inference.
+- At least 16 GB of VRAM is recommended for Qwen 2.5-1.5B.
+- Disk space to cache model weights (≥ 50 GB).
+
+### Software & Libraries
+
+- Python 3.11 (tested)
+- PyTorch 2.6.0
+- DeepSpeed 0.9+ (for GRPO training)
+- Transformers 4.\*
+- Datasets 2.\*
+- vLLM 0.8.5.post1
+- FlashAttention 2
+- Accelerate (optional)
+- Additional packages:
+  - python-dotenv
+  - numpy
+  - tqdm
+  - packaging
+  - deepspeed
+  - wandb
+
+### Hugging Face Authentication
+
+An authenticated Hugging Face token with write permissions to push to the hubs:
+
+- `od2961/Qwen2.5-1.5B-Instruct-SFT`
+- `od2961/Qwen2.5-1.5B-Instruct-GRPO`
+
+## Data
+
+We leverage the **OpenR1-Math 220k** dataset, which comprises 220,000 math problems with chain-of-thought annotations. For training and inference, we use the Hugging Face `open-r1/OpenR1-Math-220k` repository and its default configuration.
+
+- **Train Split:**  
+  Only the first 500 selected for inference, consistent across SFT and GRPO
+
+## Training
+
+All training experiments were conducted using the base model:  
+`Qwen/Qwen2.5-1.5B-Instruct (revision: main)`  
+with modifications to enable **bfloat16**, **flash_attention_2**, and appropriate gradient settings.
+
+### Model Arguments (Common)
+
+These arguments are shared between GRPO and SFT:
+
+```yaml
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+model_revision: main
+torch_dtype: bfloat16
+attn_implementation: flash_attention_2
+dataset_name: open-r1/OpenR1-Math-220k
+dataset_prompt_column: problem
+system_prompt: >
+  "You are a helpful AI Assistant that provides well-reasoned and detailed responses.
+   You first think about the reasoning process as an internal monologue and then provide
+   the user with the answer. Respond in the following format:
+   <think>\n...\n</think>\n<answer>\n...\n</answer>"
+seed: 42
+warmup_ratio: 0.05
+bf16: true
+use_vllm: true
+gradient_accumulation_steps: 4
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+```
+
+Detailed training configurations are available within the yaml folder. 
+
+## Citation
+
+If you use this work or the methodology in your own research, please cite as follows:
+
+Liv G. d’Aliberti and Manoel Horta Ribeiro, “The Illusion of Insight in Reasoning Models,” unpublished workshop, June 2025.
+
+```bibtex
+@misc{daliberti2025cot,
+  author       = {Liv G. d’Aliberti and Manoel Horta Ribeiro},
+  title        = {The Illusion of Insight in Reasoning Models},
+  year         = {2025},
+  month        = jun,
+  note         = {Unpublished workshop. \url{https://github.com/liv-daliberti/Chain-of-Thought-Traces}}
+}
+```
+
+## License
+
+This project is released under the MIT License. See \texttt{LICENSE} for details.

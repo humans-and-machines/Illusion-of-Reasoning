@@ -51,6 +51,8 @@ _deps = [
     "flake8>=6.0.0",
     "hf_transfer>=0.1.4",
     "huggingface-hub[cli,hf_xet]>=0.30.2,<1.0",
+    "httpcore>=1.0,<1.1",
+    "httpx>=0.27,<0.28",
     "isort>=5.12.0",
     "jieba",  # Needed for Chinese language support
     "langdetect",  # Needed for LightEval's extended tasks
@@ -74,6 +76,12 @@ _deps = [
     "async-lru>=2.0.5",
     "aiofiles>=24.1.0",
     "pandas>=2.2.3",
+    "sphinx>=8.2.3",
+    "furo>=2025.9.25",
+    "imagesize>=1.3",
+    "snowballstemmer>=2.2",
+    "sphinxcontrib-jsmath>=1.0.1",
+    "beautifulsoup4>=4.12",
 ]
 
 # this is a lookup table with items like:
@@ -95,7 +103,8 @@ extras["torch"] = deps_list("torch")
 extras["quality"] = deps_list("ruff", "isort", "flake8")
 extras["code"] = deps_list("e2b-code-interpreter", "python-dotenv", "morphcloud", "jieba", "pandas", "aiofiles")
 extras["eval"] = deps_list("lighteval", "math-verify")
-extras["dev"] = extras["quality"] + extras["tests"] + extras["eval"] + extras["code"]
+extras["docs"] = deps_list("sphinx", "furo", "imagesize", "snowballstemmer", "sphinxcontrib-jsmath", "beautifulsoup4")
+extras["dev"] = extras["quality"] + extras["tests"] + extras["eval"] + extras["code"] + extras["docs"]
 
 # core dependencies shared across the whole project - keep this to a bare minimum :)
 install_requires = [
@@ -106,6 +115,8 @@ install_requires = [
     deps["deepspeed"],
     deps["hf_transfer"],
     deps["huggingface-hub"],
+    deps["httpx"],
+    deps["httpcore"],
     deps["langdetect"],
     deps["latex2sympy2_extended"],
     deps["math-verify"],

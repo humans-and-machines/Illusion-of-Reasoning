@@ -8,10 +8,14 @@ check_dirs := src tests
 
 # dev dependencies
 install:
+	mkdir -p $(PWD)/.pip_cache $(PWD)/.tmp $(PWD)/.hf_cache $(PWD)/.conda_pkgs && \
+	PIP_CACHE_DIR="$(PWD)/.pip_cache" TMPDIR="$(PWD)/.tmp" HF_HOME="$(PWD)/.hf_cache" CONDA_PKGS_DIRS="$(PWD)/.conda_pkgs" \
 	. $$(conda info --base)/etc/profile.d/conda.sh && \
 		(conda env create -f configs/environment.yml -p $(PWD)/openr1 || conda env update -f configs/environment.yml -p $(PWD)/openr1) && \
 		conda activate $(PWD)/openr1 && \
+		PIP_CACHE_DIR="$(PWD)/.pip_cache" TMPDIR="$(PWD)/.tmp" HF_HOME="$(PWD)/.hf_cache" CONDA_PKGS_DIRS="$(PWD)/.conda_pkgs" \
 		pip install --upgrade pip && \
+		PIP_CACHE_DIR="$(PWD)/.pip_cache" TMPDIR="$(PWD)/.tmp" HF_HOME="$(PWD)/.hf_cache" CONDA_PKGS_DIRS="$(PWD)/.conda_pkgs" \
 		GIT_LFS_SKIP_SMUDGE=1 pip install -e ".[dev]"
 
 style:

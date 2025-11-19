@@ -143,6 +143,7 @@ artifacts/
 .env
 .env.*
 configs/azure.yml
+configs/condaenv.*.requirements.txt
 
 # Local fine-tuned Open-R1 checkpoints (kept off git)
 models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1/

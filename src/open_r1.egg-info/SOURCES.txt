@@ -41,3 +41,6 @@ src/open_r1/utils/ioi/ioi_utils.py
 src/open_r1/utils/ioi/morph_client.py
 src/open_r1/utils/ioi/piston_client.py
 src/open_r1/utils/ioi/utils.py
+tests/test_data_car_park.py
+tests/test_data_crossword.py
+tests/test_rewards.py

@@ -30,6 +30,11 @@ python data/car_park/build_rush_small_balanced.py \
   --difficulty_scheme fixed \
   --push_to_hub --dataset_id your-username/rush-balanced
 ```
+Shortcut helper:
+- `data/car_park/build.sh` wraps the above with env overrides and optional push.
+  - Download/build locally: `bash data/car_park/build.sh`
+  - Push to HF: `PUSH_TO_HUB=1 DATASET_ID=your-username/rush-balanced bash data/car_park/build.sh`
+  - Customize knobs via env (examples): `SIZES="4 5 6" LIMIT_PER_SIZE=200000 SAMPLE_SIZES="6" TARGET_PER_SIZE="6:200000" MAX_PIECES_PER_SIZE="4:8,5:10,6:12" MIN_EMPTIES_PER_SIZE="4:1,5:2,6:3" MAX_NODES=500000 BALANCE_PER_SIZE=1`.
 Key flags:
 - `--sample_sizes 6` to sample instead of enumerate the listed sizes (useful for 6×6).
 - `--target_per_size 6:50000` to set per-size row targets when sampling.
@@ -58,6 +63,14 @@ python data/crossword/csv_to_hf_crossword_dataset.py \
 ```
 
 Both scripts emit HF `DatasetDict` splits and can push to the Hub or save locally under `hf_datasets/`.
+
+### Raw Cryptonite bundle helper
+- `data/crossword/build_cryptonite_official.sh` downloads the original `cryptonite-official-split.zip` from the upstream Cryptonite repo and (optionally) converts/pushes it to HF via `make_hf_crossword_dataset.py`.
+  - Defaults: downloads to `data/crossword/raw/cryptonite-official-split.zip`, uses `HUB_USER` for pushes, `SKIP_PUSH=1` to keep local.
+  - Examples:
+    - Download only: `RUN_CONVERT=0 bash data/crossword/build_cryptonite_official.sh`
+    - Download + build locally: `HUB_USER=your-hf-handle SKIP_PUSH=1 bash data/crossword/build_cryptonite_official.sh`
+    - Download + build + push: `HUB_USER=your-hf-handle SKIP_PUSH=0 bash data/crossword/build_cryptonite_official.sh`
 
 ## Inspecting examples
 Use `data/crossword/sample_hf_outputs.py` to peek at a local or Hub-hosted crossword dataset:

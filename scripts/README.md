@@ -1,7 +1,7 @@
-# Scripts layout
-- `annotate/`: LLM-as-judge + annotation entrypoints (`gpt-eval.py`, `evaluation.py`, `recheck.py`, `gpt-cohens-kappa.py`).
-- `analysis/`: plotting/stats entrypoints; `analysis/legacy/` holds older one-offs kept for reference.
-- `inference/`: generation/GRPO/inference runners.
-- `viz/`: figure/table renderers.
-- `utils/`: helpers (download/prune/summarize, list-results, etc.).
-- `slurm/` (symlinked as `cluster/`): job specs for running on the cluster.
+# Scripts layout (launchers only)
+- `inference/`: Slurm launchers for eval/entropy experiments (call Python in `src/inference/`).
+- `training/`: Slurm launchers for GRPO/SFT runs.
+
+Notes
+- Python entrypoints for inference live under `src/inference/`; the `.slurm` files here just wrap them.
+- Other helper trees (`analysis/`, `annotate/`, `utils/`, `viz/`) now live under `src/scripts/` if needed.

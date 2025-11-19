@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=xword_compare_qwen
-#SBATCH --output=logs/xword_compare_qwen_%A_%a.out
-#SBATCH --error=logs/xword_compare_qwen_%A_%a.err
+#SBATCH --job-name=carpark_compare_qwen
+#SBATCH --output=logs/carpark_compare_qwen_%A_%a.out
+#SBATCH --error=logs/carpark_compare_qwen_%A_%a.err
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
@@ -46,7 +46,7 @@ export TRITON_CACHE_DIR="$CACHE_ROOT/triton"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export MALLOC_ARENA_MAX=2
 
-# WANDB
+# WANDB (optional)
 export WANDB_MODE=online
 export WANDB_DIR=/n/fs/similarity/wandb-offload/tmp
 export WANDB_ARTIFACT_DIR=/n/fs/similarity/wandb-offload/artifacts
@@ -54,16 +54,15 @@ export WANDB_CACHE_DIR=/n/fs/similarity/wandb-offload/cache
 mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR"
 
 # ── Paths ───────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/scripts/inference/crossword-inference.py}"
-DATA_JSONL="${DATA_JSONL:-$PROJECT_ROOT/data/data.jsonl}"  # your local eval set
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/carpark-inference.py}"
 
 # Tuned checkpoint root + step (override with env if needed)
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
-CKPT_STEP="${CKPT_STEP:-1000}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"
+CKPT_STEP="${CKPT_STEP:-750}"
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 
 # Output
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-xword-compare-1shot}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-carpark-compare-1shot}"
 mkdir -p "$OUTPUT_ROOT"
 
 # HF online so we can pull the base model
@@ -75,6 +74,7 @@ export HF_HUB_REQUEST_TIMEOUT=60
 # ── Select model (array: 0=base, 1=tuned@CKPT_STEP) ─────────
 if [[ "${SLURM_ARRAY_TASK_ID}" -eq 0 ]]; then
   MODEL_NAME_OR_PATH="Qwen/Qwen2.5-1.5B-Instruct"   # base model (no FT)
+  REV_FLAG="--revision main"
   TAG="base-step0"
   STEP_FLAG="--step 0"
 else
@@ -83,6 +83,7 @@ else
     exit 1
   fi
   MODEL_NAME_OR_PATH="$CKPT_DIR"
+  REV_FLAG=""
   TAG="tuned-step${CKPT_STEP}"
   STEP_FLAG="--step ${CKPT_STEP}"
 fi
@@ -90,25 +91,27 @@ fi
 OUTDIR="$OUTPUT_ROOT/$TAG"
 mkdir -p "$OUTDIR"
 
-echo "→ Running crossword compare: $TAG"
+echo "→ Running carpark compare: $TAG"
 echo "   Model: $MODEL_NAME_OR_PATH"
-echo "   Data : $DATA_JSONL"
 echo "   Out  : $OUTDIR"
 
-# ── Inference: 1 sample, NO second pass ─────────────────────
+# ── Inference: 1-shot, temp 0.05, NO second pass ────────────
 python -u "$SCRIPT_PATH" \
   --model_name_or_path "$MODEL_NAME_OR_PATH" \
+  $REV_FLAG \
   --output_dir "$OUTDIR" \
   --batch_size 1 \
   --entropy_mode full \
-  --num_examples 1000000 \
+  --num_examples 500 \
   --num_samples 1 \
-  --temperature 0.0 \
+  --temperature 0.00 \
   --top_p 0.95 \
   --seed 42 \
   --dtype bfloat16 \
-  --dataset_id CROSSWORD-LOCAL \
-  --dataset_path "$DATA_JSONL" \
+  --attn_implementation sdpa \
+  --dataset_id od2961/rush4-5-6-balanced \
+  --dataset_prompt_column messages \
+  --dataset_solution_column solution \
   --split test \
   --think_cap 750 \
   --answer_cap 50 \

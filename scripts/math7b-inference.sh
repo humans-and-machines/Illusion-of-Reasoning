@@ -1,28 +1,31 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=math_compare_llama8b_4tempsXckpts
-#SBATCH --output=logs/math_compare_llama8b_%A_%a.out
-#SBATCH --error=logs/math_compare_llama8b_%A_%a.err
+#SBATCH --job-name=math_compare_qwen7b_4tempsXckpts
+#SBATCH --output=logs/math_compare_qwen7b_%A_%a.out
+#SBATCH --error=logs/math_compare_qwen7b_%A_%a.err
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a6000:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
+#SBATCH --gres=gpu:a100:1
 #SBATCH --time=00:59:00
-#SBATCH --array=0   # 4 temps * 14 ckpts (0,50,...,650) = 56 tasks
+#SBATCH --array=0 # 4 temps * 15 ckpts
+
+# Array mapping:
+#   temps=(0 0.05 0.3 0.7)
+#   ckpts=(0 50 100 150 200 250 300 350 400 450 500)
+#   temp_idx = idx % 4, ckpt_idx = idx / 4
 
 set -euo pipefail
 ulimit -n 4096
 
-# ── Repo root ────────────────────────────────────────────────────────────────
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
-
-# ── Logging/runtime ──────────────────────────────────────────────────────────
 export LOGLEVEL=DEBUG
 export PYTHONUNBUFFERED=1
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-# ── Conda env ───────────────────────────────────────────────────────────────
+# ── Repo + Conda env ────────────────────────────────────────────────────────
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
+
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
 conda activate "${CONDA_ENV:-openr1}"
 echo "✅ Conda env: $(which python)"
@@ -30,20 +33,18 @@ python --version
 
 module load cudatoolkit/12.6
 
-# ── HF auth / behavior ───────────────────────────────────────────────────────
-# (You asked to use this token exactly.)
-export HUGGING_FACE_HUB_TOKEN="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"
+# Avoid user site pkgs
+export PYTHONNOUSERSITE=1
+unset PYTHONPATH
+export PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# HF online (for base model pull)
+# HF online (for base model)
 export TRANSFORMERS_OFFLINE=0
 export HF_HUB_OFFLINE=0
 export HF_HUB_ENABLE_HF_TRANSFER=1
 export HF_HUB_REQUEST_TIMEOUT=60
-export PIP_DISABLE_PIP_VERSION_CHECK=1
-export PYTHONNOUSERSITE=1
-unset PYTHONPATH
 
-# ── W&B (optional) ──────────────────────────────────────────────────────────
+# W&B (optional)
 export WANDB_MODE=online
 export WANDB_DIR=/n/fs/similarity/wandb-offload/tmp
 export WANDB_ARTIFACT_DIR=/n/fs/similarity/wandb-offload/artifacts
@@ -51,12 +52,12 @@ export WANDB_CACHE_DIR=/n/fs/similarity/wandb-offload/cache
 mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/scripts/inference/math-inference.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Llama-8B-Open-R1-GRPO-math-v2}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/math-inference.py}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
 BASE_RESULTS_ROOT="${BASE_RESULTS_ROOT:-$PROJECT_ROOT/results}"
 
-# Tags for directory naming
-MODEL_TAG="${MODEL_TAG:-Llama8B}"
+# Tags for directory naming (override if you want e.g. MODEL_TAG=1.5B DOMAIN_TAG=xword)
+MODEL_TAG="${MODEL_TAG:-7B}"
 DOMAIN_TAG="${DOMAIN_TAG:-math}"
 
 # ── Grid ────────────────────────────────────────────────────────────────────
@@ -81,30 +82,26 @@ ckpt_idx=$(( idx / n_temps ))
 TEMP="${temps[$temp_idx]}"
 STEP="${ckpts[$ckpt_idx]}"
 
-# ── Model selection ─────────────────────────────────────────────────────────
-# Step 0 = base Llama-3.1 8B Instruct from HF; tuned steps load from $MODEL_ROOT/checkpoint-<STEP>
+# Model selection
 if [[ "$STEP" -eq 0 ]]; then
-  MODEL_NAME_OR_PATH="meta-llama/Meta-Llama-3.1-8B-Instruct"
+  MODEL_NAME_OR_PATH="Qwen/Qwen2.5-7B-Instruct"   # base
   TAG="base-step0"
   STEP_FLAG="--step 0"
 else
   CKPT_DIR="$MODEL_ROOT/checkpoint-$STEP"
-  if [[ ! -d "$CKPT_DIR" ]]; then
-    echo "Missing tuned checkpoint: $CKPT_DIR"
-    exit 1
-  fi
+  test -d "$CKPT_DIR" || { echo "Missing tuned checkpoint: $CKPT_DIR"; exit 1; }
   MODEL_NAME_OR_PATH="$CKPT_DIR"
   TAG="tuned-step${STEP}"
   STEP_FLAG="--step ${STEP}"
 fi
 
-# ── Output layout ───────────────────────────────────────────────────────────
-# /.../results/GRPO-<MODEL_TAG>-<DOMAIN_TAG>-temp-<TEMP>/step-<STEP>
+# Desired output style:
+#   /.../results/GRPO-<MODEL_TAG>-<DOMAIN_TAG>-temp-<TEMP>/step-<STEP>
 OUT_PREFIX="${BASE_RESULTS_ROOT}/GRPO-${MODEL_TAG}-${DOMAIN_TAG}-temp-${TEMP}"
 OUTDIR="${OUT_PREFIX}/step-${STEP}"
 mkdir -p "$OUTDIR"
 
-# Per-run caches (avoid contention / NFS slowness)
+# Per-run caches (avoid contention)
 CACHEROOT="$OUTDIR/hf_cache"
 mkdir -p "$CACHEROOT" "$OUTDIR/.triton" "$OUTDIR/.torchinductor" "$OUTDIR/.tmp"
 export HF_HOME="$CACHEROOT"
@@ -118,7 +115,7 @@ echo "→ Task ${SLURM_ARRAY_TASK_ID}/${n_total}: TEMP=${TEMP}, STEP=${STEP}"
 echo "→ Model:  $MODEL_NAME_OR_PATH"
 echo "→ Output: $OUTDIR"
 
-# ── Inference (mirror your Qwen run) ────────────────────────────────────────
+# ── Inference (1 sample, no second pass) ────────────────────────────────────
 DTYPE="${DTYPE:-float16}"
 
 python -u "$SCRIPT_PATH" \

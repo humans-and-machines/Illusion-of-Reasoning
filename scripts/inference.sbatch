@@ -118,7 +118,7 @@ CACHEROOT="$OUTPUT_ROOT/hf_cache"
 mkdir -p "$OUTPUT_ROOT" "$CACHEROOT"
 
 # Script location and per-revision output directory
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/scripts/inference/inference.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/inference.py}"
 OUTDIR="$OUTPUT_ROOT/$REV"
 mkdir -p "$OUTDIR"
 

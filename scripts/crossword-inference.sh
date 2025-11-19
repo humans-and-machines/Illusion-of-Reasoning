@@ -28,7 +28,7 @@ export TRANSFORMERS_NO_PYTORCH_IMAGE_TRANSFORMS=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export MALLOC_ARENA_MAX=2
 
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/scripts/inference/crossword-inference.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/crossword-inference.py}"
 MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
 DATA_JSONL="${DATA_JSONL:-$PROJECT_ROOT/data/data.jsonl}"
 

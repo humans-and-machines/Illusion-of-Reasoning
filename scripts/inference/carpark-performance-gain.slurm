@@ -54,7 +54,7 @@ export WANDB_CACHE_DIR=/n/fs/similarity/wandb-offload/cache
 mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR"
 
 # ── Paths ───────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/carpark-inference.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_carpark_runner.py}"
 
 # Tuned checkpoint root + step (override with env if needed)
 MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"

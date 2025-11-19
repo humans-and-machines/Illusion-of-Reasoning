@@ -54,7 +54,7 @@ export WANDB_CACHE_DIR=/n/fs/similarity/wandb-offload/cache
 mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR"
 
 # ── Paths ───────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/crossword-inference.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_crossword_runner.py}"
 DATA_JSONL="${DATA_JSONL:-$PROJECT_ROOT/data/data.jsonl}"  # your local eval set
 
 # Tuned checkpoint root + step (override with env if needed)

@@ -46,7 +46,7 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────
 MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/math-inference.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
 
 # Steps and temps
 CHECKPOINT_STEPS=(50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500 1550)

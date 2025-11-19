@@ -11,14 +11,13 @@ import logging
 from typing import Tuple
 
 try:
-    from openai import OpenAI
-except Exception:  # pragma: no cover - optional dependency
+    from openai import OpenAI, AzureOpenAI, OpenAIError
+except ImportError:  # pragma: no cover - optional dependency
     OpenAI = None  # type: ignore
-
-try:
-    from openai import AzureOpenAI
-except Exception:  # pragma: no cover - optional dependency
     AzureOpenAI = None  # type: ignore
+
+    class OpenAIError(Exception):  # type: ignore
+        """Fallback when openai is not installed."""
 
 
 def build_preferred_client(
@@ -42,18 +41,33 @@ def build_preferred_client(
             client = OpenAI(base_url=base_url, api_key=api_key)
             logging.info("[client] Using Responses API (v1) at %s", base_url)
             return client, True
-        except Exception as e:
-            logging.warning("Failed to init v1 Responses client (%s). Falling back. %r", base_url, e)
+        except OpenAIError as exc:
+            logging.warning(
+                "Failed to init v1 Responses client (%s). Falling back. %r",
+                base_url,
+                exc,
+            )
 
     if AzureOpenAI is None:
-        raise RuntimeError("openai>=1.x with AzureOpenAI or v1 OpenAI client is required. pip install -U openai")
+        raise RuntimeError(
+            "openai>=1.x with AzureOpenAI or v1 OpenAI client is required. "
+            "pip install -U openai"
+        )
 
     try:
-        client = AzureOpenAI(api_key=api_key, azure_endpoint=endpoint, api_version=api_version)
-        logging.info("[client] Using legacy Chat Completions at %s (api_version=%s)", endpoint, api_version)
+        client = AzureOpenAI(
+            api_key=api_key,
+            azure_endpoint=endpoint,
+            api_version=api_version,
+        )
+        logging.info(
+            "[client] Using legacy Chat Completions at %s (api_version=%s)",
+            endpoint,
+            api_version,
+        )
         return client, False
-    except Exception as e:
-        raise RuntimeError(f"Failed to initialize AzureOpenAI client: {e}")
+    except OpenAIError as exc:
+        raise RuntimeError(f"Failed to initialize AzureOpenAI client: {exc}") from exc
 
 
 def build_chat_client(endpoint: str, api_key: str, api_version: str):
@@ -62,4 +76,8 @@ def build_chat_client(endpoint: str, api_key: str, api_version: str):
     """
     if AzureOpenAI is None:
         raise RuntimeError("openai>=1.x with AzureOpenAI is required. pip install -U openai")
-    return AzureOpenAI(api_key=api_key, azure_endpoint=endpoint.rstrip("/"), api_version=api_version)
+    return AzureOpenAI(
+        api_key=api_key,
+        azure_endpoint=endpoint.rstrip("/"),
+        api_version=api_version,
+    )

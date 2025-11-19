@@ -48,7 +48,6 @@ _deps = [
     "datasets>=3.2.0",
     "deepspeed==0.16.8",
     "distilabel[vllm,ray,openai]>=1.5.2",
-    "e2b-code-interpreter>=1.0.5",
     "einops>=0.8.0",
     "flake8>=6.0.0",
     "hf_transfer>=0.1.4",
@@ -62,7 +61,6 @@ _deps = [
     "liger-kernel>=0.5.10",
     "lighteval @ git+https://github.com/huggingface/lighteval.git@d3da6b9bbf38104c8b5e1acc86f83541f9a502d1",  # Critical bug fix for tokenizer revisions: https://github.com/huggingface/lighteval/pull/721
     "math-verify==0.5.2",  # Used for math verification in grpo
-    "morphcloud==0.1.67",
     "packaging>=23.0",
     "parameterized>=0.9.0",
     "peft>=0.14.0",
@@ -103,7 +101,7 @@ extras = {}
 extras["tests"] = deps_list("pytest", "parameterized", "math-verify", "jieba")
 extras["torch"] = deps_list("torch")
 extras["quality"] = deps_list("ruff", "isort", "flake8")
-extras["code"] = deps_list("e2b-code-interpreter", "python-dotenv", "morphcloud", "jieba", "pandas", "aiofiles")
+extras["code"] = deps_list("jieba", "pandas", "aiofiles")
 extras["eval"] = deps_list("lighteval", "math-verify")
 extras["docs"] = deps_list("sphinx", "furo", "imagesize", "snowballstemmer", "sphinxcontrib-jsmath", "beautifulsoup4")
 extras["dev"] = extras["quality"] + extras["tests"] + extras["eval"] + extras["code"] + extras["docs"]

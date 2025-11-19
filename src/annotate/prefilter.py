@@ -1,9 +1,7 @@
-"""
-Shared regex utilities for shift-cue detection and tag extraction.
-"""
+"""Shared regex utilities for shift-cue detection and tag extraction."""
 
 import re
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 RE_THINK = re.compile(r"(?si)<think>(.*?)</think>")
 RE_ANSWER = re.compile(r"(?si)<answer>(.*?)</answer>")
@@ -65,7 +63,10 @@ SHIFT_CAND_PATTERNS: List[Tuple[str, re.Pattern]] = [
     ("oops", re.compile(r"(?i)\b(?:oops|whoops|uh[-\s]*oh)\b")),
     ("apologies", re.compile(r"(?i)\bapolog(?:y|ies|ise|ize)\b")),
     ("erroneous", re.compile(r"(?i)\berroneous\b")),
-    ("error_on_my_part", re.compile(r"(?i)\b(?:an|the) error (?:on|in) (?:my|the) (?:part|work)\b")),
+    (
+        "error_on_my_part",
+        re.compile(r"(?i)\b(?:an|the) error (?:on|in) (?:my|the) (?:part|work)\b"),
+    ),
     # ───────── Mis-* patterns (specific failure types) ─────────
     ("misread", re.compile(r"(?i)\bmis-?read\b|\bI misread\b")),
     ("miscount", re.compile(r"(?i)\bmis-?count(?:ed|ing)?\b")),
@@ -113,10 +114,28 @@ SHIFT_CAND_PATTERNS: List[Tuple[str, re.Pattern]] = [
     ("backtrack", re.compile(r"(?i)\bbacktrack(?:ing|ed)?\b")),
     ("start over", re.compile(r"(?i)\bstart over\b|\brestart\b|\breset\b|\bfrom scratch\b")),
     # ───────── “Previous idea was X, but …” templates ─────────
-    ("i_thought_but", re.compile(r"(?i)\bI (?:first|initially|originally) thought\b.*\b(?:but|however)\b", re.S)),
-    ("previously_but", re.compile(r"(?i)\bpreviously\b.*\b(?:but|however)\b", re.S)),
-    ("earlier_but", re.compile(r"(?i)\bearlier\b.*\b(?:but|however)\b", re.S)),
-    ("however+fix", re.compile(r"(?i)\bhowever\b.*\b(?:correct|fix|instead|rather|change)\b", re.S)),
+    (
+        "i_thought_but",
+        re.compile(
+            r"(?i)\bI (?:first|initially|originally) thought\b.*\b(?:but|however)\b",
+            re.S,
+        ),
+    ),
+    (
+        "previously_but",
+        re.compile(r"(?i)\bpreviously\b.*\b(?:but|however)\b", re.S),
+    ),
+    (
+        "earlier_but",
+        re.compile(r"(?i)\bearlier\b.*\b(?:but|however)\b", re.S),
+    ),
+    (
+        "however+fix",
+        re.compile(
+            r"(?i)\bhowever\b.*\b(?:correct|fix|instead|rather|change)\b",
+            re.S,
+        ),
+    ),
     ("but_instead", re.compile(r"(?i)\bbut\b.*\binstead\b", re.S)),
     ("but_rather", re.compile(r"(?i)\bbut\b.*\brather\b", re.S)),
     # ───────── Oversight / omission admissions ─────────
@@ -151,11 +170,13 @@ SHIFT_CAND_PATTERNS: List[Tuple[str, re.Pattern]] = [
 
 
 def extract_think(txt: str) -> Optional[str]:
+    """Return the <think> block contents, if present."""
     m = RE_THINK.search(txt or "")
     return m.group(1).strip() if m else None
 
 
 def find_shift_cues(think: str) -> Tuple[List[str], Optional[int]]:
+    """Find cue names and the earliest character index in the think text."""
     if not think:
         return [], None
     hits: List[str] = []

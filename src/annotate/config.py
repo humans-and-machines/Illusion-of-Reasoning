@@ -9,23 +9,22 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 try:
-    import yaml
-except Exception:  # pragma: no cover - yaml optional
-    yaml = None  # type: ignore
+    import yaml as _yaml  # type: ignore
+except ImportError:  # pragma: no cover - yaml optional
+    _yaml = None  # type: ignore
 
 
 def load_yaml(path: Path) -> Dict[str, Any]:
-    if not yaml:
-        return {}
-    if not path.exists():
+    """Best-effort YAML loader (empty dict on missing/absent yaml module)."""
+    if not _yaml or not path.exists():
         return {}
     with path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+        return _yaml.safe_load(f) or {}
 
 
 def load_azure_config(yaml_path: Optional[str] = None) -> Dict[str, Any]:
     """
-    Return a dict with keys: endpoint, api_key, deployment, api_version, use_v1.
+    Return Azure settings as a dict: endpoint, api_key, deployment, api_version, use_v1.
     Precedence: env vars override YAML, YAML overrides defaults.
     """
     defaults = {
@@ -39,11 +38,31 @@ def load_azure_config(yaml_path: Optional[str] = None) -> Dict[str, Any]:
     ycfg = load_yaml(ypath)
 
     cfg = {
-        "endpoint": os.getenv("AZURE_OPENAI_ENDPOINT", ycfg.get("endpoint", defaults["endpoint"])).rstrip("/") or defaults["endpoint"],
-        "api_key": os.getenv("AZURE_OPENAI_API_KEY", ycfg.get("api_key", defaults["api_key"])),
-        "deployment": os.getenv("AZURE_OPENAI_DEPLOYMENT", ycfg.get("deployment", defaults["deployment"])),
-        "api_version": os.getenv("AZURE_OPENAI_API_VERSION", ycfg.get("api_version", defaults["api_version"])),
-        "use_v1": bool(int(os.getenv("AZURE_OPENAI_USE_V1", str(int(ycfg.get("use_v1", defaults["use_v1"])))))),
+        "endpoint": os.getenv(
+            "AZURE_OPENAI_ENDPOINT",
+            ycfg.get("endpoint", defaults["endpoint"]),
+        ).rstrip("/")
+        or defaults["endpoint"],
+        "api_key": os.getenv(
+            "AZURE_OPENAI_API_KEY",
+            ycfg.get("api_key", defaults["api_key"]),
+        ),
+        "deployment": os.getenv(
+            "AZURE_OPENAI_DEPLOYMENT",
+            ycfg.get("deployment", defaults["deployment"]),
+        ),
+        "api_version": os.getenv(
+            "AZURE_OPENAI_API_VERSION",
+            ycfg.get("api_version", defaults["api_version"]),
+        ),
+        "use_v1": bool(
+            int(
+                os.getenv(
+                    "AZURE_OPENAI_USE_V1",
+                    str(int(ycfg.get("use_v1", defaults["use_v1"]))),
+                )
+            )
+        ),
     }
     return cfg
 

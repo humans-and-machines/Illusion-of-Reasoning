@@ -4,11 +4,11 @@
 # until it has run N times. Each script is managed independently & concurrently.
 #
 # Default scripts (edit as needed):
-#   - carpark-inference.sh
-#   - crossword-inference.sh
-#   - math7b-inference.sh
-#   - math8b-inference.sh
-#   - math-inference.sh
+#   - carpark-inference.sh        (unified_carpark_runner)
+#   - crossword-inference.sh      (unified_crossword_runner)
+#   - math7b-inference.sh         (unified_math_runner)
+#   - math8b-inference.sh         (unified_math_runner)
+#   - math-inference.sh           (unified_math_runner)
 #
 # Usage:
 #   bash run_inference_per_script_looper.sh

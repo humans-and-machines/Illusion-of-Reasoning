@@ -105,7 +105,13 @@ logger = logging.getLogger(__name__)
 from trl import GRPOTrainer
 from training.utils.replay_buffer import ReplayBuffer
 import torch.distributed as dist
-from training.rewards_core import crossword_accuracy_reward, pure_accuracy_reward          # ← import once
+from training.rewards_core import (
+    crossword_accuracy_reward,
+    pure_accuracy_reward,
+    pure_accuracy_reward_math,
+    rush_solution_shaped,
+    rush_solution_exact,
+)          # ← import once
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -407,6 +413,203 @@ def _wrap_reward_for_nested(fn):
             idx += k
         return out
     return wrapped
+
+def _task_from_script_args(script_args) -> Optional[str]:
+    """
+    Try to infer a single task from the YAML/CLI `reward_funcs` field.
+    Returns "RUSH" | "CROSSWORD" | "MATH" | None.
+    """
+    if script_args is None:
+        return None
+
+    rf = getattr(script_args, "reward_funcs", None)
+    if rf is None:
+        return None
+
+    # Normalize to a flat list of lowercase strings (handles str | list | tuple | dict)
+    if isinstance(rf, str):
+        names = [rf.lower()]
+    elif isinstance(rf, dict):
+        names = [str(k).lower() for k in rf.keys()]
+    elif isinstance(rf, (list, tuple)):
+        names = [str(x).lower() for x in rf]
+    else:
+        try:
+            names = [str(rf).lower()]
+        except Exception:
+            names = []
+
+    joined = " ".join(names)
+    if ("rush_solution_exact" in joined) or ("rush_solution_shaped" in joined) or ("rush" in joined):
+        return "RUSH"
+    if ("pure_accuracy_reward_math" in joined) or ("pure_accuracy_math" in joined) or ("math" in joined and "reward" in joined):
+        return "MATH"
+    if ("pure_accuracy_reward" in joined) or ("cross" in joined) or ("crypt" in joined):
+        return "CROSSWORD"
+    return None
+
+
+def _default_task(args=None, *, system_prompt: Optional[str] = None,
+                  dataset_name_hint: Optional[str] = None,
+                  prompt_hint: Optional[str] = None) -> str:
+    """
+    Heuristically decide the task label when examples/batches don't carry one.
+    Priority: explicit args.dataset_name → dataset_name_hint → system/prompt hints.
+    """
+    t_from_rf = _task_from_script_args(args)
+    if t_from_rf:
+        return t_from_rf
+
+    name = ""
+    if args is not None:
+        for fld in ("dataset_name", "dataset", "dataset_path", "output_dir", "hub_model_id"):
+            val = getattr(args, fld, None)
+            if val:
+                name = str(val)
+                break
+    if not name and dataset_name_hint:
+        name = str(dataset_name_hint)
+
+    blob = " ".join(
+        s for s in (
+            name,
+            system_prompt or "",
+            prompt_hint or "",
+            os.environ.get("DEFAULT_TASK_HINT", "")
+        ) if s
+    ).lower()
+
+    if any(k in blob for k in ("rush", "carpark", "car_parking", "parking")):
+        return "RUSH"
+    if any(k in blob for k in ("cross", "crypt")):
+        return "CROSSWORD"
+    if any(k in blob for k in ("math", "algebra", "calculus")):
+        return "MATH"
+
+    # Last resort: lean CROSSWORD to avoid misrouting crossword runs to math.
+    return "CROSSWORD"
+
+
+def _adapt_gold(seq_or_list, **kw):
+    gold = (kw.get("answer") or kw.get("answers") or
+            kw.get("gold")   or kw.get("references") or
+            kw.get("labels"))
+    if isinstance(gold, str):
+        n = len(seq_or_list) if isinstance(seq_or_list, list) else 1
+        return [gold] * n
+    return list(gold or [])
+
+
+def _flatten_nested(comps):
+    if not (isinstance(comps, list) and comps and isinstance(comps[0], (list, tuple))):
+        return comps, 1
+    flat = [y for x in comps for y in x]
+    return flat, len(comps[0])
+
+
+def _to_text_list(items, proc=None):
+    """
+    Coerce a list of completions that may be str | list[int] | torch.Tensor
+    into a list[str], decoding with `proc` if available.
+    """
+    try:
+        import torch
+    except Exception:
+        torch = None
+
+    if not isinstance(items, list):
+        items = [items]
+
+    out = []
+    for x in items:
+        if isinstance(x, str):
+            out.append(x)
+            continue
+        if torch is not None and hasattr(x, "detach"):
+            ids = x.detach().cpu().tolist()
+            if proc is not None and hasattr(proc, "decode"):
+                out.append(proc.decode(ids, skip_special_tokens=True, clean_up_tokenization_spaces=False))
+            else:
+                out.append(str(ids))
+            continue
+        if isinstance(x, (list, tuple)) and x and isinstance(x[0], int):
+            if proc is not None and hasattr(proc, "decode"):
+                out.append(proc.decode(list(x), skip_special_tokens=True, clean_up_tokenization_spaces=False))
+            else:
+                out.append(" ".join(map(str, x)))
+            continue
+        out.append(str(x))
+    return out
+
+
+def reward_router(*, prompts=None, completions=None, tasks=None, proc=None, **kw):
+    """
+    Task-aware reward router.
+    For RUSH: per-sample rush_solution_shaped with optional board/moves hints.
+    For MATH: pure_accuracy_reward_math.
+    Default: crossword pure_accuracy_reward (with shaping).
+    """
+    comps, K = _flatten_nested(completions)
+    comps = _to_text_list(comps, proc=proc)
+    gold  = _adapt_gold(comps, **kw)
+
+    def _kw_no_answer(d):
+        d = dict(d)
+        for k in ("answer", "answers", "gold", "labels", "references"):
+            d.pop(k, None)
+        return d
+    kw_clean = _kw_no_answer(kw)
+
+    # Normalize prompts to per-sample list
+    if isinstance(prompts, list) and len(prompts) == len(comps):
+        p_list = prompts
+    else:
+        p_list = [prompts] * len(comps)
+
+    gm = kw.get("gold_moves")      # minimal moves
+    bs = kw.get("board_str") or kw.get("board")
+    nn = kw.get("N") or kw.get("size")
+
+    def ith(v, i):
+        if isinstance(v, list) and len(v) == len(comps): return v[i]
+        if isinstance(v, (list, tuple)) and v:           return v[0]
+        return v
+
+    script_args = kw.get("script_args", None)
+    t = _task_from_script_args(script_args)
+    if not t:
+        prompt_hint = None
+        if isinstance(prompts, list) and prompts:
+            p0 = prompts[0]
+            if isinstance(p0, str):
+                prompt_hint = p0
+            elif isinstance(p0, list):
+                for m in p0:
+                    if isinstance(m, dict) and m.get("role") == "user":
+                        prompt_hint = m.get("content", "")
+                        break
+        t = (tasks[0] if isinstance(tasks, list) and tasks else _default_task(script_args, prompt_hint=prompt_hint))
+    t = t.upper()
+
+    if "RUSH" in t:
+        scores = []
+        for i, (p, c, g) in enumerate(zip(p_list, comps, gold)):
+            s = rush_solution_shaped(
+                prompts=p,
+                completions=[c],
+                gold=[g],
+                gold_moves=ith(gm, i),
+                board_str=ith(bs, i),
+                N=ith(nn, i),
+                w_exact=0.5, w_solve=0.2, w_prefix=0.2, w_phi=0.1,
+            )[0]
+            scores.append(s)
+        return scores
+
+    if "MATH" in t:
+        return pure_accuracy_reward_math(comps, gold, **kw_clean)
+
+    return pure_accuracy_reward(comps, gold, **kw_clean)
 
 def _is_rank0(accelerator) -> bool:
     # accelerate sets .is_main_process on Accelerator
@@ -870,12 +1073,18 @@ class GRPOTrainerReplay(GRPOTrainer):
             gold_answers = [ex.get("answer")  for ex in clean_inputs]
             prompts_list = [ex.get("prompt")  for ex in clean_inputs]
             tasks_list   = [ex.get("task", "MATH") for ex in clean_inputs]   # ← NEW
+            boards_list  = [ex.get("board") or ex.get("board_str") for ex in clean_inputs]
+            sizes_list   = [ex.get("size") or ex.get("N") for ex in clean_inputs]
+            moves_list   = [ex.get("moves") or ex.get("gold_moves") for ex in clean_inputs]
         else:
             clean_inputs  = inputs
             gold_answers  = None
             prompts_list  = None
             B             = 0
             tasks_list = None
+            boards_list = None
+            sizes_list = None
+            moves_list = None
 
         # ----------------------------------------------------------
         # **NEW**  – broadcast answer / prompt if we injected
@@ -1001,6 +1210,12 @@ class GRPOTrainerReplay(GRPOTrainer):
                 prompts_list = [prompts_list[i] for i in order]
             if tasks_list is not None:
                 tasks_list = [tasks_list[i] for i in order]
+            if boards_list is not None:
+                boards_list = [boards_list[i] for i in order]
+            if sizes_list is not None:
+                sizes_list = [sizes_list[i] for i in order]
+            if moves_list is not None:
+                moves_list = [moves_list[i] for i in order]
 
         if isinstance(inputs, list) and any("_buf_uid" in ex for ex in inputs):
             print("FIXING INJECTED!")
@@ -1030,7 +1245,39 @@ class GRPOTrainerReplay(GRPOTrainer):
                 if "answer" in rk: rk["answer"] = gold_answers
                 if "gold"   in rk: rk["gold"]   = gold_answers
                 rk["tasks"] = tasks_list     
-            
+
+        # ------------------------------------------------------------------
+        # Patch reward kwargs and compute task-aware rewards (rush/cross/math)
+        # ------------------------------------------------------------------
+        rk = out.setdefault("reward_kwargs", {})
+        rk["answer"]     = gold_answers
+        rk["gold"]       = gold_answers
+        rk["prompts"]    = prompts_list
+        rk["tasks"]      = tasks_list
+        rk["board_str"]  = boards_list
+        rk["N"]          = sizes_list
+        rk["gold_moves"] = moves_list
+
+        scores_nested = reward_router(
+            completions=completions_txt,
+            tasks=tasks_list,
+            answer=gold_answers,
+            gold=gold_answers,
+            board_str=boards_list,
+            N=sizes_list,
+            gold_moves=moves_list,
+            prompts=prompts_list,
+            proc=self.processing_class or self.tokenizer,
+            script_args=self.args,
+        )
+
+        flat = [s for row in scores_nested for s in row] if isinstance(scores_nested, list) and scores_nested and isinstance(scores_nested[0], list) else scores_nested
+        out["rewards"] = flat
+        if isinstance(out.get("advantages"), torch.Tensor) and isinstance(flat, list):
+            out["rewards"] = torch.tensor(flat, device=out["advantages"].device, dtype=out["advantages"].dtype)
+        elif isinstance(out.get("advantages"), torch.Tensor) and isinstance(flat, torch.Tensor):
+            out["rewards"] = flat.to(device=out["advantages"].device, dtype=out["advantages"].dtype)
+
         # ------------------------------------------------------------------
         # 3)  (optional) keep only the first 8 completions from each prompt
         # ------------------------------------------------------------------

@@ -8,7 +8,7 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 - **Create env (conda, local to repo):** `conda env create -f configs/environment.yml -p ./openr1 || conda env update -f configs/environment.yml -p ./openr1`, then `conda activate ./openr1`, then `make install` (installs dev extras in the same env; caches live under `.pip_cache/.tmp/.hf_cache/.conda_pkgs`).
 - **Install only runtime deps:** `pip install -e .`; dev extras: `pip install -e .[dev]`.
 - **Authenticate for gated assets:** `huggingface-cli login` or `export HF_TOKEN=<token>`.
-- **Run jobs:** ready-to-use launchers live under `scripts/inference/` (e.g., `bash scripts/inference/training-math-grpo.sh`); cluster specs live in `scripts/slurm/`.
+- **Run jobs:** ready-to-use launchers live under `scripts/inference/` (e.g., `bash scripts/inference/training-math-grpo.slurm`); cluster specs live in `scripts/inference/` and `scripts/training/`.
 
 This repository demonstrates GRPO fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset (plus crossword and Rush Hour generators). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. SFT scaffolding exists in the codebase but was not used for the paper’s results.
 

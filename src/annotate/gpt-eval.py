@@ -38,16 +38,16 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.config import load_azure_config
-from src.llm_client import build_preferred_client
-from src.prefilter import (
+from src.annotate.config import load_azure_config
+from src.annotate.llm_client import build_preferred_client
+from src.annotate.prefilter import (
     RE_ANSWER,
     RE_THINK,
     SHIFT_CAND_PATTERNS,
     extract_think as _extract_think,
     find_shift_cues as _find_shift_cues,
 )
-from src.prompts import (
+from src.annotate.prompts import (
     SHIFT_JUDGE_SYSTEM_PROMPT as PROMPT_SYSTEM,
     SHIFT_JUDGE_USER_TEMPLATE as PROMPT_USER_TEMPLATE,
 )

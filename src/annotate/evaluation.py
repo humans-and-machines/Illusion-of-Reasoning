@@ -50,10 +50,10 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.config import load_sandbox_config
-from src.llm_client import build_chat_client
-from src.prefilter import extract_think, find_cue_hits
-from src.prompts import SHIFT_PROMPT
+from src.annotate.config import load_sandbox_config
+from src.annotate.llm_client import build_chat_client
+from src.annotate.prefilter import extract_think, find_cue_hits
+from src.annotate.prompts import SHIFT_PROMPT
 
 # ─────────────────── AzureOpenAI (Princeton Sandbox) ───────────────────
 _sandbox = load_sandbox_config()

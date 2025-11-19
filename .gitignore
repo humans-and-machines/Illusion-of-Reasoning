@@ -154,3 +154,4 @@ models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b/
 # Dataset outputs
 rush*-balanced/
 *.jsonl
+hf_datasets/

@@ -1086,7 +1086,7 @@ def _canon_math(s: str) -> str:
     """
     Canonicalize math answers:
     - strip leading/trailing whitespace
-    - remove LaTeX spacing commands (\ ), $...$, and curly braces around single tokens
+    - remove LaTeX spacing commands (\\ ), $...$, and curly braces around single tokens
     - normalize minus-zero to zero
     - drop trailing .0 from integers
     - remove spaces inside the expression unless inside LaTeX commands

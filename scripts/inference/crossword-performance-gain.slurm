@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Experimental comparison script: 1-shot crossword baseline vs tuned checkpoint.
+# Canonical full-sweep crossword inference lives in crossword-inference.slurm.
 #SBATCH --job-name=xword_compare_qwen
 #SBATCH --output=logs/xword_compare_qwen_%A_%a.out
 #SBATCH --error=logs/xword_compare_qwen_%A_%a.err
@@ -58,12 +60,12 @@ SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_crossword_runner
 DATA_JSONL="${DATA_JSONL:-$PROJECT_ROOT/data/data.jsonl}"  # your local eval set
 
 # Tuned checkpoint root + step (override with env if needed)
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
 CKPT_STEP="${CKPT_STEP:-1000}"
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 
-# Output
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-xword-compare-1shot}"
+# Output (under artifacts/results)
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/GRPO-1.5B-xword-compare-1shot}"
 mkdir -p "$OUTPUT_ROOT"
 
 # HF online so we can pull the base model

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Experimental comparison script: 1-shot math baseline vs tuned checkpoint.
+# Canonical full-sweep math inference lives in math-inference.slurm.
 #SBATCH --job-name=math_compare_qwen
 #SBATCH --output=logs/math_compare_qwen_%A_%a.out
 #SBATCH --error=logs/math_compare_qwen_%A_%a.err
@@ -51,12 +53,12 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" "$TMPDIR" logs "$
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
 
 # Tuned (local) root and step to compare
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
 CKPT_STEP=500
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 
-# Output & HF caches (localized)
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-math-compare-1shot}"
+# Output & HF caches (localized under artifacts/results)
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-compare-1shot}"
 CACHEROOT="$OUTPUT_ROOT/hf_cache"
 mkdir -p "$OUTPUT_ROOT" "$CACHEROOT"
 export HF_HOME="$CACHEROOT"

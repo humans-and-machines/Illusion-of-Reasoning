@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Inference helper for MATH-500 via the Portkey AI Gateway (e.g., Princeton AI
+Sandbox).
+
+Behavior:
+- Single-pass generation with the same math system prompt used in GRPO runs.
+- Writes JSONL to: {output_dir}/step{step:04d}_{split}.jsonl
+- Resumable: if a JSONL already exists, only missing sample_idx entries are
+  generated.
+
+Auth:
+- Expects an API key in the `AI_SANDBOX_KEY` env var (Portkey key or sandbox
+  key).
+
+Example usage:
+  export AI_SANDBOX_KEY="***"
+  python -m src.inference.math_portkey --output_dir artifacts/results/gpt4o-math-portkey
+"""
+
+from __future__ import annotations
+import os
+import random
+import sys
+from dataclasses import dataclass
+from importlib import import_module
+from typing import Any, Dict
+
+from src.inference.common import (
+    append_jsonl_row,
+    build_math_gateway_arg_parser,
+    build_math_gateway_messages,
+    build_math_gateway_row_base,
+    build_usage_dict,
+    canon_math as _canon_math,
+    extract_blocks as _extract_blocks,
+    extract_problem_and_answer,
+    parse_openai_chat_response,
+    prepare_math_gateway_dataset_from_args,
+    require_datasets,
+    setup_hf_cache_dir_env,
+    setup_script_logger,
+    valid_tag_structure as _valid_tag_structure,
+)
+from src.inference.math_core import load_math500
+from src.inference.task_registry import MATH_SYSTEM_PROMPT
+
+
+DatasetType, load_dataset = require_datasets()
+logger = setup_script_logger(__name__)
+
+
+# ----------------------- Prompt -----------------------
+SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
+
+
+# ----------------------- Portkey client + call -----------------------
+@dataclass
+class PortkeyCallParams:
+    """Lightweight container for Portkey generation parameters."""
+
+    temperature: float
+    top_p: float
+    max_output_tokens: int
+    request_timeout: int
+
+
+@dataclass
+class PortkeyRunConfig:
+    """Configuration for a Portkey MATH-500 pass."""
+
+    output_path: str
+    split_name: str
+    model_name: str
+    num_samples: int
+    params: PortkeyCallParams
+    seed: int
+    step: int
+
+
+@dataclass
+class ExampleContext:
+    """Per-example metadata for a MATH-500 row."""
+
+    problem: str
+    gold_answer: Any
+    canon_gold: Any
+    sample_idx: int
+
+
+@dataclass
+class PortkeyCallResult:
+    """Result of a single Portkey generation call."""
+
+    text: str
+    answer: str
+    finish_reason: Any
+    usage: Any
+
+
+def _make_client():
+    """Construct a Portkey client using AI_SANDBOX_KEY from the environment."""
+    try:
+        portkey_mod = import_module("portkey_ai")
+    except ImportError as import_exc:  # pragma: no cover - optional dependency
+        print(
+            "portkey-ai is required for this script: pip install portkey-ai",
+            file=sys.stderr,
+        )
+        raise import_exc
+
+    api_key = os.getenv("AI_SANDBOX_KEY")
+    if not api_key:
+        raise RuntimeError("AI_SANDBOX_KEY env var is required for Portkey.")
+    client_cls = getattr(portkey_mod, "Portkey")
+    return client_cls(api_key=api_key)
+
+
+def _call_model(
+    client,
+    model: str,
+    problem: str,
+    params: PortkeyCallParams,
+):
+    messages = build_math_gateway_messages(SYSTEM_PROMPT, problem)
+    resp = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=params.temperature,
+        top_p=params.top_p,
+        max_tokens=params.max_output_tokens,
+        timeout=params.request_timeout,
+    )
+    return parse_openai_chat_response(resp)
+
+
+def _iter_examples(dataset, num_examples: int | None):
+    """Yield at most num_examples examples from a dataset (or all if None)."""
+    if num_examples is not None and num_examples > 0:
+        dataset = dataset.select(range(min(num_examples, len(dataset))))
+    yield from dataset
+
+
+def _build_portkey_row(
+    example: ExampleContext,
+    result: PortkeyCallResult,
+    config: PortkeyRunConfig,
+) -> Dict[str, Any]:
+    """
+    Build a single JSONL row for Portkey MATH-500 inference and compute
+    correctness.
+    """
+    pred_canon = _canon_math(result.answer)
+    is_correct = bool(
+        pred_canon
+        and example.canon_gold
+        and example.canon_gold in pred_canon
+    )
+
+    row: Dict[str, Any] = build_math_gateway_row_base(
+        problem=example.problem,
+        gold_answer=example.gold_answer,
+        gold_answer_canon=example.canon_gold,
+        split=config.split_name,
+        step=config.step,
+        sample_idx=example.sample_idx,
+    )
+    row.update(
+        {
+            "endpoint": "portkey-ai",
+            "deployment": config.model_name,
+            "api_version": None,
+            "temperature": config.params.temperature,
+            "top_p": config.params.top_p,
+            "pass1": {
+                "output": result.text.strip(),
+                "pred_answer": result.answer,
+                "pred_answer_canon": pred_canon,
+                "is_correct_pred": is_correct,
+                "valid_tag_structure": _valid_tag_structure(result.text),
+                "finish_reason": result.finish_reason,
+            },
+        },
+    )
+
+    if result.usage is not None:
+        row["usage"] = build_usage_dict(result.usage)
+
+    return row
+
+
+def run_portkey_math_inference(
+    client,
+    dataset,
+    existing: Dict[str, set],
+    config: PortkeyRunConfig,
+) -> None:
+    """Run single-pass math inference via Portkey and write JSONL results."""
+    random.seed(config.seed)
+    total_new = 0
+    for example in _iter_examples(dataset, None):
+        problem, gold_answer = extract_problem_and_answer(example)
+        if not problem or gold_answer is None:
+            continue
+
+        todo_indices = [
+            idx
+            for idx in range(config.num_samples)
+            if idx not in existing.get(problem, set())
+        ]
+        if not todo_indices:
+            continue
+
+        for sample_idx in todo_indices:
+            text, finish_reason, usage = _call_model(
+                client=client,
+                model=config.model_name,
+                problem=problem,
+                params=config.params,
+            )
+
+            _, answer = _extract_blocks(text)
+            row = _build_portkey_row(
+                ExampleContext(
+                    problem=problem,
+                    gold_answer=gold_answer,
+                    canon_gold=_canon_math(gold_answer),
+                    sample_idx=sample_idx,
+                ),
+                PortkeyCallResult(
+                    text=text,
+                    answer=answer,
+                    finish_reason=finish_reason,
+                    usage=usage,
+                ),
+                config,
+            )
+
+            append_jsonl_row(config.output_path, row)
+            total_new += 1
+            existing.setdefault(problem, set()).add(sample_idx)
+
+    logger.info("All done. Wrote %d new samples → %s", total_new, config.output_path)
+
+
+def main() -> None:
+    """Parse arguments, load dataset, and run Portkey-based MATH-500 inference."""
+    parser = build_math_gateway_arg_parser(
+        default_temperature=0.7,
+        description="Portkey MATH-500 runner.",
+    )
+    parser.add_argument(
+        "--model",
+        default="gpt-4o",
+        help="Model name to use via Portkey (e.g., gpt-4o, gpt-5, o3-mini).",
+    )
+
+    args = parser.parse_args()
+
+    client = _make_client()
+    logger.info("Portkey client ready | model=%s", args.model)
+
+    output_path = os.path.join(
+        args.output_dir,
+        f"step{args.step:04d}_{args.split}.jsonl",
+    )
+    call_params = PortkeyCallParams(
+        temperature=args.temperature,
+        top_p=args.top_p,
+        max_output_tokens=args.max_output_tokens,
+        request_timeout=args.request_timeout,
+    )
+    config = PortkeyRunConfig(
+        output_path=output_path,
+        split_name=args.split,
+        model_name=args.model,
+        num_samples=args.num_samples,
+        params=call_params,
+        seed=args.seed,
+        step=args.step,
+    )
+    dataset, existing, _ = prepare_math_gateway_dataset_from_args(
+        args=args,
+        outpath=output_path,
+        logger=logger,
+        load_math500_fn=load_math500,
+        load_remote_dataset_fn=lambda ds_id, split, cache_dir: load_dataset(
+            ds_id,
+            split=split,
+            cache_dir=cache_dir,
+        ),
+        cache_dir=setup_hf_cache_dir_env("./.hf_cache"),
+    )
+    run_portkey_math_inference(
+        client=client,
+        dataset=dataset,
+        existing=existing,
+        config=config,
+    )
+
+
+if __name__ == "__main__":
+    main()

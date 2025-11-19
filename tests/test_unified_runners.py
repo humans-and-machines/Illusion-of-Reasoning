@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from src.inference.unified_math_runner import run_math_inference
+from src.inference.unified_math_runner import MathTestConfig, run_math_inference
 
 
 class FakeTokenizer:
@@ -59,8 +59,7 @@ def test_run_math_inference_smoke(tmp_path):
     backend = SimpleNamespace(tokenizer=FakeTokenizer(), model=FakeModel())
     dataset = [{"problem": "2+2?", "answer": "4"}]
 
-    run_math_inference(
-        backend=backend,
+    cfg = MathTestConfig(
         dataset=dataset,
         output_dir=str(tmp_path),
         step=0,
@@ -75,6 +74,7 @@ def test_run_math_inference_smoke(tmp_path):
         second_pass_use_sample_idx=0,
         eos_ids=[backend.tokenizer.eos_token_id],
     )
+    run_math_inference(backend=backend, config=cfg)
 
     outpath = tmp_path / "step0000_test.jsonl"
     assert outpath.exists()

@@ -3,12 +3,13 @@
 # For each script below, submit/run it; when it finishes, immediately submit/run it again,
 # until it has run N times. Each script is managed independently & concurrently.
 #
-# Default scripts (edit as needed):
-#   - carpark-inference.sh        (unified_carpark_runner)
-#   - crossword-inference.sh      (unified_crossword_runner)
-#   - math7b-inference.sh         (unified_math_runner)
-#   - math8b-inference.sh         (unified_math_runner)
-#   - math-inference.sh           (unified_math_runner)
+# Default scripts (edit as needed). These are the
+# canonical inference sweeps for each domain/model:
+#   - carpark-inference.slurm     (unified_carpark_runner)
+#   - crossword-inference.slurm   (unified_crossword_runner)
+#   - math7b-inference.slurm      (unified_math_runner, Qwen 7B)
+#   - math8b-inference.slurm      (unified_math_runner, Llama 8B)
+#   - math-inference.slurm        (unified_math_runner, Qwen 1.5B)
 #
 # Usage:
 #   bash run_inference_per_script_looper.sh
@@ -17,7 +18,7 @@
 #   bash run_inference_per_script_looper.sh --force-bash           # run all via bash
 #   bash run_inference_per_script_looper.sh --dry-run
 #   bash run_inference_per_script_looper.sh --fail-fast            # stop a script's loop on failure
-#   bash run_inference_per_script_looper.sh --scripts "a.sh b.sh"  # override list
+#   bash run_inference_per_script_looper.sh --scripts \"a.slurm b.slurm\"  # override list
 
 set -euo pipefail
 
@@ -27,7 +28,15 @@ SLEEP_SECS=15
 force_mode="auto"   # auto | bash | sbatch
 dry_run=false
 fail_fast=false
-SCRIPTS=("math8b-inference.sh")
+SCRIPTS=(
+  "carpark-inference.slurm"
+  "crossword-inference.slurm"
+  "math7b-inference.slurm"
+  "math8b-inference.slurm"
+  "math-inference.slurm"
+)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # -------------------- Args --------------------
 while [[ $# -gt 0 ]]; do
@@ -162,7 +171,7 @@ manage_script() {
 # -------------------- Launch managers concurrently --------------------
 pids=()
 for f in "${SCRIPTS[@]}"; do
-  manage_script "$f" "$LOOPS" &
+  manage_script "${SCRIPT_DIR}/${f}" "$LOOPS" &
   pids+=("$!")
 done
 

@@ -1,7 +1,8 @@
-import logging
+"""Dataset loading utilities for SFT training."""
 
-import datasets
-from datasets import DatasetDict, concatenate_datasets
+import logging
+from importlib import import_module
+from typing import Any
 
 from ..configs import ScriptArguments
 
@@ -9,57 +10,88 @@ from ..configs import ScriptArguments
 logger = logging.getLogger(__name__)
 
 
-def get_dataset(args: ScriptArguments) -> DatasetDict:
+def _require_datasets_module():
+    """Import and return the `datasets` module, raising with a clear message if missing."""
+    try:
+        return import_module("datasets")
+    except ImportError as import_exc:  # pragma: no cover - optional dependency
+        logger.error("The 'datasets' package is required: pip install datasets")
+        raise import_exc
+
+
+def get_dataset(args: ScriptArguments) -> Any:
     """Load a dataset or a mixture of datasets based on the configuration.
 
     Args:
         args (ScriptArguments): Script arguments containing dataset configuration.
 
     Returns:
-        DatasetDict: The loaded datasets.
+        Any: The loaded dataset or dataset dict (train/test).
     """
+    datasets_module = _require_datasets_module()
+
     if args.dataset_name and not args.dataset_mixture:
-        logger.info(f"Loading dataset: {args.dataset_name}")
-        return datasets.load_dataset(args.dataset_name, args.dataset_config)
-    elif args.dataset_mixture:
-        logger.info(f"Creating dataset mixture with {len(args.dataset_mixture.datasets)} datasets")
-        seed = args.dataset_mixture.seed
+        logger.info("Loading dataset: %s", args.dataset_name)
+        return datasets_module.load_dataset(args.dataset_name, args.dataset_config)
+
+    if args.dataset_mixture:
+        mixture = args.dataset_mixture
+        logger.info(
+            "Creating dataset mixture with %d datasets",
+            len(mixture.datasets),
+        )
+        seed = mixture.seed
         datasets_list = []
 
-        for dataset_config in args.dataset_mixture.datasets:
-            logger.info(f"Loading dataset for mixture: {dataset_config.id} (config: {dataset_config.config})")
-            ds = datasets.load_dataset(
+        for dataset_config in mixture.datasets:
+            logger.info(
+                "Loading dataset for mixture: %s (config: %s)",
+                dataset_config.id,
+                dataset_config.config,
+            )
+            dataset_obj = datasets_module.load_dataset(
                 dataset_config.id,
                 dataset_config.config,
                 split=dataset_config.split,
             )
             if dataset_config.columns is not None:
-                ds = ds.select_columns(dataset_config.columns)
+                dataset_obj = dataset_obj.select_columns(dataset_config.columns)
             if dataset_config.weight is not None:
-                ds = ds.shuffle(seed=seed).select(range(int(len(ds) * dataset_config.weight)))
-                logger.info(
-                    f"Subsampled dataset '{dataset_config.id}' (config: {dataset_config.config}) with weight={dataset_config.weight} to {len(ds)} examples"
-                )
-
-            datasets_list.append(ds)
-
-        if datasets_list:
-            combined_dataset = concatenate_datasets(datasets_list)
-            combined_dataset = combined_dataset.shuffle(seed=seed)
-            logger.info(f"Created dataset mixture with {len(combined_dataset)} examples")
-
-            if args.dataset_mixture.test_split_size is not None:
-                combined_dataset = combined_dataset.train_test_split(
-                    test_size=args.dataset_mixture.test_split_size, seed=seed
+                target_size = int(len(dataset_obj) * dataset_config.weight)
+                dataset_obj = dataset_obj.shuffle(seed=seed).select(
+                    range(target_size),
                 )
                 logger.info(
-                    f"Split dataset into train and test sets with test size: {args.dataset_mixture.test_split_size}"
+                    "Subsampled dataset '%s' (config: %s) with weight=%s to %d examples",
+                    dataset_config.id,
+                    dataset_config.config,
+                    dataset_config.weight,
+                    len(dataset_obj),
                 )
-                return combined_dataset
-            else:
-                return DatasetDict({"train": combined_dataset})
-        else:
+
+            datasets_list.append(dataset_obj)
+
+        if not datasets_list:
             raise ValueError("No datasets were loaded from the mixture configuration")
 
-    else:
-        raise ValueError("Either `dataset_name` or `dataset_mixture` must be provided")
+        combined_dataset = datasets_module.concatenate_datasets(datasets_list)
+        combined_dataset = combined_dataset.shuffle(seed=seed)
+        logger.info(
+            "Created dataset mixture with %d examples",
+            len(combined_dataset),
+        )
+
+        if mixture.test_split_size is not None:
+            combined_dataset = combined_dataset.train_test_split(
+                test_size=mixture.test_split_size,
+                seed=seed,
+            )
+            logger.info(
+                "Split dataset into train and test sets with test size: %s",
+                mixture.test_split_size,
+            )
+            return combined_dataset
+
+        return {"train": combined_dataset}
+
+    raise ValueError("Either `dataset_name` or `dataset_mixture` must be provided")

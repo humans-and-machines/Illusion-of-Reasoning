@@ -13,50 +13,140 @@ one uniform interface for "give me generations for these prompts".
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from importlib import import_module
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList
+from .common import (
+    StopOnSubstrings,
+    classify_stop_reason,
+    decode_generated_row,
+    move_inputs_to_device,
+)
 
-from .common import move_inputs_to_device
-
-try:
+try:  # pragma: no cover - optional Azure dependency
     from src.annotate.config import load_azure_config
     from src.annotate.llm_client import build_preferred_client
-except Exception:  # noqa: BLE001
-    load_azure_config = None
-    build_preferred_client = None
+except ImportError:  # pragma: no cover - environments without Azure support
+    load_azure_config = None  # type: ignore[assignment]
+    build_preferred_client = None  # type: ignore[assignment]
 
 
-# ----------------------- Shared helpers -----------------------
-class StopOnSubstrings(StoppingCriteria):
-    """Stop generation when any of the provided substrings is seen."""
+def _load_torch_and_transformers() -> Tuple[Any, Any, Any, Any]:
+    """
+    Lazily import torch and key transformers classes used by the HF backend.
 
-    def __init__(self, tokenizer, stops: List[str]):
-        self.stop_ids = [tokenizer.encode(s, add_special_tokens=False) for s in stops]
+    This keeps heavy optional dependencies out of module import time so that
+    code paths that do not require HF models can still import this module.
+    """
+    torch_mod = import_module("torch")
+    transformers_mod = import_module("transformers")
+    auto_tokenizer_cls = getattr(transformers_mod, "AutoTokenizer")
+    auto_model_cls = getattr(transformers_mod, "AutoModelForCausalLM")
+    stopping_criteria_list_cls = getattr(transformers_mod, "StoppingCriteriaList")
+    return torch_mod, auto_tokenizer_cls, auto_model_cls, stopping_criteria_list_cls
 
-    @staticmethod
-    def _endswith(a: torch.Tensor, b: List[int]) -> bool:
-        return len(a) >= len(b) and a[-len(b) :].tolist() == b
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs):
-        for row in input_ids:
-            for s in self.stop_ids:
-                if s and self._endswith(row, s):
-                    return True
-        return False
+def _load_hf_tokenizer(
+    auto_tokenizer_cls,
+    tok_src: str,
+    revision: Optional[str],
+    trust_remote_code: bool,
+    cache_dir: Optional[str],
+):
+    """Load and configure a HuggingFace tokenizer for causal LM inference."""
+    tokenizer = auto_tokenizer_cls.from_pretrained(
+        tok_src,
+        revision=revision,
+        trust_remote_code=trust_remote_code,
+        cache_dir=cache_dir,
+    )
+    tokenizer.padding_side = "left"
+    tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
+    tokenizer.truncation_side = "left"
+    return tokenizer
+
+
+def _load_hf_model(
+    auto_model_cls,
+    torch_mod,
+    model_name_or_path: str,
+    *,
+    revision: Optional[str],
+    trust_remote_code: bool,
+    cache_dir: Optional[str],
+    dtype: str,
+    device_map: str,
+    attn_implementation: Optional[str],
+):
+    """Load a HuggingFace causal LM with the requested dtype and device map."""
+    torch_dtype = torch_mod.bfloat16 if dtype == "bfloat16" else torch_mod.float16
+    model = auto_model_cls.from_pretrained(
+        model_name_or_path,
+        revision=revision,
+        trust_remote_code=trust_remote_code,
+        cache_dir=cache_dir,
+        torch_dtype=torch_dtype,
+        device_map=device_map,
+        attn_implementation=attn_implementation,
+    )
+    return model.eval()
+
+
+@dataclass
+class HFDecodeContext:
+    """Bundle decode-and-classify inputs to keep helper signature small."""
+
+    tokenizer: Any
+    model: Any
+    sequences: Any
+    input_lengths: Any
+    stop_strings: List[str]
+    max_new_tokens: Optional[int]
+
+
+def _prepare_hf_inputs(
+    tokenizer,
+    prompts: List[str],
+    max_length: Optional[int],
+):
+    """
+    Tokenize prompts and move them (and attention-mask lengths) to the right device.
+    """
+    inputs = tokenizer(
+        prompts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=max_length,
+    )
+    return move_inputs_to_device(inputs)
+
+
+def _build_hf_stopping_criteria(
+    stopping_criteria_list_cls,
+    tokenizer,
+    stop_strings: Optional[List[str]],
+):
+    """Construct a StoppingCriteriaList for the provided stop strings, if any."""
+    if not stop_strings:
+        return None
+    return stopping_criteria_list_cls([StopOnSubstrings(tokenizer, stop_strings)])
 
 
 # ----------------------- HF backend -----------------------
 @dataclass
 class HFGenerateResult:
+    """Container for HuggingFace generate() outputs."""
+
     texts: List[str]
     stop_reasons: List[str]
-    sequences: torch.Tensor
+    sequences: Any
     output: Any  # the raw generate output
 
 
 class HFBackend:
+    """Backend that wraps a transformers AutoModelForCausalLM + tokenizer."""
+
     def __init__(self, tokenizer, model):
         self.tokenizer = tokenizer
         self.model = model
@@ -74,27 +164,29 @@ class HFBackend:
         trust_remote_code: bool = True,
         tokenizer_path: Optional[str] = None,
     ) -> "HFBackend":
+        """
+        Load a tokenizer + causal LM from HuggingFace and wrap them in HFBackend.
+        """
+        env = _load_torch_and_transformers()
         tok_src = tokenizer_path or model_name_or_path
-        tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer = _load_hf_tokenizer(
+            env[1],
             tok_src,
             revision=revision,
             trust_remote_code=trust_remote_code,
             cache_dir=cache_dir,
         )
-        tokenizer.padding_side = "left"
-        tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
-        tokenizer.truncation_side = "left"
-
-        torch_dtype = torch.bfloat16 if dtype == "bfloat16" else torch.float16
-        model = AutoModelForCausalLM.from_pretrained(
+        model = _load_hf_model(
+            env[2],
+            env[0],
             model_name_or_path,
             revision=revision,
             trust_remote_code=trust_remote_code,
             cache_dir=cache_dir,
-            torch_dtype=torch_dtype,
+            dtype=dtype,
             device_map=device_map,
             attn_implementation=attn_implementation,
-        ).eval()
+        )
         return cls(tokenizer, model)
 
     def generate(
@@ -105,88 +197,122 @@ class HFBackend:
         max_length: Optional[int] = None,
         **gen_kwargs,
     ) -> HFGenerateResult:
-        tokenizer = self.tokenizer
-        model = self.model
-
-        inputs = tokenizer(
-            prompts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=max_length,
+        """
+        Generate continuations for a batch of string prompts.
+        """
+        env = _load_torch_and_transformers()
+        inputs, input_lengths = _prepare_hf_inputs(self.tokenizer, prompts, max_length)
+        stopping_criteria = _build_hf_stopping_criteria(
+            env[3],
+            self.tokenizer,
+            stop_strings,
         )
-        inputs, input_lengths = move_inputs_to_device(inputs)
+        with env[0].inference_mode():
+            out = self.model.generate(
+                **inputs,
+                stopping_criteria=stopping_criteria,
+                **gen_kwargs,
+            )
 
-        stop = (
-            StoppingCriteriaList([StopOnSubstrings(tokenizer, stop_strings)])
-            if stop_strings
-            else None
+        sequences = out.sequences if hasattr(out, "sequences") else out
+        decode_ctx = HFDecodeContext(
+            tokenizer=self.tokenizer,
+            model=self.model,
+            sequences=sequences,
+            input_lengths=input_lengths,
+            stop_strings=stop_strings or [],
+            max_new_tokens=(
+                int(gen_kwargs["max_new_tokens"])
+                if gen_kwargs.get("max_new_tokens")
+                else None
+            ),
         )
-        with torch.inference_mode():
-            out = model.generate(**inputs, stopping_criteria=stop, **gen_kwargs)
+        texts, stop_reasons = self._decode_and_classify(decode_ctx)
 
-        seqs = out.sequences if hasattr(out, "sequences") else out
-        total_rows = seqs.shape[0]
+        return HFGenerateResult(
+            texts=texts,
+            stop_reasons=stop_reasons,
+            sequences=sequences,
+            output=out,
+        )
+
+    @staticmethod
+    def _decode_and_classify(ctx: HFDecodeContext) -> Tuple[List[str], List[str]]:
+        """
+        Decode generated sequences and compute stop reasons for each row.
+        """
+        total_rows = ctx.sequences.shape[0]
         texts: List[str] = []
         stop_reasons: List[str] = []
 
+        def _sequence_has_eos(gen_ids, eos_token_id) -> bool:
+            if eos_token_id is None:
+                return False
+            if isinstance(eos_token_id, Iterable):
+                return any((gen_ids == int(e)).any() for e in eos_token_id)
+            return (gen_ids == int(eos_token_id)).any()
+
         for row_i in range(total_rows):
-            start_tok_idx = int(input_lengths[row_i].item())
-            gen_ids = seqs[row_i, start_tok_idx:]
-            raw_txt = tokenizer.decode(gen_ids, skip_special_tokens=True)
+            gen_ids, raw_txt, _ = decode_generated_row(
+                ctx.tokenizer,
+                ctx.sequences,
+                ctx.input_lengths,
+                row_i,
+                skip_special_tokens=True,
+            )
             texts.append(raw_txt)
 
-            found_stop = any(s in raw_txt for s in (stop_strings or []))
-            hit_max = bool(gen_kwargs.get("max_new_tokens")) and len(gen_ids) >= int(
-                gen_kwargs["max_new_tokens"]
-            )
-            has_eos = False
-            if model.config.eos_token_id is not None:
-                eos_id = model.config.eos_token_id
-                if isinstance(eos_id, Iterable):
-                    has_eos = any((gen_ids == int(e)).any() for e in eos_id)
-                else:
-                    has_eos = (gen_ids == int(eos_id)).any()
-            if found_stop:
-                stop_reasons.append("stop_token")
-            elif has_eos:
-                stop_reasons.append("eos")
-            elif hit_max:
-                stop_reasons.append("max_new_tokens")
-            else:
-                stop_reasons.append("other")
+            found_stop = any(stop in raw_txt for stop in ctx.stop_strings)
+            hit_max = ctx.max_new_tokens is not None and len(gen_ids) >= ctx.max_new_tokens
+            has_eos = _sequence_has_eos(gen_ids, ctx.model.config.eos_token_id)
+            stop_reasons.append(classify_stop_reason(found_stop, has_eos, hit_max))
 
-        return HFGenerateResult(texts=texts, stop_reasons=stop_reasons, sequences=seqs, output=out)
+        return texts, stop_reasons
 
 
 # ----------------------- Azure backend -----------------------
 @dataclass
 class AzureGenerateResult:
+    """Container for batched Azure generation outputs."""
+
     texts: List[str]
     finish_reasons: List[str]
     raw: List[Any]
 
 
 class AzureBackend:
-    def __init__(self, client):
+    """Backend that wraps an Azure/OpenAI client for chat-style generation."""
+
+    def __init__(self, client: Any, deployment: str, uses_v1: bool) -> None:
         if client is None:
             raise ValueError("Azure client is required")
         self.client = client
+        self.deployment = deployment
+        self.uses_v1 = uses_v1
 
     @classmethod
     def from_env(cls, deployment: Optional[str] = None) -> "AzureBackend":
+        """
+        Construct an AzureBackend using environment / YAML configuration.
+
+        The optional `deployment` parameter overrides the configured deployment
+        name if provided.
+        """
         if load_azure_config is None or build_preferred_client is None:
-            raise RuntimeError("Azure dependencies are unavailable")
-        cfg = load_azure_config(deployment_override=deployment)
-        client = build_preferred_client(
-            endpoint=cfg.endpoint,
-            api_key=cfg.api_key,
-            azure_ad_token=cfg.token,
-            api_version=cfg.api_version,
-            deployment_name=cfg.deployment,
-            azure_ad_token_provider=lambda: cfg.token,  # type: ignore[arg-type]
+            raise RuntimeError(
+                "Azure backend requires src.annotate.config and src.annotate.llm_client; "
+                "ensure optional Azure dependencies are installed.",
+            )
+
+        cfg = load_azure_config()
+        deployment_name = deployment or cfg["deployment"]
+        client, uses_v1 = build_preferred_client(
+            endpoint=cfg["endpoint"],
+            api_key=cfg["api_key"],
+            api_version=cfg["api_version"],
+            use_v1=cfg.get("use_v1", True),
         )
-        return cls(client)
+        return cls(client=client, deployment=deployment_name, uses_v1=uses_v1)
 
     def _call(
         self,
@@ -196,37 +322,75 @@ class AzureBackend:
         top_p: Optional[float] = None,
         max_output_tokens: int = 900,
     ) -> tuple[str, str, Any]:
-        client = self.client
-        # Prefer Responses API if available
-        if hasattr(client, "responses"):
-            resp = client.responses.create(
-                model=getattr(client, "deployment", None),  # type: ignore[attr-defined]
-                input=messages,
-                max_output_tokens=max_output_tokens,
+        """
+        Call the underlying Azure/OpenAI client for a single message batch.
+        """
+        if hasattr(self.client, "responses"):
+            return self._call_responses_api(
+                messages,
                 temperature=temperature,
                 top_p=top_p,
+                max_output_tokens=max_output_tokens,
             )
-            text = getattr(resp, "output_text", None)
-            if not text and getattr(resp, "output", None):
-                # Some SDKs expose output/content instead of output_text
-                out = resp.output
-                if hasattr(out, "message") and getattr(out.message, "content", None):
-                    parts = getattr(out.message, "content", []) or []
-                    texts = [getattr(p, "text", "") for p in parts]
-                    text = "".join(texts) or None
-                elif hasattr(out, "content") and out.content:
-                    # content is a list of parts
-                    parts = getattr(out, "content", [])
-                    texts = [getattr(p, "text", "") for p in parts]
-                    text = "".join(texts) or None
-            text = text or ""
-            finish = getattr(getattr(resp, "output", None), "finish_reason", None) or getattr(
-                resp, "finish_reason", None
-            )
-            return text, finish, resp
-        # Fallback: Chat Completions
-        resp = client.chat.completions.create(  # type: ignore[attr-defined]
-            model=getattr(client, "deployment", None),  # type: ignore[attr-defined]
+        return self._call_chat_completions(
+            messages,
+            temperature=temperature,
+            top_p=top_p,
+            max_output_tokens=max_output_tokens,
+        )
+
+    def _call_responses_api(
+        self,
+        messages: List[Dict[str, str]],
+        *,
+        temperature: float,
+        top_p: Optional[float],
+        max_output_tokens: int,
+    ) -> tuple[str, str, Any]:
+        """
+        Call the Azure Responses-style API (if available on the client).
+        """
+        resp = self.client.responses.create(
+            model=self.deployment,
+            input=messages,
+            max_output_tokens=max_output_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        text = getattr(resp, "output_text", None)
+        if not text and getattr(resp, "output", None):
+            # Some SDKs expose output/content instead of output_text
+            out = resp.output
+            if hasattr(out, "message") and getattr(out.message, "content", None):
+                parts = getattr(out.message, "content", []) or []
+                texts = [getattr(part, "text", "") for part in parts]
+                text = "".join(texts) or None
+            elif hasattr(out, "content") and out.content:
+                # content is a list of parts
+                parts = getattr(out, "content", [])
+                texts = [getattr(part, "text", "") for part in parts]
+                text = "".join(texts) or None
+        text = text or ""
+        finish = getattr(getattr(resp, "output", None), "finish_reason", None) or getattr(
+            resp,
+            "finish_reason",
+            None,
+        )
+        return text, finish, resp
+
+    def _call_chat_completions(
+        self,
+        messages: List[Dict[str, str]],
+        *,
+        temperature: float,
+        top_p: Optional[float],
+        max_output_tokens: int,
+    ) -> tuple[str, str, Any]:
+        """
+        Call the Chat Completions API as a fallback.
+        """
+        resp = self.client.chat.completions.create(  # type: ignore[attr-defined]
+            model=self.deployment,
             messages=messages,
             max_tokens=max_output_tokens,
             temperature=temperature,
@@ -245,6 +409,9 @@ class AzureBackend:
         top_p: Optional[float] = None,
         max_output_tokens: int = 900,
     ) -> AzureGenerateResult:
+        """
+        Generate responses for a batch of message lists.
+        """
         texts: List[str] = []
         finish_reasons: List[str] = []
         raws: List[Any] = []

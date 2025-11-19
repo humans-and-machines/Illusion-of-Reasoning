@@ -171,8 +171,8 @@ SHIFT_CAND_PATTERNS: List[Tuple[str, re.Pattern]] = [
 
 def extract_think(txt: str) -> Optional[str]:
     """Return the <think> block contents, if present."""
-    m = RE_THINK.search(txt or "")
-    return m.group(1).strip() if m else None
+    match = RE_THINK.search(txt or "")
+    return match.group(1).strip() if match else None
 
 
 def find_shift_cues(think: str) -> Tuple[List[str], Optional[int]]:
@@ -182,10 +182,10 @@ def find_shift_cues(think: str) -> Tuple[List[str], Optional[int]]:
     hits: List[str] = []
     first_pos = None
     for name, pat in SHIFT_CAND_PATTERNS:
-        m = pat.search(think)
-        if m:
+        match = pat.search(think)
+        if match:
             hits.append(name)
-            pos = m.start()
+            pos = match.start()
             if first_pos is None or pos < first_pos:
                 first_pos = pos
     return hits, first_pos

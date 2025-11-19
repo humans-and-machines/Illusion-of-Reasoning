@@ -1,14 +1,22 @@
-# training/utils/callbacks.py
+"""Trainer callbacks for hub uploads, success caching, and replay buffer."""
+
 from __future__ import annotations
 
 import logging
 import subprocess
-from typing import Dict, List, Optional
+from importlib import import_module
+from types import SimpleNamespace
+from typing import List, Optional
 
-import torch
-from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+try:  # pragma: no cover - optional dependency for type-check / lint envs
+    from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+except ImportError:  # pragma: no cover - lightweight stubs for tooling
+    TrainerCallback = object  # type: ignore[assignment]
+    TrainerControl = object  # type: ignore[assignment]
+    TrainerState = object  # type: ignore[assignment]
+    TrainingArguments = object  # type: ignore[assignment]
 
-from training.utils.replay_buffer import ReplayBuffer
+from .replay_buffer import ReplayBuffer
 
 # ---------------------------------------------------------------------------
 #  SLURM helper --------------------------------------------------------------
@@ -30,23 +38,30 @@ def _slurm_available() -> bool:
 #  Push-to-hub callback ------------------------------------------------------
 # ---------------------------------------------------------------------------
 
-class _DummyCfg:
-    def __init__(self, **kw):  # convenience holder for hub + benchmark helpers
-        for k, v in kw.items():
-            setattr(self, k, v)
-
 class PushToHubRevisionCallback(TrainerCallback):
+    """Callback that pushes a checkpoint to the hub under a step-specific tag."""
+
     def __init__(self, model_cfg):
         self.model_cfg = model_cfg
         self.log = logging.getLogger("PushToHub")
 
-    def on_save(self, args: TrainingArguments, state: TrainerState,
-                control: TrainerControl, **kwargs):
+    def get_model_config(self):
+        """Public accessor for the associated model configuration."""
+        return self.model_cfg
+
+    def on_save(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        _control: TrainerControl,  # unused but kept for Trainer API
+        **_kwargs,
+    ):
+        """Push a new revision to the hub when the checkpoint is saved."""
         if not state.is_world_process_zero:
             return
 
         step_tag = f"step-{state.global_step:09d}"
-        dummy = _DummyCfg(
+        dummy = SimpleNamespace(
             hub_model_id    = args.hub_model_id,
             hub_model_revision = f"{args.hub_model_revision}-{step_tag}",
             output_dir      = f"{args.output_dir}/checkpoint-{state.global_step}",
@@ -54,17 +69,22 @@ class PushToHubRevisionCallback(TrainerCallback):
         )
 
         # lazy import – avoids circular deps if huggingface_hub absent
-        from .hub import push_to_hub_revision
+        hub_mod = import_module("training.utils.hub")
+        push_to_hub_revision = getattr(hub_mod, "push_to_hub_revision")
         fut = push_to_hub_revision(dummy, extra_ignore_patterns=["*.pt"])
 
         # (optional) spawn benchmark job when the upload finishes
         if _slurm_available():
             def _after(_):
-                from .evaluation import run_benchmark_jobs
+                eval_mod = import_module("training.utils.evaluation")
+                run_benchmark_jobs = getattr(eval_mod, "run_benchmark_jobs")
                 self.log.info("Upload done – submitting benchmark job.")
                 dummy.benchmarks = args.benchmarks
                 run_benchmark_jobs(dummy, self.model_cfg)
-            fut.add_done_callback(_after)
+
+            callback = getattr(fut, "add_done_callback", None)
+            if callback is not None:
+                callback(_after)
 
 # ---------------------------------------------------------------------------
 #  Success-caching callback (text-log scraper) -------------------------------
@@ -83,24 +103,26 @@ class SuccessCachingCallback(TrainerCallback):
         self._trainer = None                         # will be set later
         self.log = logging.getLogger("SuccessCache")
 
-    # ---------- lifecycle hooks ------------------------------------------
+        # ---------- lifecycle hooks ------------------------------------------
     def set_trainer(self, trainer):                  # called once at start
+        """Register the underlying Trainer instance."""
         self._trainer = trainer
 
     # ---------- main hook -------------------------------------------------
     def on_log(
         self,
-        args: TrainingArguments,
-        state: TrainerState,
-        control: TrainerControl,
-        logs: Optional[dict[str, float]] = None,
-        **kwargs,
+        _args: TrainingArguments,
+        _state: TrainerState,
+        _control: TrainerControl,
+        _logs: Optional[dict[str, float]] = None,
+        **_kwargs,
     ):
-        # nothing to do if trainer not yet registered or no textual logs
-        if self._trainer is None or not hasattr(self._trainer, "_textual_logs"):
+        """Scrape textual logs and cache successful prompts into the buffer."""
+        # nothing to do if trainer not yet registered or textual logs unavailable
+        if self._trainer is None or not hasattr(self._trainer, "textual_logs"):
             return
 
-        txt_logs = self._trainer._textual_logs
+        txt_logs = self._trainer.textual_logs  # exposed by HierarchicalGRPOTrainer
         if not txt_logs["prompt"]:                  # empty until first eval step
             return
 
@@ -118,6 +140,8 @@ class SuccessCachingCallback(TrainerCallback):
 # ---------------------------------------------------------------------------
 
 class ReplayBufferCallback(TrainerCallback):
+    """Callback that pushes high-accuracy prompts into the replay buffer."""
+
     def __init__(
         self,
         replay_buffer: ReplayBuffer,
@@ -131,37 +155,39 @@ class ReplayBufferCallback(TrainerCallback):
         self.thr  = threshold
         print("[ReplayBufferCallback] registered ✔️", flush=True)
 
+    def buffer_size(self) -> int:
+        """Return the current replay buffer size."""
+        return len(self.buf)
+
     # ←–––– this fires AFTER loss.backward() and BEFORE scheduler/step().
     # It always receives both `inputs` and `outputs`.
-    def on_train_batch_end(self, args, state, control, **kw):
-        outs    = kw["outputs"]             # dict from training_step
-        inputs  = kw["inputs"]              # the batch fed forward
-
-        rewards = outs.get("rewards", {})
+    def on_train_batch_end(self, args, *_unused, **kwargs):
+        """Inspect per-batch rewards and add successful prompts to the buffer."""
+        rewards = kwargs.get("outputs", {}).get("rewards", {})
         if self.key not in rewards:
-            return                           # key mismatch → nothing to do
+            return  # key mismatch → nothing to do
 
-        acc_vec = rewards[self.key].detach().cpu()   # tensor (B,)
-        print("accuracy vector", acc_vec)
-        ids_vec = inputs["input_ids"]                 # tensor (B, seq)
-        is_rep  = inputs.get("is_replay")             # tensor (B,) or None
+        acc_vec = rewards[self.key].detach().cpu()
+        ids_batch = kwargs["inputs"]["input_ids"]
+        is_replay_flags = kwargs["inputs"].get("is_replay")
 
         added = 0
-        for acc, ids in zip(acc_vec.tolist(), ids_vec):
-            if acc >= self.thr:
-                prompt = self.tok.decode(ids, skip_special_tokens=True)
-                self.buf.add(prompt)
+        for accuracy, token_ids in zip(acc_vec.tolist(), ids_batch):
+            if accuracy >= self.thr:
+                prompt_text = self.tok.decode(token_ids, skip_special_tokens=True)
+                self.buf.add(prompt_text)
                 added += 1
 
-        # diagnostics
-        rank      = args.local_rank if args.local_rank != -1 else 0
-        buf_size  = len(self.buf)
-        num_rep   = int(is_rep.sum().item()) if is_rep is not None else 0
-        batch_sz  = len(ids_vec)
+        local_rank = args.local_rank if args.local_rank != -1 else 0
+        num_replay = (
+            int(is_replay_flags.sum().item())
+            if is_replay_flags is not None
+            else 0
+        )
 
         print(
-            f"[ReplayBufferCallback][rank{rank}] added {added} new • "
-            f"{num_rep}/{batch_sz} replay • buffer = {buf_size}",
+            f"[ReplayBufferCallback][rank{local_rank}] added {added} new • "
+            f"{num_replay}/{len(ids_batch)} replay • buffer = {len(self.buf)}",
             flush=True,
         )
 # ---------------------------------------------------------------------------
@@ -207,10 +233,12 @@ def get_callbacks(
 
         elif name == "replay_buffer_callback":
             if replay_buffer is None or tokenizer is None:
-                raise ValueError("ReplayBufferCallback requires both `replay_buffer` and `tokenizer`.")
+                raise ValueError(
+                    "ReplayBufferCallback requires `replay_buffer` and `tokenizer`."
+                )
             cb_list.append(cls(replay_buffer=replay_buffer, tokenizer=tokenizer))
 
-        else:          
+        else:
             cb_list.append(cls())
 
     return cb_list

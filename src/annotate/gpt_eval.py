@@ -80,26 +80,26 @@ def _clamp(txt: str, lim: int = MAX_FIELD_LEN) -> str:
     return txt[-lim:] if len(txt) > lim else txt
 
 def _dump_filtered(prompt: str):
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    dg = hashlib.md5(prompt.encode()).hexdigest()[:8]
-    fn = f"filtered_prompt_{ts}_{dg}.txt"
-    with open(fn, "w", encoding="utf-8") as f:
-        f.write(prompt)
-    logging.warning("LLM filtered/failed; saved prompt to %s", fn)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    digest = hashlib.md5(prompt.encode()).hexdigest()[:8]
+    filename = f"filtered_prompt_{timestamp}_{digest}.txt"
+    with open(filename, "w", encoding="utf-8") as file_handle:
+        file_handle.write(prompt)
+    logging.warning("LLM filtered/failed; saved prompt to %s", filename)
 
-def _json_from_text(s: str) -> Optional[Dict[str, Any]]:
+def _json_from_text(text: str) -> Optional[Dict[str, Any]]:
     """Extract the first top-level JSON object from arbitrary text."""
-    s = (s or "").strip()
-    if s.startswith("{") and s.endswith("}"):
+    text = (text or "").strip()
+    if text.startswith("{") and text.endswith("}"):
         try:
-            return json.loads(s)
+            return json.loads(text)
         except JSONDecodeError:
             return None
-    i = s.find("{")
-    j = s.rfind("}")
+    i = text.find("{")
+    j = text.rfind("}")
     if i != -1 and j != -1 and j > i:
         try:
-            return json.loads(s[i:j+1])
+            return json.loads(text[i:j+1])
         except JSONDecodeError:
             return None
     return None
@@ -167,8 +167,8 @@ def llm_judge_shift(
                 ],
             )
             content = resp.choices[0].message.content if resp and resp.choices else ""
-    except OpenAIError as e:
-        _dump_filtered(user_content + "\n\n[ERROR] " + repr(e))
+    except OpenAIError as error:
+        _dump_filtered(user_content + "\n\n[ERROR] " + repr(error))
         return {
             "shift_in_reasoning": False,
             "confidence": "low",
@@ -204,19 +204,19 @@ def llm_judge_shift(
 # ───────────────────── File scanning / update ─────────────────────
 def nat_step_from_path(path: str) -> Optional[int]:
     """Extract numeric step from a filename like step00050_test.jsonl."""
-    m = re.search(r"step(\d+)", path)
-    return int(m.group(1)) if m else None
+    match = re.search(r"step(\d+)", path)
+    return int(match.group(1)) if match else None
 
 def scan_jsonl(root: str, split: Optional[str]) -> List[str]:
     """Recursively list JSONL files (sorted by step desc), optionally filtered by split."""
     files: List[str] = []
-    for dp, _, fns in os.walk(root):
-        for fn in fns:
-            if not fn.endswith(".jsonl"):
+    for dirpath, _, filenames in os.walk(root):
+        for filename in filenames:
+            if not filename.endswith(".jsonl"):
                 continue
-            if split and split not in fn:
+            if split and split not in filename:
                 continue
-            files.append(os.path.join(dp, fn))
+            files.append(os.path.join(dirpath, filename))
     files.sort(key=lambda p: (nat_step_from_path(p) or 0, p), reverse=True)
     return files
 
@@ -231,13 +231,13 @@ def record_id_for_logs(obj: Dict[str, Any]) -> str:
 
 def _load_records(path: str) -> List[Dict[str, Any]]:
     """Load JSONL lines; keep raw lines for those that fail to parse."""
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as file_handle:
         records: List[Dict[str, Any]] = []
-        for ln in f:
+        for line in file_handle:
             try:
-                records.append(json.loads(ln))
+                records.append(json.loads(line))
             except JSONDecodeError:
-                records.append({"__raw__": ln})
+                records.append({"__raw__": line})
     return records
 
 
@@ -247,38 +247,40 @@ def _prefilter_records(records: List[Dict[str, Any]]) -> List[int]:
     for i, rec in enumerate(records):
         if "__raw__" in rec:
             continue
-        p1 = rec.get("pass1") or {}
-        if "shift_in_reasoning_v1" in p1:
+        pass1_section = rec.get("pass1") or {}
+        if "shift_in_reasoning_v1" in pass1_section:
             continue
 
-        out = p1.get("output")
+        out = pass1_section.get("output")
         if not out:
             continue
 
         think = _extract_think(out)
         if not think:
-            p1["shift_in_reasoning_v1"] = False
-            rec["pass1"] = p1
+            pass1_section["shift_in_reasoning_v1"] = False
+            rec["pass1"] = pass1_section
             continue
 
         cues, pos = _find_shift_cues(think)
-        p1["_shift_prefilter_markers"] = cues
-        p1["_shift_prefilter_pos"] = pos
-        rec["pass1"] = p1
+        pass1_section["_shift_prefilter_markers"] = cues
+        pass1_section["_shift_prefilter_pos"] = pos
+        rec["pass1"] = pass1_section
         todo.append(i)
     return todo
 
 
-def _mark_no_cue(p1: Dict[str, Any], deployment: str) -> None:
+def _mark_no_cue(pass1_section: Dict[str, Any], deployment: str) -> None:
     """Set conservative FALSE annotation when no cue is present."""
-    p1["shift_in_reasoning_v1"] = False
-    p1["shift_markers_v1"] = []
-    p1["shift_first_marker_char"] = -1
-    p1["shift_before_excerpt"] = ""
-    p1["shift_after_excerpt"] = ""
-    p1["shift_rationale_gpt"] = "No explicit cue; conservative FALSE."
-    p1["shift_rationale_gpt_model"] = deployment
-    p1["shift_rationale_gpt_time"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    pass1_section["shift_in_reasoning_v1"] = False
+    pass1_section["shift_markers_v1"] = []
+    pass1_section["shift_first_marker_char"] = -1
+    pass1_section["shift_before_excerpt"] = ""
+    pass1_section["shift_after_excerpt"] = ""
+    pass1_section["shift_rationale_gpt"] = "No explicit cue; conservative FALSE."
+    pass1_section["shift_rationale_gpt_model"] = deployment
+    pass1_section["shift_rationale_gpt_time"] = time.strftime(
+        "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+    )
 
 
 @dataclass
@@ -294,16 +296,16 @@ class AnnotateOpts:
 
 def _annotate_record(rec: Dict[str, Any], opts: AnnotateOpts, rng: random.Random) -> bool:
     """Annotate a single record; returns True if an LLM call was made."""
-    p1 = rec.get("pass1") or {}
-    out = p1.get("output") or ""
+    pass1_section = rec.get("pass1") or {}
+    out = pass1_section.get("output") or ""
     think = _extract_think(out) or ""
     problem = rec.get("problem") or rec.get("clue") or ""
-    cues = p1.get("_shift_prefilter_markers") or []
-    pos = p1.get("_shift_prefilter_pos")
+    cues = pass1_section.get("_shift_prefilter_markers") or []
+    pos = pass1_section.get("_shift_prefilter_pos")
 
     if not cues:
-        _mark_no_cue(p1, opts.deployment)
-        rec["pass1"] = p1
+        _mark_no_cue(pass1_section, opts.deployment)
+        rec["pass1"] = pass1_section
         return False
 
     if opts.dry_run:
@@ -322,19 +324,19 @@ def _annotate_record(rec: Dict[str, Any], opts: AnnotateOpts, rng: random.Random
             },
         )
 
-    p1["shift_in_reasoning_v1"] = bool(result.get("shift_in_reasoning", False))
-    p1["shift_markers_v1"] = list(result.get("markers_found", []) or cues)
-    p1["shift_first_marker_char"] = int(
+    pass1_section["shift_in_reasoning_v1"] = bool(result.get("shift_in_reasoning", False))
+    pass1_section["shift_markers_v1"] = list(result.get("markers_found", []) or cues)
+    pass1_section["shift_first_marker_char"] = int(
         result.get("first_marker_index", -1 if pos is None else pos)
     )
-    p1["shift_before_excerpt"] = _clamp(result.get("before_excerpt", ""), 240)
-    p1["shift_after_excerpt"] = _clamp(result.get("after_excerpt", ""), 280)
-    p1["shift_rationale_gpt"] = _clamp(result.get("explanation_short", ""), 300)
-    p1["shift_rationale_gpt_model"] = opts.deployment
-    p1["shift_rationale_gpt_time"] = time.strftime(
+    pass1_section["shift_before_excerpt"] = _clamp(result.get("before_excerpt", ""), 240)
+    pass1_section["shift_after_excerpt"] = _clamp(result.get("after_excerpt", ""), 280)
+    pass1_section["shift_rationale_gpt"] = _clamp(result.get("explanation_short", ""), 300)
+    pass1_section["shift_rationale_gpt_model"] = opts.deployment
+    pass1_section["shift_rationale_gpt_time"] = time.strftime(
         "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
     )
-    rec["pass1"] = p1
+    rec["pass1"] = pass1_section
     if opts.jitter > 0:
         time.sleep(rng.uniform(0.0, opts.jitter))
     return True
@@ -357,74 +359,74 @@ def annotate_file(path: str, opts: AnnotateOpts):
             calls += 1
 
     tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with open(tmp, "w", encoding="utf-8") as tmp_file:
         for rec in records:
             if "__raw__" in rec:
-                f.write(rec["__raw__"])
+                tmp_file.write(rec["__raw__"])
             else:
-                json.dump(rec, f, ensure_ascii=False)
-                f.write("\n")
+                json.dump(rec, tmp_file, ensure_ascii=False)
+                tmp_file.write("\n")
     os.replace(tmp, path)
     logging.info("Updated %s (LLM calls: %d)", path, calls)
 
 # ───────────────────── CLI ─────────────────────
 def build_argparser():
     """CLI argument builder."""
-    ap = argparse.ArgumentParser()
-    ap.add_argument("results_root", help="Directory containing step*/.../*.jsonl")
-    ap.add_argument(
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("results_root", help="Directory containing step*/.../*.jsonl")
+    arg_parser.add_argument(
         "--split",
         default=None,
         help="Filter filenames that contain this substring (e.g., 'test').",
     )
 
-    ap.add_argument(
+    arg_parser.add_argument(
         "--seed", type=int, default=1234, help="Shuffle seed for random processing order."
     )
-    ap.add_argument(
+    arg_parser.add_argument(
         "--max_calls", type=int, default=None, help="Optional cap on model calls."
     )
-    ap.add_argument(
+    arg_parser.add_argument(
         "--dry_run",
         action="store_true",
         help="Discover candidates but do not call the model or write changes.",
     )
-    ap.add_argument(
+    arg_parser.add_argument(
         "--jitter",
         type=float,
         default=0.25,
         help="Max random sleep (seconds) between calls; 0 to disable.",
     )
-    ap.add_argument("--loglevel", default="INFO")
+    arg_parser.add_argument("--loglevel", default="INFO")
 
     # Azure OpenAI specifics
-    ap.add_argument(
+    arg_parser.add_argument(
         "--endpoint",
         default=DEFAULT_ENDPOINT,
         help="Azure OpenAI endpoint (e.g., https://<res>.openai.azure.com/).",
     )
-    ap.add_argument(
+    arg_parser.add_argument(
         "--deployment",
         default=DEFAULT_DEPLOYMENT,
         help="Azure OpenAI deployment name (e.g., 'gpt-4o').",
     )
-    ap.add_argument(
+    arg_parser.add_argument(
         "--api_version",
         default=DEFAULT_API_VERSION,
         help="Azure API version (legacy client only).",
     )
-    ap.add_argument(
+    arg_parser.add_argument(
         "--use_v1",
         type=int,
         default=DEFAULT_USE_V1,
         help="1=prefer v1 Responses API, 0=legacy client.",
     )
-    return ap
+    return arg_parser
 
 def main():
     """Entrypoint."""
-    ap = build_argparser()
-    args = ap.parse_args()
+    arg_parser = build_argparser()
+    args = arg_parser.parse_args()
 
     logging.basicConfig(
         level=getattr(logging, args.loglevel.upper(), logging.INFO),

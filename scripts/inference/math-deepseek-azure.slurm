@@ -34,8 +34,8 @@ if [[ -z "${AZURE_OPENAI_API_KEY:-}" ]]; then
 fi
 
 # ── Paths ───────────────────────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/math-deepseek-azure.py}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/deepseek-r1-math-azure}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/math_deepseek_azure.py}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/deepseek-r1-math-azure}"
 mkdir -p "$OUTPUT_ROOT" logs
 
 ENDPOINT="${AZURE_OPENAI_ENDPOINT:-https://example.openai.azure.com/}"

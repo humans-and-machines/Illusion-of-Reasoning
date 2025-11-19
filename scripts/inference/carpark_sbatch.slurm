@@ -1,4 +1,6 @@
 #!/bin/bash
+# Dataset builder for Rush Hour (carpark) puzzles, not an inference job.
+# Canonical carpark inference uses carpark-inference.slurm.
 #SBATCH --job-name=RushBalanced           # <-- change as you like
 #SBATCH --nodes=1                         # <-- you can change
 #SBATCH --cpus-per-task=64                # <-- you can change

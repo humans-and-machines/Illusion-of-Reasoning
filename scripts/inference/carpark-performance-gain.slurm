@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Experimental comparison script: 1-shot carpark baseline vs tuned checkpoint.
+# Canonical full-sweep carpark inference lives in carpark-inference.slurm.
 #SBATCH --job-name=carpark_compare_qwen
 #SBATCH --output=logs/carpark_compare_qwen_%A_%a.out
 #SBATCH --error=logs/carpark_compare_qwen_%A_%a.err
@@ -57,12 +59,12 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR"
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_carpark_runner.py}"
 
 # Tuned checkpoint root + step (override with env if needed)
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"
 CKPT_STEP="${CKPT_STEP:-750}"
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 
-# Output
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-carpark-compare-1shot}"
+# Output (under artifacts/results)
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/GRPO-1.5B-carpark-compare-1shot}"
 mkdir -p "$OUTPUT_ROOT"
 
 # HF online so we can pull the base model

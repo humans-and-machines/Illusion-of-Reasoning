@@ -53,8 +53,8 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────────────────────
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
-BASE_RESULTS_ROOT="${BASE_RESULTS_ROOT:-$PROJECT_ROOT/results}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
+BASE_RESULTS_ROOT="${BASE_RESULTS_ROOT:-$PROJECT_ROOT/artifacts/results}"
 
 # Tags for directory naming (override if you want e.g. MODEL_TAG=1.5B DOMAIN_TAG=xword)
 MODEL_TAG="${MODEL_TAG:-7B}"
@@ -96,7 +96,7 @@ else
 fi
 
 # Desired output style:
-#   /.../results/GRPO-<MODEL_TAG>-<DOMAIN_TAG>-temp-<TEMP>/step-<STEP>
+#   /.../artifacts/results/GRPO-<MODEL_TAG>-<DOMAIN_TAG>-temp-<TEMP>/step-<STEP>
 OUT_PREFIX="${BASE_RESULTS_ROOT}/GRPO-${MODEL_TAG}-${DOMAIN_TAG}-temp-${TEMP}"
 OUTDIR="${OUT_PREFIX}/step-${STEP}"
 mkdir -p "$OUTDIR"

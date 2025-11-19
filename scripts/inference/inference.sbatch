@@ -1,4 +1,7 @@
 #!/bin/bash
+# Legacy Math220k GRPO sweep script using src/inference/inference.py.
+# Canonical unified math evaluation now lives in math-inference.slurm
+# via src/inference/unified_math_runner.py.
 #SBATCH --job-name=infer_math_ckpts
 #SBATCH --output=logs/infer_ckpts_%A_%a.out
 #SBATCH --error=logs/infer_ckpts_%A_%a.err
@@ -110,8 +113,8 @@ REVISIONS=(
 REV=${REVISIONS[$SLURM_ARRAY_TASK_ID]}
 echo "→ Running revision: $REV"
 
-# Paths and output roots
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/od2961/Math220k/GRPO/1.5B}"
+# Paths and output roots (under artifacts/results)
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/od2961/Math220k/GRPO/1.5B}"
 CACHEROOT="$OUTPUT_ROOT/hf_cache"
 
 # Ensure output and cache directories exist

@@ -8,45 +8,121 @@ This helper now detects that schema and decodes it if a tokenizer is passed.
 """
 
 from __future__ import annotations
-import json, time
-from typing import List, Optional
+
+import json
+import time
+from typing import Any, List
+
 import requests
 
 
 # ─────────────────── generic GET helper ──────────────────────────────────────
-def safe_request(url: str, max_retries: int = 3, backoff: float = 1.0, timeout: float = 10.0):
+def safe_request(
+    url: str,
+    max_retries: int = 3,
+    backoff: float = 1.0,
+    timeout: float = 10.0,
+) -> dict:
+    """Perform a GET request with simple retry and exponential backoff."""
+    last_error: Exception | None = None
+
     for attempt in range(max_retries):
         try:
-            r = requests.get(url, timeout=timeout)
-            if r.status_code == 200:
-                return r.json()
-            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:120]}")
-        except (requests.ConnectionError, requests.Timeout):
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 200:
+                return response.json()
+            last_error = RuntimeError(
+                f"HTTP {response.status_code}: {response.text[:120]}"
+            )
+            break
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last_error = exc
             if attempt < max_retries - 1:
                 time.sleep(backoff * (2**attempt))
-            else:
-                raise
+
+    if last_error is not None:
+        raise last_error
+    msg = "safe_request failed without performing any HTTP request."
+    raise RuntimeError(msg)
 
 
 # ─────────────────── helper to parse non-stream JSON ─────────────────────────
-def _parse_nonstream_json(data: dict, tokenizer=None) -> List[List[str]]:
+def _parse_nonstream_json(
+    data: dict,
+    tokenizer: Any | None = None,
+) -> List[List[str]]:
     # OpenAI route
     if "choices" in data:
-        return [[c["text"] for c in data["choices"]]]
+        return [[choice["text"] for choice in data["choices"]]]
     # Plain /generate route (newer default)
     if "results" in data:
-        return [[r["text"] for r in data["results"]]]
+        return [[result["text"] for result in data["results"]]]
     # vLLM 0.8.x batched output
     if "text" in data and isinstance(data["text"], list):
-        return [[t] for t in data["text"]]
+        return [[text] for text in data["text"]]
     # vLLM 0.8.x token-ID output
     if "completion_ids" in data:
         if tokenizer is None:
             raise RuntimeError(
                 "Server returned token IDs but no tokenizer was supplied to safe_generate()."
             )
-        return [[tokenizer.decode(ids, skip_special_tokens=True)] for ids in data["completion_ids"]]
+        return [
+            [tokenizer.decode(ids, skip_special_tokens=True)]
+            for ids in data["completion_ids"]
+        ]
     raise RuntimeError(f"Unknown vLLM response format: {data}")
+
+
+def _parse_streaming_response(
+    response: requests.Response,
+    num_prompts: int,
+) -> List[List[str]]:
+    """Convert a streaming vLLM response into a list-of-lists of strings."""
+    texts: list[list[str]] = [[] for _ in range(num_prompts)]
+    for line_bytes in response.iter_lines():
+        if not line_bytes:
+            continue
+        row = json.loads(line_bytes.decode())
+        index = row.get("prompt_index", 0)
+        texts[index].append(row["text"])
+    return [["".join(parts)] for parts in texts]
+
+
+def _generate_with_retries(
+    *,
+    prompts: List[str],
+    url: str,
+    payload: dict,
+    tokenizer: Any | None,
+    stream: bool,
+    max_retries: int,
+    backoff: float,
+    timeout: float,
+) -> List[List[str]]:
+    """Call the vLLM server with retries and decode the response."""
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(
+                url,
+                json=payload,
+                timeout=timeout,
+                stream=stream,
+            )
+            if response.status_code != 200:
+                msg = f"HTTP {response.status_code}: {response.text[:120]}"
+                raise RuntimeError(msg)
+
+            if stream:
+                return _parse_streaming_response(response, len(prompts))
+            return _parse_nonstream_json(response.json(), tokenizer)
+        except (requests.ConnectionError, requests.Timeout, RuntimeError) as exc:
+            if attempt < max_retries - 1:
+                time.sleep(backoff * (2**attempt))
+            else:
+                msg = f"safe_generate failed: {exc}"
+                raise RuntimeError(msg) from exc
+
+    raise RuntimeError("safe_generate failed without performing any HTTP request.")
 
 
 # ─────────────────── POST /generate helper ────────────────────────────────────
@@ -59,34 +135,27 @@ def safe_generate(
     top_p: float = 0.9,
     n: int = 1,
     stream: bool = False,
-    tokenizer=None,                 # ← new optional arg
+    tokenizer: Any | None = None,
     max_retries: int = 3,
     backoff: float = 1.0,
     timeout: float = 30.0,
 ) -> List[List[str]]:
     """Robust call to /generate with retry + schema-agnostic decoding."""
-    payload = dict(
-        prompts=prompts, temperature=temperature, top_p=top_p,
-        n=n, max_tokens=max_tokens, stream=stream,
+    payload = {
+        "prompts": prompts,
+        "temperature": temperature,
+        "top_p": top_p,
+        "n": n,
+        "max_tokens": max_tokens,
+        "stream": stream,
+    }
+    return _generate_with_retries(
+        prompts=prompts,
+        url=url,
+        payload=payload,
+        tokenizer=tokenizer,
+        stream=stream,
+        max_retries=max_retries,
+        backoff=backoff,
+        timeout=timeout,
     )
-
-    for attempt in range(max_retries):
-        try:
-            r = requests.post(url, json=payload, timeout=timeout, stream=stream)
-            if r.status_code == 200:
-                if stream:
-                    texts = [[] for _ in prompts]
-                    for line in r.iter_lines():
-                        if line:
-                            row = json.loads(line.decode())
-                            idx = row.get("prompt_index", 0)
-                            texts[idx].append(row["text"])
-                    return [["".join(parts)] for parts in texts]
-                else:
-                    return _parse_nonstream_json(r.json(), tokenizer)
-            raise RuntimeError(f"HTTP {r.status_code}: {r.text[:120]}")
-        except (requests.ConnectionError, requests.Timeout, RuntimeError) as e:
-            if attempt < max_retries - 1:
-                time.sleep(backoff * (2**attempt))
-            else:
-                raise RuntimeError(f"safe_generate failed: {e}") from e

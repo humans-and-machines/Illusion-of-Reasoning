@@ -1,31 +1,35 @@
 # training/utils/replay_buffer.py
+"""Simple replay buffer used for GRPO-style training."""
+
 from __future__ import annotations
-from typing import Any, List, Tuple, Optional, Dict
+
+from typing import Any, Dict, List, Optional, Tuple
 import copy
 import threading
 import math
 import numpy as np
-import torch.distributed as dist
+
 
 def _prompt_key(prompt: list[dict[str, str]]) -> tuple:
-    return tuple((m["role"], " ".join(m["content"].split())) for m in prompt)
+    """Canonicalise a prompt into a hashable key."""
+    return tuple((message["role"], " ".join(message["content"].split())) for message in prompt)
 
-def _is_full_example(x: Any) -> bool:
-    return isinstance(x, dict) and "prompt" in x
 
-def _finite_float(x: Any, default: float = 0.0) -> float:
+def _finite_float(value: Any, default: float = 0.0) -> float:
+    """Best-effort conversion to a finite float with a default fallback."""
     try:
-        v = float(x)
-        return v if math.isfinite(v) else default
-    except Exception:
+        value_float = float(value)
+        return value_float if math.isfinite(value_float) else default
+    except (TypeError, ValueError):
         return default
 
 
-def _is_full_example(x: Any) -> bool:
-    return isinstance(x, dict) and "prompt" in x and "answer" in x
+def _is_full_example(example: Any) -> bool:
+    """Return True when an object looks like a full prompt+answer example."""
+    return isinstance(example, dict) and "prompt" in example and "answer" in example
 
 
-class ReplayBuffer:
+class ReplayBuffer:  # pylint: disable=too-many-instance-attributes
     """
     Bandit / UCB replay buffer with stable UIDs and optional exploit/explore mixing.
 
@@ -34,19 +38,34 @@ class ReplayBuffer:
     * update_priority_by_uid updates μ / priority using a stable uid (safe for DDP)
     """
 
-    def __init__(self, capacity: int = 4000, C: float = 1.0, debug_steps: int = 0):
+    def __init__(
+        self,
+        capacity: int = 4000,
+        ucb_coefficient: float = 1.0,
+        debug_steps: int = 0,
+        **kwargs: Any,
+    ):
+        """
+        Initialise an in-memory replay buffer.
+
+        Accepts a legacy ``C=...`` keyword (mapped to ``ucb_coefficient``) for
+        backwards compatibility.
+        """
+        if "C" in kwargs and kwargs["C"] is not None:
+            ucb_coefficient = float(kwargs.pop("C"))
+
         self.capacity = int(capacity)
-        self.C = float(C)
+        self.ucb_coefficient = float(ucb_coefficient)
         self.debug_steps = int(debug_steps)
 
         self._buf: List[Any] = []
         self._mean: List[float] = []
-        self._M2: List[float] = []
-        self._n: List[int] = []
+        self._m2: List[float] = []
+        self._count: List[int] = []
         self._uids: List[int] = []
         self._uid2idx: Dict[int, int] = {}
 
-        self._seen = set()         # prompt de-dup
+        self._seen = set()  # prompt de-dup
         self._t = 0
         self._lock = threading.Lock()
         self._sample_calls = 0
@@ -56,27 +75,36 @@ class ReplayBuffer:
         self._last_error: Optional[dict] = None
 
     def last_error(self):
+        """Return the last error metadata recorded during insertion."""
         return self._last_error
 
     def _set_err(self, **kw):
         self._last_error = kw
-        
+
 
     def __len__(self) -> int:
         return len(self._buf)
 
     # ----------------- stats utils -----------------
-    def _init_stats(self, r: float) -> tuple[float, float, int]:
-        return float(r), 0.0, 1
+    def _init_stats(self, reward: float) -> tuple[float, float, int]:
+        """Initialise streaming mean/variance stats for a reward."""
+        return float(reward), 0.0, 1
 
-    def _update_stats(self, idx: int, r: float):
-        mu, M2, n = self._mean[idx], self._M2[idx], self._n[idx]
-        n += 1
-        delta = r - mu
-        mu += delta / n
-        delta2 = r - mu
-        M2 += delta * delta2
-        self._mean[idx], self._M2[idx], self._n[idx] = mu, M2, n
+    def _update_stats(self, idx: int, reward: float) -> None:
+        """Welford update of mean and second moment for a single index."""
+        mean_value = self._mean[idx]
+        m2_value = self._m2[idx]
+        count = self._count[idx]
+
+        count += 1
+        delta = reward - mean_value
+        mean_value += delta / count
+        delta2 = reward - mean_value
+        m2_value += delta * delta2
+
+        self._mean[idx] = mean_value
+        self._m2[idx] = m2_value
+        self._count[idx] = count
 
     # ----------------- helpers -----------------
     def _key_for_sample(self, sample: Any):
@@ -89,7 +117,7 @@ class ReplayBuffer:
                     _prompt_key(ex["prompt"]) if _is_full_example(ex) else repr(ex)
                     for ex in sample["group"]
                 )
-            except Exception:
+            except (TypeError, KeyError):
                 return repr(sample)
         return repr(sample)
 
@@ -114,24 +142,32 @@ class ReplayBuffer:
             uid = self._next_uid
             self._next_uid += 1
 
-            mu, M2, n = self._init_stats(reward)
+            mean_value, m2_value, count = self._init_stats(reward)
 
             if len(self._buf) < self.capacity:
                 self._buf.append(copy.deepcopy(sample))
-                self._mean.append(mu)
-                self._M2.append(M2)
-                self._n.append(n)
+                self._mean.append(mean_value)
+                self._m2.append(m2_value)
+                self._count.append(count)
                 self._uids.append(uid)
                 self._uid2idx[uid] = len(self._buf) - 1
                 if self.debug_steps:
-                    print(f"[RB][ADD] inserted uid={uid} μ={mu:.4f} size={len(self._buf)}")
+                    print(
+                        f"[RB][ADD] inserted uid={uid} μ={mean_value:.4f} "
+                        f"size={len(self._buf)}",
+                    )
                 return True, uid
 
             if len(self._buf) >= self.capacity:
                 worst = int(np.argmin(self._mean))
                 if reward <= self._mean[worst]:
-                    self._set_err(where="add", why="capacity_worse_mu",
-                                cap=self.capacity, worst_mu=self._mean[worst], r=reward)
+                    self._set_err(
+                        where="add",
+                        why="capacity_worse_mu",
+                        cap=self.capacity,
+                        worst_mu=self._mean[worst],
+                        r=reward,
+                    )
                     return False, -1
 
             # Full: maybe replace worst μ
@@ -141,13 +177,16 @@ class ReplayBuffer:
                 if old_uid in self._uid2idx:
                     del self._uid2idx[old_uid]
                 self._buf[worst] = copy.deepcopy(sample)
-                self._mean[worst] = mu
-                self._M2[worst] = M2
-                self._n[worst] = n
+                self._mean[worst] = mean_value
+                self._m2[worst] = m2_value
+                self._count[worst] = count
                 self._uids[worst] = uid
                 self._uid2idx[uid] = worst
                 if self.debug_steps:
-                    print(f"[RB][REPLACE] worst idx={worst} -> uid={uid} μ={mu:.4f}")
+                    print(
+                        f"[RB][REPLACE] worst idx={worst} -> uid={uid} "
+                        f"μ={mean_value:.4f}",
+                    )
                 return True, uid
 
             # Not inserted
@@ -170,7 +209,7 @@ class ReplayBuffer:
         if reward is None:
             try:
                 reward_local = float(np.mean([g.get("reward", 0.0) for g in group]))
-            except Exception:
+            except (TypeError, ValueError):
                 reward_local = 0.0
         else:
             reward_local = float(reward)
@@ -189,6 +228,7 @@ class ReplayBuffer:
         return uid
 
     def update_priority_by_uid(self, uid: int, reward: float):
+        """Update running priority statistics for a given uid."""
         reward = _finite_float(reward, 0.0)
         with self._lock:
             idx = self._uid2idx.get(uid, None)
@@ -200,11 +240,13 @@ class ReplayBuffer:
 
     # Legacy (index-based) — keep if you use it elsewhere
     def update_priority(self, idx: int, reward: float):
+        """Update running priority statistics using a raw buffer index."""
         with self._lock:
             if 0 <= idx < len(self._buf):
                 self._update_stats(idx, _finite_float(reward, 0.0))
 
     def debug_state(self):
+        """Return a small debug snapshot of the buffer tail and metadata."""
         with self._lock:
             tail = slice(max(0, len(self._buf) - 5), len(self._buf))
             return {
@@ -213,14 +255,13 @@ class ReplayBuffer:
                 "next_uid": self._next_uid,
                 "tail_uids": self._uids[tail],
                 "tail_mu": [float(m) for m in self._mean[tail]],
-                "tail_n": self._n[tail],
+                "tail_n": self._count[tail],
             }
-            
+
     # ----------------- sampling -----------------
     def sample(
         self,
         batch_size: int = 1,
-        *_, **__,
     ) -> Tuple[List[Any], List[int], List[int], np.ndarray]:
         """
         Uniformly sample `batch_size` distinct entries from the buffer.
@@ -233,14 +274,18 @@ class ReplayBuffer:
             if not self._buf:
                 raise ValueError("Empty replay buffer")
 
-            n  = len(self._buf)
-            bs = min(batch_size, n)
+            buffer_size = len(self._buf)
+            batch_size_clamped = min(batch_size, buffer_size)
 
-            idxs = np.random.choice(n, size=bs, replace=False).tolist()
+            idxs = np.random.choice(
+                buffer_size,
+                size=batch_size_clamped,
+                replace=False,
+            ).tolist()
 
             samples = [copy.deepcopy(self._buf[i]) for i in idxs]
-            uids    = [self._uids[i]          for i in idxs]
-            isw     = np.ones(bs, dtype=np.float32)       # importance‑sampling wts (unused)
+            uids = [self._uids[i] for i in idxs]
+            isw = np.ones(batch_size_clamped, dtype=np.float32)  # importance‑sampling wts (unused)
 
             # Optional debug
             if self.debug_steps:
@@ -252,13 +297,13 @@ class ReplayBuffer:
         """
         Convenience: return a single UID chosen uniformly at random.
         """
-        print("SAMPLING!")
         with self._lock:
             if not self._buf:
                 return None
             return np.random.choice(self._uids).item()
 
     def get_group(self, uid: int) -> List[dict[str, Any]]:
+        """Return the stored group for a uid, or [] if missing."""
         with self._lock:
             idx = self._uid2idx.get(uid, None)
             if idx is None:

@@ -88,7 +88,7 @@ with open(p,"w") as f: yaml.safe_dump(cfg, f, sort_keys=False)
 PY
 
 
-export RESUME_CKPT="${RESUME_CKPT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1/checkpoint-950}"
+export RESUME_CKPT="${RESUME_CKPT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1/checkpoint-950}"
 
 
 # ── Launch: vLLM (1 GPU) + Trainer (remaining GPUs) ────────────────────

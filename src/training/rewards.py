@@ -8,7 +8,7 @@ math_verify/code rewards are intentionally omitted.
 
 from typing import Callable, List
 
-from training.rewards_core import (
+from .rewards_core import (
     crossword_accuracy_reward,
     pure_accuracy_reward,
     pure_accuracy_reward_math,
@@ -19,9 +19,18 @@ from training.rewards_core import (
 
 def get_reward_funcs(
     script_args,
-    ref_model=None,            # unused (legacy signature)
-    tokenizer=None,            # unused (legacy signature)
+    ref_model=None,  # kept for backwards-compatible signature
+    tokenizer=None,  # kept for backwards-compatible signature
 ) -> List[Callable]:
+    """
+    Build the list of reward functions requested via script_args.reward_funcs.
+
+    The ref_model and tokenizer parameters are accepted for API compatibility
+    with older callers but are not used in the current implementation.
+    """
+    # Mark legacy-only parameters as used to satisfy linters.
+    _ = (ref_model, tokenizer)
+
     registry = {
         "crossword_accuracy": crossword_accuracy_reward,
         "pure_accuracy": pure_accuracy_reward,

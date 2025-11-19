@@ -52,8 +52,8 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────────────────────
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Llama-8B-Open-R1-GRPO-math-v2}"
-BASE_RESULTS_ROOT="${BASE_RESULTS_ROOT:-$PROJECT_ROOT/results}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Llama-8B-Open-R1-GRPO-math-v2}"
+BASE_RESULTS_ROOT="${BASE_RESULTS_ROOT:-$PROJECT_ROOT/artifacts/results}"
 
 # Tags for directory naming
 MODEL_TAG="${MODEL_TAG:-Llama8B}"
@@ -99,7 +99,7 @@ else
 fi
 
 # ── Output layout ───────────────────────────────────────────────────────────
-# /.../results/GRPO-<MODEL_TAG>-<DOMAIN_TAG>-temp-<TEMP>/step-<STEP>
+# /.../artifacts/results/GRPO-<MODEL_TAG>-<DOMAIN_TAG>-temp-<TEMP>/step-<STEP>
 OUT_PREFIX="${BASE_RESULTS_ROOT}/GRPO-${MODEL_TAG}-${DOMAIN_TAG}-temp-${TEMP}"
 OUTDIR="${OUT_PREFIX}/step-${STEP}"
 mkdir -p "$OUTDIR"

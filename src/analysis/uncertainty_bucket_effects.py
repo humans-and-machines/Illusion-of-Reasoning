@@ -31,8 +31,13 @@ Binning:
 Only steps <= 1000 are loaded by default (hard cap).
 """
 
-import os, re, json, argparse, warnings
+import os
+import re
+import json
+import argparse
+import warnings
 from typing import Optional, List, Dict, Any, Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -46,6 +51,21 @@ from statsmodels.tools.sm_exceptions import PerfectSeparationError
 from statsmodels.stats.contingency_tables import StratifiedTable
 from statsmodels.stats.proportion import proportions_ztest
 from scipy.stats import chi2
+
+try:
+    # Preferred when analysis is installed as a package
+    from .labels import aha_gpt_for_rec
+    from .utils import coerce_bool, coerce_float, get_problem_id
+except ImportError:  # pragma: no cover - script fallback
+    # Fallback for running this file directly: add project src root and import
+    import sys as _sys
+    import os as _os
+
+    _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _ROOT not in _sys.path:
+        _sys.path.append(_ROOT)
+    from analysis.labels import aha_gpt_for_rec  # type: ignore
+    from analysis.utils import coerce_bool, coerce_float, get_problem_id  # type: ignore
 
 # ---------------------------
 # Model/domain name handling
@@ -144,53 +164,12 @@ def discover_roots_7b8b(scan_root: str,
                     print(f"      {d:9s} -> {p}")
     return mapping
 
-# ==========
-# Utilities
-# ==========
-
-def coerce_bool(x) -> Optional[int]:
-    if x is None: return None
-    if isinstance(x,bool): return int(x)
-    if isinstance(x,(int,np.integer)): return int(bool(x))
-    if isinstance(x,str):
-        s=x.strip().lower()
-        if s in ("1","true","t","yes","y"): return 1
-        if s in ("0","false","f","no","n"): return 0
-    try: return int(bool(x))
-    except Exception: return None
-
-def coerce_float(x) -> Optional[float]:
-    if x is None: return None
-    try: return float(x)
-    except Exception: return None
-
-def get_pid(rec: Dict[str,Any]) -> Optional[str]:
-    for k in ("problem_id","example_id","id","question","clue","title"):
-        v = rec.get(k)
-        if v is not None and not isinstance(v,(list,dict)): return str(v)
-    si = rec.get("sample_idx")
-    return f"sample_{si}" if si is not None else None
-
-# =====================
-# Aha (LLM) gating
-# =====================
-
-def aha_gate(p1: Dict[str,Any], domain: str, mode: str) -> int:
-    keys = (["change_way_of_thinking","shift_in_reasoning_v1"]
-            if mode=="canonical" else
-            ["change_way_of_thinking","shift_in_reasoning_v1","shift_llm","shift_gpt","pivot_llm","rechecked"])
-    has_recon = coerce_bool(p1.get("has_reconsider_cue")) == 1
-    rec_marks = p1.get("reconsider_markers") or []
-    injected  = ("injected_cue" in rec_marks)
-    recon_ok  = has_recon and not injected
-    pre = p1.get("_shift_prefilter_markers") or []
-    judge = p1.get("shift_markers_v1") or []
-    gate = (recon_ok or bool(pre) or (bool(judge) if domain.lower()=="crossword" else False))
-    raw = 0
-    for k in keys:
-        cb = coerce_bool(p1.get(k))
-        if cb == 1: raw = 1; break
-    return int(raw and gate)
+def get_pid(rec: Dict[str, Any]) -> Optional[str]:
+    """
+    Domain-agnostic problem identifier, wrapper around shared get_problem_id
+    to preserve the previous behavior (namespacing by domain happens later).
+    """
+    return get_problem_id(rec)
 
 # ==========================
 # Load pass-1 rows (all T)
@@ -268,19 +247,31 @@ def load_rows(dir_path: str, split: str, domain: str,
                 if ent is None: continue
 
                 # correctness
-                if domain=="Carpark":
-                    sr=coerce_float(p1.get("soft_reward"))
-                    if sr is None: continue
-                    if   carpark_op=="gt":  corr=int(sr> carpark_thr)
-                    elif carpark_op=="ge":  corr=int(sr>=carpark_thr)
-                    elif carpark_op=="eq":  corr=int(sr==carpark_thr)
-                    else:                   corr=int(sr>=carpark_thr)
+                if domain == "Carpark":
+                    sr = coerce_float(p1.get("soft_reward"))
+                    if sr is None:
+                        continue
+                    if carpark_op == "gt":
+                        corr = int(sr > carpark_thr)
+                    elif carpark_op == "ge":
+                        corr = int(sr >= carpark_thr)
+                    elif carpark_op == "eq":
+                        corr = int(sr == carpark_thr)
+                    else:
+                        corr = int(sr >= carpark_thr)
                 else:
-                    cb=coerce_bool(p1.get("is_correct_pred"))
-                    if cb is None: continue
-                    corr=int(cb)
+                    cb = coerce_bool(p1.get("is_correct_pred"))
+                    if cb is None:
+                        continue
+                    corr = int(cb)
 
-                shift=aha_gate(p1, domain, gpt_mode)
+                # GPT-based shift with domain-aware gating (canonical vs broad)
+                gpt_keys = (
+                    ["change_way_of_thinking", "shift_in_reasoning_v1"]
+                    if gpt_mode == "canonical"
+                    else ["change_way_of_thinking", "shift_in_reasoning_v1", "shift_llm", "shift_gpt", "pivot_llm", "rechecked"]
+                )
+                shift = aha_gpt_for_rec(p1, rec, gpt_subset_native=True, gpt_keys=gpt_keys, domain=domain)
 
                 recs.append({
                     "model": model_label or "UNKNOWN",

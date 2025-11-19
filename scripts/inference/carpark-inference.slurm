@@ -32,7 +32,7 @@ export MALLOC_ARENA_MAX=2
 
 # ── Paths & defaults ─────────────────────────────────────────────────────────
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_carpark_runner.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"
 
 # Carpark (Rush Hour) dataset config
 DATASET_ID="${DATASET_ID:-od2961/rush4-5-6-balanced}"
@@ -68,7 +68,7 @@ if [[ ! -d "$CKPT" ]]; then
 fi
 
 # ── Output & per-task caches ─────────────────────────────────────────────────
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-carpark-temp-${TEMP}}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/GRPO-1.5B-carpark-temp-${TEMP}}"
 OUTDIR="$OUTPUT_ROOT/step${STEP}"
 mkdir -p "$OUTDIR"
 

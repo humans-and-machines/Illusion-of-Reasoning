@@ -12,57 +12,91 @@ from __future__ import annotations
 
 import importlib
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
-from src.inference import common
+from src.inference.common import OPENR1_PROMPT_TEMPLATE
 
 
 def _resolve_callable(path: Optional[str]) -> Optional[Callable]:
-    """Import dotted-path 'module:attr' lazily."""
+    """Import dotted-path 'module:attr' lazily and return the referenced callable."""
     if not path:
         return None
     if ":" not in path:
         raise ValueError(f"Callable path must look like 'module:attr', got {path}")
-    module_name, attr = path.split(":", 1)
-    mod = importlib.import_module(module_name)
-    return getattr(mod, attr)
+    module_name, attr_name = path.split(":", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, attr_name)
 
 
 @dataclass
 class DatasetSpec:
-    loader: str  # dotted path to a loader fn
+    """Dataset loader specification for a task."""
+
+    loader: str  # dotted path to a loader function
     default_id: Optional[str] = None
     prompt_column: Optional[str] = None
     answer_column: Optional[str] = None
     split: str = "test"
 
     def loader_fn(self) -> Callable:
-        fn = _resolve_callable(self.loader)
-        if fn is None:
+        """Resolve and return the loader function described by this spec."""
+        loader_func = _resolve_callable(self.loader)
+        if loader_func is None:
             raise ValueError(f"Could not resolve dataset loader: {self.loader}")
-        return fn
+        return loader_func
 
 
 @dataclass
 class TaskSpec:
+    """Configuration for a logical inference task (prompt, caps, dataset, etc.)."""
+
     name: str
-    system_prompt: Optional[str]
-    stop_think: List[str]
-    stop_answer: List[str]
-    two_pass: bool
-    think_cap: Optional[int] = None
-    answer_cap: Optional[int] = None
-    max_output_tokens: Optional[int] = None  # for single-pass APIs (e.g., Azure)
-    canonicalize_pred: Optional[str] = None  # dotted path
-    canonicalize_gold: Optional[str] = None  # dotted path
+    config: Dict[str, Any]
     dataset: Optional[DatasetSpec] = None
     notes: str = ""
 
+    @property
+    def system_prompt(self) -> Optional[str]:
+        """System prompt string for the task, if configured."""
+        return self.config.get("system_prompt")
+
+    @property
+    def stop_think(self) -> List[str]:
+        """Stop strings for the think phase."""
+        return self.config.get("stop_think", [])
+
+    @property
+    def stop_answer(self) -> List[str]:
+        """Stop strings for the answer phase."""
+        return self.config.get("stop_answer", [])
+
+    @property
+    def two_pass(self) -> bool:
+        """Whether the task uses a two-pass protocol."""
+        return bool(self.config.get("two_pass", False))
+
+    @property
+    def think_cap(self) -> Optional[int]:
+        """Maximum think tokens, if applicable."""
+        return self.config.get("think_cap")
+
+    @property
+    def answer_cap(self) -> Optional[int]:
+        """Maximum answer tokens, if applicable."""
+        return self.config.get("answer_cap")
+
+    @property
+    def max_output_tokens(self) -> Optional[int]:
+        """Maximum total output tokens for single-pass APIs."""
+        return self.config.get("max_output_tokens")
+
     def canon_pred_fn(self) -> Optional[Callable]:
-        return _resolve_callable(self.canonicalize_pred)
+        """Return the canonicalization function for predictions, if configured."""
+        return _resolve_callable(self.config.get("canonicalize_pred"))
 
     def canon_gold_fn(self) -> Optional[Callable]:
-        return _resolve_callable(self.canonicalize_gold)
+        """Return the canonicalization function for gold answers, if configured."""
+        return _resolve_callable(self.config.get("canonicalize_gold"))
 
 
 # ----------------------- Prompts -----------------------
@@ -197,32 +231,23 @@ CARPARK_SYSTEM_PROMPT = (
     "</answer>\n"
 )
 
-OPENR1_PROMPT_TEMPLATE = (
-    "You are a helpful AI assistant. First think in the <think> block, then write "
-    "ONLY the final answer in the <answer> block. Do NOT add anything after "
-    "</answer>.\n\n"
-    "Problem: {problem}\n\n"
-    "<think>\n"
-    "</think>\n\n"
-    "<answer>\n"
-    "</answer>"
-)
-
 # ----------------------- Registry -----------------------
 TASK_REGISTRY: Dict[str, TaskSpec] = {
     # Math (open-source HF models; two-pass optional)
     "math-qwen": TaskSpec(
         name="math-qwen",
-        system_prompt=MATH_SYSTEM_PROMPT,
-        stop_think=["</think>"],
-        stop_answer=["</answer>"],
-        two_pass=True,
-        think_cap=750,
-        answer_cap=50,
-        canonicalize_pred="src.inference.common:canon_math",
-        canonicalize_gold="src.inference.common:canon_math",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.common:canon_math",
+            "canonicalize_gold": "src.inference.common:canon_math",
+        },
         dataset=DatasetSpec(
-            loader="src.inference.math-inference:load_math500",
+            loader="src.inference.math_core:load_math500",
             default_id="MATH-500",
             prompt_column="problem",
             answer_column="answer",
@@ -233,16 +258,18 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # Math (Llama checkpoints via ZeRO)
     "math-llama": TaskSpec(
         name="math-llama",
-        system_prompt=MATH_SYSTEM_PROMPT,
-        stop_think=["</think>"],
-        stop_answer=["</answer>"],
-        two_pass=True,
-        think_cap=750,
-        answer_cap=50,
-        canonicalize_pred="src.inference.common:canon_math",
-        canonicalize_gold="src.inference.common:canon_math",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.common:canon_math",
+            "canonicalize_gold": "src.inference.common:canon_math",
+        },
         dataset=DatasetSpec(
-            loader="src.inference.math-llama-inference:load_math500",
+            loader="src.inference.math_llama_core:load_math500",
             default_id="MATH-500",
             prompt_column="problem",
             answer_column="answer",
@@ -253,15 +280,17 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # Math via Azure-hosted DeepSeek-R1 (Responses / Chat Completions)
     "math-azure": TaskSpec(
         name="math-azure",
-        system_prompt=MATH_SYSTEM_PROMPT,
-        stop_think=["</think>"],
-        stop_answer=["</answer>"],
-        two_pass=False,
-        max_output_tokens=900,
-        canonicalize_pred="src.inference.common:canon_math",
-        canonicalize_gold="src.inference.common:canon_math",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": False,
+            "max_output_tokens": 900,
+            "canonicalize_pred": "src.inference.common:canon_math",
+            "canonicalize_gold": "src.inference.common:canon_math",
+        },
         dataset=DatasetSpec(
-            loader="src.inference.math-deepseek-azure:load_math500",
+            loader="src.inference.math_deepseek_azure:load_math500",
             default_id="MATH-500",
             prompt_column="problem",
             answer_column="answer",
@@ -272,16 +301,18 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # Rush Hour (car-park) two-pass inference
     "carpark": TaskSpec(
         name="carpark",
-        system_prompt=CARPARK_SYSTEM_PROMPT,
-        stop_think=["</think>"],
-        stop_answer=["</answer>"],
-        two_pass=True,
-        think_cap=750,
-        answer_cap=50,
-        canonicalize_pred="src.inference.carpark-inference:_canon_rush_generic",
-        canonicalize_gold="src.inference.carpark-inference:_canon_rush_gold",
+        config={
+            "system_prompt": CARPARK_SYSTEM_PROMPT,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.carpark_core:_canon_rush_generic",
+            "canonicalize_gold": "src.inference.carpark_core:_canon_rush_gold",
+        },
         dataset=DatasetSpec(
-            loader="src.inference.carpark-inference:load_rush_dataset",
+            loader="src.inference.carpark_core:load_rush_dataset",
             default_id="od2961/rush4-5-6-balanced",
             prompt_column="messages",
             answer_column="solution",
@@ -292,16 +323,18 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # Cryptic crossword solver (two-pass capable)
     "crossword": TaskSpec(
         name="crossword",
-        system_prompt=CROSSWORD_SYSTEM_PROMPT,
-        stop_think=["</think>"],
-        stop_answer=["</answer>"],
-        two_pass=True,
-        think_cap=750,
-        answer_cap=50,
-        canonicalize_pred="src.inference.crossword-inference:_canon_cross",
-        canonicalize_gold="src.inference.crossword-inference:_canon_cross",
+        config={
+            "system_prompt": CROSSWORD_SYSTEM_PROMPT,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.crossword_core:_canon_cross",
+            "canonicalize_gold": "src.inference.crossword_core:_canon_cross",
+        },
         dataset=DatasetSpec(
-            loader="src.inference.crossword-inference:load_crossword_local",
+            loader="src.inference.crossword_core:load_crossword_local",
             default_id="CROSSWORD-LOCAL",
             prompt_column="clue",
             answer_column="answer",
@@ -312,14 +345,16 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
     # Baseline one-pass Open-R1 style inference (single prompt template)
     "openr1": TaskSpec(
         name="openr1",
-        system_prompt=OPENR1_PROMPT_TEMPLATE,
-        stop_think=[],
-        stop_answer=[],
-        two_pass=False,
-        think_cap=None,
-        answer_cap=None,
-        canonicalize_pred=None,
-        canonicalize_gold=None,
+        config={
+            "system_prompt": OPENR1_PROMPT_TEMPLATE,
+            "stop_think": [],
+            "stop_answer": [],
+            "two_pass": False,
+            "think_cap": None,
+            "answer_cap": None,
+            "canonicalize_pred": None,
+            "canonicalize_gold": None,
+        },
         dataset=DatasetSpec(
             loader="datasets:load_dataset",
             default_id="open-r1/OpenR1-Math-220k",

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Experimental comparison script: 1-shot math 7B baseline vs tuned checkpoint.
+# Canonical full-sweep 7B math inference lives in math7b-inference.slurm.
 #SBATCH --job-name=math_compare_qwen7b
 #SBATCH --output=logs/math_compare_qwen7b_%A_%a.out
 #SBATCH --error=logs/math_compare_qwen7b_%A_%a.err
@@ -49,12 +51,12 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
 
 # 7B tuned root + step to compare
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
 CKPT_STEP=500
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 
-# Output root
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-7B-math-compare-1shot}"
+# Output root (under artifacts/results)
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/GRPO-7B-math-compare-1shot}"
 mkdir -p "$OUTPUT_ROOT"
 
 # ── Select model (array: 0=base 7B, 1=tuned@500) ───────────

@@ -18,8 +18,8 @@ def load_yaml(path: Path) -> Dict[str, Any]:
     """Best-effort YAML loader (empty dict on missing/absent yaml module)."""
     if not _yaml or not path.exists():
         return {}
-    with path.open("r", encoding="utf-8") as f:
-        return _yaml.safe_load(f) or {}
+    with path.open("r", encoding="utf-8") as file_handle:
+        return _yaml.safe_load(file_handle) or {}
 
 
 def load_azure_config(yaml_path: Optional[str] = None) -> Dict[str, Any]:
@@ -28,11 +28,16 @@ def load_azure_config(yaml_path: Optional[str] = None) -> Dict[str, Any]:
     Precedence: env vars override YAML, YAML overrides defaults.
     """
     defaults = {
-        "endpoint": "https://example.openai.azure.com/",
+        # Local default: your Azure OpenAI resource for math experiments.
+        # NOTE: api_key intentionally left blank here; provide it via env
+        # (AZURE_OPENAI_API_KEY) or configs/azure.yml, both of which are gitignored.
+        "endpoint": "https://cos-wiki-ai.openai.azure.com/",
         "api_key": "",
         "deployment": "gpt-4o",
         "api_version": "2024-12-01-preview",
-        "use_v1": True,
+        # Default to legacy Chat Completions-style client; can be overridden
+        # via AZURE_OPENAI_USE_V1=1 if you want to prefer the v1 Responses API.
+        "use_v1": False,
     }
     ypath = Path(yaml_path) if yaml_path else Path("configs/azure.yml")
     ycfg = load_yaml(ypath)

@@ -29,7 +29,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export MALLOC_ARENA_MAX=2
 
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_crossword_runner.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
 DATA_JSONL="${DATA_JSONL:-$PROJECT_ROOT/data/data.jsonl}"
 
 STEPS_DEFAULT="50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500 1550"
@@ -55,8 +55,8 @@ TEMP=${TEMPS[$TEMP_IDX]}
 CKPT="$MODEL_ROOT/checkpoint-$STEP"
 [[ -d "$CKPT" ]] || { echo "Missing checkpoint: $CKPT"; exit 0; }
 
-# Output & per-task caches
-OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/results/GRPO-1.5B-xword-temp-${TEMP}}"
+# Output & per-task caches (under artifacts/results)
+OUTPUT_ROOT="${OUTPUT_ROOT:-$PROJECT_ROOT/artifacts/results/GRPO-1.5B-xword-temp-${TEMP}}"
 OUTDIR="$OUTPUT_ROOT/step${STEP}"
 mkdir -p "$OUTDIR"
 CACHEROOT="$OUTDIR/hf_cache"

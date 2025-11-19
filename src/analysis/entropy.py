@@ -5,7 +5,7 @@ from scipy.stats import ttest_ind
 import seaborn as sns
 
 # 1) Load
-root = Path("results/od2961/Math220k/GRPO/1.5B")
+root = Path("artifacts/results/od2961/Math220k/GRPO/1.5B")
 dfs = [pd.read_json(f, lines=True) for f in root.glob("**/*.jsonl")]
 
 
@@ -65,11 +65,11 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from statsmodels.stats.proportion import proportion_confint
 from pathlib import Path
-files = sorted(Path("results/od2961/Math220k/GRPO/1.5B/analysis").glob("*_scored.jsonl"))
+files = sorted(Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis").glob("*_scored.jsonl"))
 print([f.name for f in files])
 
 # ───────────────────────── Paths ─────────────────────────
-ANALYSIS_DIR = Path("results/od2961/Math220k/GRPO/1.5B/analysis")
+ANALYSIS_DIR = Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis")
 files = sorted(ANALYSIS_DIR.glob("*_scored.jsonl"))
 if not files:
     raise SystemExit(f"No scored files in {ANALYSIS_DIR!r}")
@@ -165,7 +165,7 @@ from pathlib import Path
 from statsmodels.stats.proportion import proportion_confint
 
 # ─── Load your scored JSONLs ───────────────────────────────────────────────
-ANALYSIS_DIR = Path("results/od2961/Math220k/GRPO/1.5B/analysis")
+ANALYSIS_DIR = Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis")
 files = sorted(ANALYSIS_DIR.glob("*_scored.jsonl"))
 df = pd.concat([pd.read_json(f, lines=True) for f in files], ignore_index=True)
 
@@ -223,7 +223,7 @@ import seaborn as sns
 from pathlib import Path
 from statsmodels.stats.proportion import proportion_confint
 
-ANALYSIS_DIR = Path("results/od2961/Math220k/GRPO/1.5B/analysis")
+ANALYSIS_DIR = Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis")
 files = sorted(ANALYSIS_DIR.glob("*_scored.jsonl"))
 df = pd.concat([pd.read_json(f, lines=True) for f in files], ignore_index=True)
 
@@ -322,7 +322,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # ── 1) Load your scored data ───────────────────────────────────────────
-ANALYSIS_DIR = Path("results/od2961/Math220k/GRPO/1.5B/analysis")
+ANALYSIS_DIR = Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis")
 files = sorted(ANALYSIS_DIR.glob("*_scored.jsonl"))
 df_all = pd.concat([pd.read_json(f, lines=True) for f in files],
                    ignore_index=True)
@@ -388,7 +388,7 @@ import pandas as pd
 from pathlib import Path
 
 # 1) Load all scored JSONL files
-analysis_dir = Path("results/od2961/Math220k/GRPO/1.5B/analysis")
+analysis_dir = Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis")
 scored_files = list(analysis_dir.glob("*_scored.jsonl"))
 df = pd.concat([pd.read_json(f, lines=True) for f in scored_files], ignore_index=True)
 
@@ -416,7 +416,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 # ── 1) Load your scored data ───────────────────────────────────────────
-ANALYSIS_DIR = Path("results/od2961/Math220k/GRPO/1.5B/analysis")
+ANALYSIS_DIR = Path("artifacts/results/od2961/Math220k/GRPO/1.5B/analysis")
 files = sorted(ANALYSIS_DIR.glob("*_scored.jsonl"))
 df_all = pd.concat([pd.read_json(f, lines=True) for f in files],
                    ignore_index=True)
@@ -477,4 +477,3 @@ plt.savefig(out, dpi=300)
 plt.close()
 
 print(f"\nSaved flip‐trajectory plot to {out}")
-

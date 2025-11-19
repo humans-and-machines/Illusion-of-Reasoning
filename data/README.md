@@ -1,6 +1,6 @@
 # Data directory
 
-This tree contains the code to build curated datasets used in the project. Generated artifacts are written to `results/` (or a user-specified output path) — keep this folder clean of large outputs.
+This tree contains the code to build curated datasets used in the project. Generated artifacts are written to `artifacts/results/` (or a user-specified output path) — keep this folder clean of large outputs.
 
 ## Contents
 - `human_assessment_questions.txt`: Prompt/assessment questions used for manual labeling; static reference file.
@@ -25,7 +25,7 @@ Example:
 ```bash
 python data/car_park/build_rush_small_balanced.py \
   --sizes 4 5 6 \
-  --out_dir results/rush-balanced \
+  --out_dir artifacts/results/rush-balanced \
   --split 0.8,0.1,0.1 \
   --difficulty_scheme fixed \
   --push_to_hub --dataset_id your-username/rush-balanced

@@ -37,7 +37,7 @@ Illusion-of-Reasoning/
 ├── data/            # task data (car_park, crossword) + human assessment prompts
 ├── src/training/    # training/generation entrypoints (grpo.py, generate.py, rlif.py, rewards*; sft.py present but not used for paper)
 ├── scripts -> src/scripts/  # launchers for inference/training, annotation, analysis, viz, utils, slurm
-├── results/, artifacts/, models/  # experiment outputs and checkpoints
+├── artifacts/models/        # experiment outputs and checkpoints
 ├── tools/           # local cache helpers and conda hook installers
 ├── Makefile         # installs dev env, lint/format/test, eval helper
 └── README.md, LICENSE, setup.py, setup.cfg
@@ -79,7 +79,7 @@ An authenticated Hugging Face token with write permissions to push to the hubs:
 
 ## Data
 
-We leverage the **OpenR1-Math 220k** dataset (HF: `open-r1/OpenR1-Math-220k`) plus task-specific sources for **crosswords** and **car park** reasoning. Raw inputs live in `data/` (see `data/README.md`); generated artifacts and checkpoints are kept under `results/`, `models/`, or `artifacts/` to keep the data directory clean.
+We leverage the **OpenR1-Math 220k** dataset (HF: `open-r1/OpenR1-Math-220k`) plus task-specific sources for **crosswords** and **car park** reasoning. Raw inputs live in `data/` (see `data/README.md`); generated artifacts and checkpoints are kept under `artifacts/` (including `artifacts/models/`) to keep the data directory clean.
 
 ## Training
 

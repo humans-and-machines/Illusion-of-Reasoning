@@ -24,125 +24,165 @@ Other features (unchanged)
 - NaN-safe token entropy; optional "reconsider" slicing.
 """
 
+import json
 import os
 import re
-import json
-import math
-import sys
-import logging
-import argparse
-from typing import Optional, List, Tuple, Dict, Any, DefaultDict
-from collections import defaultdict
-
-import torch
-from torch.nn import functional as F
-from packaging import version
-from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM,
-    StoppingCriteria,
-    StoppingCriteriaList,
-)
+from dataclasses import dataclass
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple, TYPE_CHECKING
+from src.inference.backends import _load_torch_and_transformers
 from src.inference.common import (
+    PassOutputs,
+    StopOnSubstrings,
+    build_generate_kwargs,
+    build_math_pass_meta,
     canon_math as _canon_math,
-    contains_canon as _contains_canon,
-    entropy_from_start_index as _entropy_from_start_index,
-    extract_blocks as _extract_blocks,
-    find_markers_and_context as _find_markers_and_context,
+    decode_and_score_batch,
     finite_mean as _finite_mean,
-    first_eos_any as _first_eos_any,
     load_local_json_dataset,
-    move_inputs_to_device,
-    valid_tag_structure as _valid_tag_structure,
+    pack_math_pass_result as _pack_pass_result,
+    require_datasets,
+    scan_existing_pass1_results,
+    setup_script_logger,
+    tokenize_prefixes_for_generate,
+    extract_problem_and_answer,
 )
+from src.inference.task_registry import MATH_SYSTEM_PROMPT
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    import torch
+    from torch.nn import functional as F  # type: ignore[unused-import]
+    from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteriaList
 
 # ───────────────────────── System prompt ─────────────────────────
-SYSTEM_PROMPT = """You are an expert *mathematics problem-solver*.
-
-  Every time you receive a problem you must:
-  • Analyse it thoroughly.  
-    – Pinpoint the **goal** (what quantity/set/form is requested).  
-    – Pinpoint the **givens/constraints** (domains, integrality, non-negativity, geometric conditions).  
-    – Choose the **methods** to apply (algebraic manipulation, factorization, inequalities, counting, modular arithmetic, geometry, calculus, etc.).  
-    – Write out the full derivation that leads to the final result.
-
-  • Check that the result satisfies all original constraints (no extraneous roots, correct domain, simplified form, exact arithmetic).
-
-  • Respond in **exactly** the tag-based format shown below – no greeting, no commentary outside the tags.  
-    – The final answer goes inside `<answer>` **only**.  
-    – Use **exact** math (fractions, radicals, π, e). Avoid unnecessary decimals.  
-    – Canonical forms: integers as plain numbers; reduced fractions a/b with b>0; simplified radicals; rationalized denominators; sets/tuples with standard notation; intervals in standard notation.  
-    – If there is **no solution**, write `NO SOLUTION`. If the problem is **underdetermined**, write `I DON'T KNOW`.
-
-  • You have a hard cap of **750 output tokens**. Be concise but complete.
-
-  ------------------------------------------------------------
-  TAG TEMPLATE (copy this shape for every problem)
-  <think>
-  YOUR reasoning process goes here:  
-  1. quote the relevant bits of the problem  
-  2. name the mathematical tool(s) you apply  
-  3. show each intermediate step until the result is reached  
-     
-  If you spot an error or an unmet constraint, iterate, repeating steps 1–3 as many
-  times as necessary until you are confident in your result. Finish by verifying the
-  result satisfies the original conditions exactly (substitution/checks).
-  </think>
-  <answer>
-  THEANSWER
-  </answer>
-  """
-
-# Optional "aha"/reconsider cue detectors (for analytics)
-_RECONSIDER_PATTERNS = [
-    ("wait_line",        re.compile(r"(?im)^\s*wait[,\.\-–—… ]", re.I)),
-    ("wait_reconsider",  re.compile(r"\bwait\b.*\breconsider\b", re.I | re.S)),
-    ("reconsider_exact", re.compile(r"\bwait[,!\.\s]*let me reconsider\b", re.I)),
-    ("step_by_step",     re.compile(r"\blet'?s take (this|it) step[-\s]?by[-\s]?step\b", re.I)),
-    ("step_by_step_alt", re.compile(r"\bstep[-\s]?by[-\s]?step\b", re.I)),
-    ("recheck",          re.compile(r"\bre[-\s]?check(ing)?\b", re.I)),
-]
+SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
 
 # ───────────────────────── Utilities ─────────────────────────
 _fmean = _finite_mean
 
-# ───────────────────────── Stopping on substrings ─────────────────────────
-class StopOnSubstrings(StoppingCriteria):
-    def __init__(self, tokenizer: AutoTokenizer, stops: List[str]):
-        self.stop_ids = [tokenizer.encode(s, add_special_tokens=False) for s in stops]
-    @staticmethod
-    def _endswith(a: torch.Tensor, b: List[int]) -> bool:
-        return len(a) >= len(b) and a[-len(b):].tolist() == b
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs):
-        for row in input_ids:
-            for s in self.stop_ids:
-                if s and self._endswith(row, s):
-                    return True
-        return False
+
+@dataclass
+class MathSamplingConfig:
+    """Sampling / generation controls shared by math inference loops."""
+
+    batch_size: int = 8
+    num_samples: int = 1
+    temperature: float = 0.0
+    top_p: float = 0.95
+    entropy_mode: str = "reconsider"
+    eos_ids: Optional[List[int]] = None
+
+
+@dataclass
+class MathTwoPassConfig:
+    """Configuration of the optional second pass."""
+
+    enabled: bool = False
+    phrase: str = (
+        "Wait, we need to reconsider. Let's think this through step by step."
+    )
+    use_sample_idx: int = 0
+    think_cap: int = 750
+    answer_cap: int = 50
+
+
+class MathInferenceConfig:
+    """Configuration for the two-pass math inference loop."""
+
+    def __init__(
+        self,
+        *,
+        split_name: str,
+        output_dir: str,
+        step: int,
+        **kwargs: Any,
+    ) -> None:
+        self.split_name = split_name
+        self.output_dir = output_dir
+        self.step = step
+        self.sampling = MathSamplingConfig(
+            batch_size=kwargs.pop("batch_size", 8),
+            num_samples=kwargs.pop("num_samples", 1),
+            temperature=kwargs.pop("temperature", 0.0),
+            top_p=kwargs.pop("top_p", 0.95),
+            entropy_mode=kwargs.pop("entropy_mode", "reconsider"),
+            eos_ids=kwargs.pop("eos_ids", None),
+        )
+        self.two_pass_cfg = MathTwoPassConfig(
+            enabled=kwargs.pop("two_pass", False),
+            phrase=kwargs.pop(
+                "second_pass_phrase",
+                "Wait, we need to reconsider. Let's think this through step by step.",
+            ),
+            use_sample_idx=kwargs.pop("second_pass_use_sample_idx", 0),
+            think_cap=kwargs.pop("think_cap", 750),
+            answer_cap=kwargs.pop("answer_cap", 50),
+        )
+        if kwargs:
+            raise TypeError(f"Unexpected MathInferenceConfig kwargs: {sorted(kwargs.keys())}")
+
+    # Convenience properties mirroring the legacy flat attributes -----------------
+    @property
+    def batch_size(self) -> int:
+        """Batch size used for inference."""
+        return self.sampling.batch_size
+
+    @property
+    def num_samples(self) -> int:
+        """Number of samples to generate per problem."""
+        return self.sampling.num_samples
+
+    @property
+    def temperature(self) -> float:
+        """Sampling temperature for generation."""
+        return self.sampling.temperature
+
+    @property
+    def top_p(self) -> float:
+        """Top-p nucleus sampling parameter."""
+        return self.sampling.top_p
+
+    @property
+    def entropy_mode(self) -> str:
+        """Controls how token-level entropy is computed or disabled."""
+        return self.sampling.entropy_mode
+
+    @property
+    def eos_ids(self) -> Optional[List[int]]:
+        """List of token ids that should trigger EOS during generation."""
+        return self.sampling.eos_ids
+
+    @property
+    def two_pass(self) -> bool:
+        """Whether the reconsideration second pass is enabled."""
+        return self.two_pass_cfg.enabled
+
+    @property
+    def second_pass_phrase(self) -> str:
+        """Cue phrase injected at the start of second-pass think blocks."""
+        return self.two_pass_cfg.phrase
+
+    @property
+    def second_pass_use_sample_idx(self) -> int:
+        """Preferred sample index from pass 1 to surface in pass 2."""
+        return self.two_pass_cfg.use_sample_idx
+
+    @property
+    def think_cap(self) -> int:
+        """Maximum number of newly generated tokens for <think>."""
+        return self.two_pass_cfg.think_cap
+
+    @property
+    def answer_cap(self) -> int:
+        """Maximum number of newly generated tokens for <answer>."""
+        return self.two_pass_cfg.answer_cap
 
 # ───────────────────────── Logging ─────────────────────────
-logging.basicConfig(
-    level=getattr(logging, os.getenv("LOGLEVEL", "INFO").upper(), logging.INFO),
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[logging.StreamHandler(sys.stderr)],
-)
-logger = logging.getLogger(__name__)
-logger.info("Starting %s", os.path.basename(__file__))
+logger = setup_script_logger(__name__)
 
-# ───── PyTorch 2.6 DeepSpeed un-pickle patch (safe no-op if absent) ─────
-try:
-    if version.parse(torch.__version__) >= version.parse("2.6.0"):
-        from torch.serialization import add_safe_globals  # type: ignore
-        from deepspeed.runtime.zero.config import ZeroStageEnum  # type: ignore
-        from deepspeed.runtime.fp16.loss_scaler import LossScaler  # type: ignore
-        add_safe_globals([ZeroStageEnum, LossScaler])
-        logger.info("DeepSpeed ZeRO patch enabled")
-except Exception as e:  # noqa: BLE001
-    logger.warning("DeepSpeed patch failed: %r", e)
 
 # ───────────────────────── Prompt builders (WITH system msg) ─────────────────────────
 def chat_base_for_pass1(tokenizer, problem: str) -> str:
+    """Build the base chat prompt for pass 1 (problem only)."""
     return tokenizer.apply_chat_template(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -153,6 +193,7 @@ def chat_base_for_pass1(tokenizer, problem: str) -> str:
     )
 
 def chat_base_for_pass2(tokenizer, problem: str, prev_output: str, cue: str) -> str:
+    """Build the base chat prompt for pass 2 (problem + prior reasoning + cue)."""
     return tokenizer.apply_chat_template(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -167,435 +208,661 @@ def chat_base_for_pass2(tokenizer, problem: str, prev_output: str, cue: str) -> 
 # ─────────────────────────── Results scanning ───────────────────────────
 # >>> RESUME/FILL LOGIC <<<
 def _scan_existing_results(results_path: str) -> tuple[DefaultDict[str, set], Dict[tuple, str]]:
+    """Wrapper around shared scan_existing_pass1_results helper."""
+    return scan_existing_pass1_results(results_path)
+
+def _make_gen_kwargs(cap: int, tokenizer, config: MathInferenceConfig) -> dict:
     """
-    Return:
-      existing_samples: problem -> set(sample_idx) that already exist
-      existing_pass1: (problem, sample_idx) -> pass1['output'] text (if available)
+    Build generate kwargs for a given token cap and configuration.
+
+    If temperature <= 0 → greedy (do_sample=False) and omit temperature/top_p.
+    Else → sampling with provided temperature/top_p.
     """
-    existing_samples: DefaultDict[str, set] = defaultdict(set)
-    existing_pass1: Dict[tuple, str] = {}
-    if not os.path.exists(results_path):
-        return existing_samples, existing_pass1
-    with open(results_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except Exception:
-                continue
-            prob = obj.get("problem")
-            k = obj.get("sample_idx")
-            if prob is None or k is None:
-                continue
-            existing_samples[prob].add(int(k))
-            p1 = (obj.get("pass1") or {})
-            p1_out = p1.get("output")
-            if isinstance(p1_out, str):
-                existing_pass1[(prob, int(k))] = p1_out
-    return existing_samples, existing_pass1
+    pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
+    return build_generate_kwargs(
+        cap=cap,
+        pad_token_id=pad_token_id,
+        eos_ids=config.eos_ids,
+        entropy_mode=config.entropy_mode,
+        temperature=config.temperature,
+        top_p=config.top_p,
+    )
 
-# ───────────────────── Inference Loop (two-phase per pass) ─────────────────────
-def run_inference_on_split(
-    split_name: str,
-    examples,  # datasets.Dataset
-    tokenizer,
-    model,
-    step: int,
-    outdir: str,
-    batch_size: int = 8,
-    num_samples: int = 1,
-    temperature: float = 0.0,
-    top_p: float = 0.95,
-    entropy_mode: str = "reconsider",
-    eos_ids: Optional[List[int]] = None,
-    two_pass: bool = False,
-    second_pass_phrase: str = "Wait, we need to reconsider. Let's think this through step by step.",
-    second_pass_use_sample_idx: int = 0,
-    think_cap: int = 750,
-    answer_cap: int = 50,
-):
-    """
-    Respects existing results and fills missing sample indices per problem up to `num_samples`.
-    """
 
-    # warn if greedy + multiple samples
-    if (temperature is None or float(temperature) == 0.0) and num_samples > 1:
-        logger.warning("temperature=0 with num_samples=%d → all samples will be identical (greedy).", num_samples)
+@dataclass
+class BatchSpec:
+    """Specification for a batch generation call."""
 
-    # ---------- helper: build generation kwargs ----------
-    def _make_gen_kwargs(cap: int) -> dict:
-        do_sample = (temperature is not None) and (float(temperature) > 0.0)
-        kwargs = dict(
-            max_new_tokens=cap,
-            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-            eos_token_id=eos_ids,
-            do_sample=do_sample,
-            return_dict_in_generate=True,
-            output_scores=(entropy_mode != "none"),
-            num_return_sequences=1,
-        )
-        if do_sample:
-            kwargs["temperature"] = float(temperature)
-            if top_p is not None:
-                kwargs["top_p"] = float(top_p)
-        return kwargs
+    prefixes: List[str]
+    cap: int
+    stop_strs: List[str]
 
-    def _gen_batch(prefixes: List[str], cap: int, stop_strs: List[str]) -> Tuple[
-        List[str], List[List[float]], torch.Tensor, torch.Tensor, List[str]
-    ]:
-        inputs = tokenizer(prefixes, return_tensors="pt", padding=True, truncation=True, max_length=4096)
-        inputs, input_lengths = move_inputs_to_device(inputs)
-        stop = StoppingCriteriaList([StopOnSubstrings(tokenizer, stop_strs)]) if stop_strs else None
-        gen_kwargs = _make_gen_kwargs(cap)
-        with torch.inference_mode():
-            out = model.generate(**inputs, **gen_kwargs, stopping_criteria=stop)
 
-        total_rows = out.sequences.shape[0]
-        seqs = out.sequences
-        decs: List[str] = []
-        ent_series: List[List[float]] = []
-        stop_reasons: List[str] = []
+@dataclass
+class MathInferenceContext:
+    """Bundle tokenizer, model, and config for generation helpers."""
 
-        for row_i in range(total_rows):
-            start_tok_idx = int(input_lengths[row_i].item())
-            gen_ids = seqs[row_i, start_tok_idx:]
-            raw_txt = tokenizer.decode(gen_ids, skip_special_tokens=True)
+    tokenizer: Any
+    model: Any
+    config: MathInferenceConfig
 
-            found_stop = any(s in raw_txt for s in (stop_strs or []))
-            has_eos = False
-            if eos_ids:
-                for eid in eos_ids:
-                    if (gen_ids == eid).any():
-                        has_eos = True
-                        break
-            hit_max = len(gen_ids) >= cap
-            if found_stop: stop_reasons.append("stop_token")
-            elif has_eos:  stop_reasons.append("eos")
-            elif hit_max:  stop_reasons.append("max_new_tokens")
-            else:          stop_reasons.append("other")
 
-            txt = raw_txt
-            for s in (stop_strs or []):
-                if s in txt:
-                    txt = txt.split(s, 1)[0]
-                    break
-            decs.append(txt.strip())
+@dataclass
+class BatchLayout:
+    """Mapping from generated rows back to original work items and samples."""
 
-            if entropy_mode == "none":
-                ent_series.append([]); continue
+    work_items: List[Dict[str, Any]]
+    row_to_ex_idx: List[int]
+    row_target_sample_idx: List[int]
 
-            scores_T = len(out.scores)
-            t_stop = min(_first_eos_any(gen_ids, eos_ids) if eos_ids else gen_ids.shape[0], scores_T)
-            tok_ents = []
-            bad = False
-            for t in range(t_stop):
-                logits = out.scores[t][row_i].float()
-                if torch.isnan(logits).any() or torch.isinf(logits).any():
-                    bad = True; break
-                logp = F.log_softmax(logits, dim=-1)
-                if torch.isnan(logp).any() or torch.isinf(logp).any():
-                    bad = True; break
-                p = logp.exp()
-                h = float(-(p * logp).sum().item())
-                if not math.isfinite(h):
-                    bad = True; break
-                tok_ents.append(h)
-            if bad or len(tok_ents) == 0:
-                start_idx = start_tok_idx - 1
-                tok_ents = _entropy_from_start_index(model, seqs[row_i:row_i+1], start_idx) or []
-            ent_series.append(tok_ents)
 
-        return decs, ent_series, input_lengths, seqs, stop_reasons
+@dataclass
+class ExistingPassState:
+    """Track existing pass-1 samples found on disk for resume."""
 
-    def _norm_fields(ex: dict):
-        problem = (ex.get("problem") or ex.get("question") or ex.get("query") or ex.get("prompt") or ex.get("instruction"))
-        gold    = (ex.get("answer")  or ex.get("final_answer") or ex.get("target") or ex.get("boxed_answer") or ex.get("solution"))
-        if gold and not any(k in ex for k in ("answer","final_answer","target","boxed_answer","solution")):
-            m = re.search(r"\\boxed\{([^}]*)\}", str(gold))
-            if not m:
-                m = re.search(r"\\boxed\(([^)]*)\)", str(gold))
-            if m:
-                gold = m.group(1)
-        return problem, gold
+    existing_samples: DefaultDict[str, set]
+    existing_pass1: Dict[tuple, str]
 
-    def _pack_pass_result(
-        problem: str,
-        full_text: str,
-        ent_think: List[float],
-        ent_answer: List[float],
-        injected_cue: bool,
-        canon_gold: Optional[str],
-        prev_output: Optional[str] = None,
-        cue_prefix_str: str = "",
-        stop_reason_think: Optional[str] = None,
-        stop_reason_answer: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        tok_ents_all = (ent_think or []) + (ent_answer or [])
-        Tthink = len(ent_think or [])
-        Tans   = len(ent_answer or [])
-        T      = len(tok_ents_all)
-        think, answer = _extract_blocks(full_text)
-        think_text = think or ""
-        pred_answer_text = answer or ""
-        skip_chars = len(cue_prefix_str) if injected_cue else 0
-        markers, pos_in_think, reconsider_context, reconsider_excerpt = _find_markers_and_context(
-            think_text,
-            f"Problem: {problem}",
-            _RECONSIDER_PATTERNS,
-            skip_prefix_chars=skip_chars,
-        )
-        if injected_cue:
-            markers = ["injected_cue"] + (markers or [])
-        t_cue = 0 if injected_cue else None
-        if (not injected_cue) and (pos_in_think is not None):
-            t_cue = max(0, min(pos_in_think, Tthink))
-        entropy_overall = _finite_mean(tok_ents_all) if tok_ents_all else None
-        entropy_think   = _finite_mean(ent_think)     if ent_think else None
-        entropy_answer  = _finite_mean(ent_answer)    if ent_answer else None
-        entropy_pre_cue = None
-        entropy_reconsider_think = None
-        entropy_reconsider_full = None
-        if t_cue is not None:
-            if T > t_cue:
-                entropy_reconsider_full = _finite_mean(tok_ents_all[t_cue:])
-            if Tthink > t_cue:
-                entropy_reconsider_think = _finite_mean(tok_ents_all[t_cue:Tthink])
 
-        pred_canon = _canon_math(pred_answer_text)
-        is_correct_pred = _contains_canon(pred_canon, canon_gold)
+@dataclass
+class TwoPassBatchOutputs:
+    """Container combining first- and optional second-pass outputs."""
 
-        return dict(
-            prev_output=prev_output,
-            output=full_text,
-            pred_answer=pred_answer_text,
-            pred_answer_canon=pred_canon,
-            entropy=entropy_overall,
-            entropy_think=entropy_think,
-            entropy_answer=entropy_answer,
-            entropy_pre_cue=entropy_pre_cue,
-            entropy_reconsider_think=entropy_reconsider_think,
-            entropy_reconsider_full=entropy_reconsider_full,
-            stop_reason_think=stop_reason_think,
-            stop_reason_answer=stop_reason_answer,
-            has_reconsider_cue=bool(markers),
-            reconsider_markers=markers or [],
-            reconsider_pos=pos_in_think,
-            reconsider_context=reconsider_context,
-            reconsider_excerpt=reconsider_excerpt,
-            is_correct_pred=is_correct_pred,
-            is_correct_after_reconsideration=bool(markers) and bool(is_correct_pred),
-            tokens_total=T,
-            tokens_end_think=Tthink,
-            tokens_think=Tthink,
-            tokens_answer=Tans,
-            valid_tag_structure=_valid_tag_structure(full_text),
-        )
+    pass1: PassOutputs
+    pass2: Optional[PassOutputs]
 
-    # ---------- results path & scan existing ----------
-    outpath = os.path.join(outdir, f"step{step:04d}_{split_name}.jsonl")
-    existing_samples, existing_pass1 = _scan_existing_results(outpath)
-    logger.info("Resume scan: %d problems already present", len(existing_samples))
 
-    # ---------- main loop ----------
-    os.makedirs(os.path.dirname(outpath), exist_ok=True)
+@dataclass
+class BatchWriteContext:
+    """Context object holding shared state for result writing."""
 
-    for i in range(0, len(examples), batch_size):
-        idx_lo, idx_hi = i, min(i + batch_size, len(examples))
-        slice_ds = examples.select(range(idx_lo, idx_hi))
+    outpath: str
+    config: MathInferenceConfig
+    cue_str: str
+    existing_state: ExistingPassState
+    firstpass_choice_text_per_ex: List[str]
 
-        # Build a working batch of ONLY problems that still need samples
-        work_items = []
-        for ex in slice_ds:
-            prob, gold = _norm_fields(ex)
-            if not prob:
-                continue
-            have = existing_samples.get(prob, set())
-            if len(have) >= num_samples:
-                continue
-            todo = [k for k in range(num_samples) if k not in have]
-            if not todo:
-                continue
-            ex = dict(ex)
-            ex["_normalized_problem"] = prob
-            ex["_normalized_gold"] = gold
-            ex["_todo_samples"] = todo
-            work_items.append(ex)
 
-        if not work_items:
+@dataclass
+class SecondPassInputs:
+    """Inputs required to run the optional second pass."""
+
+    layout: BatchLayout
+    pre1_think: List[str]
+    firstpass_choice_text_per_ex: List[str]
+    cue_str: str
+
+
+def _gen_batch(
+    batch_spec: BatchSpec,
+    context: MathInferenceContext,
+) -> Tuple[List[str], List[List[float]], Any, Any, List[str]]:
+    """Generate a batch of continuations and token-entropy series."""
+    torch_mod, _, _, stopping_criteria_list_cls = _load_torch_and_transformers()
+    tokenizer = context.tokenizer
+    model = context.model
+    config = context.config
+
+    inputs, input_lengths = tokenize_prefixes_for_generate(
+        tokenizer,
+        batch_spec.prefixes,
+        max_length=4096,
+    )
+    stop = (
+        stopping_criteria_list_cls([StopOnSubstrings(tokenizer, batch_spec.stop_strs)])
+        if batch_spec.stop_strs
+        else None
+    )
+    gen_kwargs = _make_gen_kwargs(batch_spec.cap, tokenizer, config)
+    with torch_mod.inference_mode():
+        out = model.generate(**inputs, **gen_kwargs, stopping_criteria=stop)
+
+    decs, ent_series, stop_reasons = decode_and_score_batch(
+        tokenizer=tokenizer,
+        sequences=out.sequences,
+        scores=out.scores,
+        input_lengths=input_lengths,
+        stop_strings=batch_spec.stop_strs,
+        cap=batch_spec.cap,
+        eos_ids=config.eos_ids,
+        entropy_mode=config.entropy_mode,
+        model=model,
+    )
+
+    return decs, ent_series, input_lengths, out.sequences, stop_reasons
+
+
+def _build_work_items_for_slice(
+    examples_slice,
+    existing_samples: Dict[str, set],
+    config: MathInferenceConfig,
+) -> List[Dict[str, Any]]:
+    """Construct per-problem work items for a dataset slice."""
+    work_items: List[Dict[str, Any]] = []
+    for raw_example in examples_slice:
+        problem, gold = _norm_fields(raw_example)
+        if not problem:
             continue
-
-        B = len(work_items)
-
-        # ===== PASS 1 for missing samples =====
-        base1 = [chat_base_for_pass1(tokenizer, ex["_normalized_problem"]) for ex in work_items]
-
-        pre1_think: List[str] = []
-        row_to_ex_idx: List[int] = []
-        row_target_sample_idx: List[int] = []
-
-        for ex_idx, ex in enumerate(work_items):
-            for k in ex["_todo_samples"]:
-                pre1_think.append(base1[ex_idx] + "<think>\n")
-                row_to_ex_idx.append(ex_idx)
-                row_target_sample_idx.append(k)
-
-        think1_texts, think1_ents, _, _, think1_stop = _gen_batch(pre1_think, think_cap, ["</think>"])
-
-        pre1_answer = []
-        for row_i in range(len(pre1_think)):
-            pre = pre1_think[row_i] + think1_texts[row_i] + "</think>\n<answer>\n"
-            pre1_answer.append(pre)
-        answer1_texts, answer1_ents, _, _, answer1_stop = _gen_batch(pre1_answer, answer_cap, ["</answer>"])
-
-        pass1_full_rows = [
-            f"<think>{think1_texts[row_i]}</think>\n<answer>{answer1_texts[row_i]}</answer>"
-            for row_i in range(len(pre1_think))
+        have = existing_samples.get(problem, set())
+        if len(have) >= config.num_samples:
+            continue
+        missing_indices = [
+            sample_idx
+            for sample_idx in range(config.num_samples)
+            if sample_idx not in have
         ]
+        if not missing_indices:
+            continue
+        example_copy = dict(raw_example)
+        example_copy["_normalized_problem"] = problem
+        example_copy["_normalized_gold"] = gold
+        example_copy["_todo_samples"] = missing_indices
+        work_items.append(example_copy)
+    return work_items
 
-        # Build per-example mapping of (newly generated) sample_idx -> pass1 text
-        new_pass1_by_ex_and_k: Dict[tuple, str] = {}
-        for row_i in range(len(pass1_full_rows)):
-            ex_idx = row_to_ex_idx[row_i]
-            k = row_target_sample_idx[row_i]
-            new_pass1_by_ex_and_k[(ex_idx, k)] = pass1_full_rows[row_i]
 
-        # ===== Decide Pass-2 "prev_output" per example =====
-        cue_str = second_pass_phrase.strip() + " "
-        firstpass_choice_text_per_ex: List[str] = []
+def _build_pass1_prefixes(
+    work_items: List[Dict[str, Any]],
+    tokenizer,
+) -> Tuple[List[str], List[int], List[int]]:
+    """Build pass-1 <think> prefixes and row→example/sample index mappings."""
+    base_prompts = [
+        chat_base_for_pass1(tokenizer, item["_normalized_problem"])
+        for item in work_items
+    ]
 
-        if two_pass:
-            for ex_idx, ex in enumerate(work_items):
-                prob = ex["_normalized_problem"]
-                k_choice = max(0, min(second_pass_use_sample_idx, num_samples - 1))
+    pre1_think: List[str] = []
+    row_to_ex_idx: List[int] = []
+    row_target_sample_idx: List[int] = []
+    for ex_idx, work_item in enumerate(work_items):
+        for sample_idx in work_item["_todo_samples"]:
+            pre1_think.append(base_prompts[ex_idx] + "<think>\n")
+            row_to_ex_idx.append(ex_idx)
+            row_target_sample_idx.append(sample_idx)
+    return pre1_think, row_to_ex_idx, row_target_sample_idx
 
-                # Prefer an existing pass1 for the chosen k if available
-                prev = existing_pass1.get((prob, k_choice))
-                if prev is None:
-                    # else prefer the pass1 we just generated for that k (if in this mini-batch)
-                    prev = new_pass1_by_ex_and_k.get((ex_idx, k_choice))
-                    if prev is None:
-                        # else fallback: smallest existing k, else smallest new k
-                        have_sorted = sorted(existing_samples.get(prob, set()))
-                        if have_sorted:
-                            prev = existing_pass1.get((prob, have_sorted[0]))
-                        else:
-                            new_ks = sorted([k for (eidx, k) in new_pass1_by_ex_and_k.keys() if eidx == ex_idx])
-                            if new_ks:
-                                prev = new_pass1_by_ex_and_k[(ex_idx, new_ks[0])]
-                if prev is None:
-                    # As an absolute fallback, use the first generated row for this ex in this batch
-                    # (should be rare)
-                    for row_i in range(len(pass1_full_rows)):
-                        if row_to_ex_idx[row_i] == ex_idx:
-                            prev = pass1_full_rows[row_i]; break
-                firstpass_choice_text_per_ex.append(prev or "")
-        else:
-            firstpass_choice_text_per_ex = [""] * B  # unused
 
-        # ===== PASS 2 for the SAME rows (one per missing sample) =====
-        if two_pass:
-            base2_per_ex = [
-                chat_base_for_pass2(
-                    tokenizer,
-                    ex["_normalized_problem"],
-                    firstpass_choice_text_per_ex[ex_idx],
-                    second_pass_phrase.strip(),
-                )
-                for ex_idx, ex in enumerate(work_items)
-            ]
+def _run_pass1_generations(
+    pre1_think: List[str],
+    context: MathInferenceContext,
+) -> PassOutputs:
+    """Run pass-1 think and answer generations for a prepared prefix batch."""
+    config = context.config
+    think1_texts, think1_ents, _, _, think1_stop = _gen_batch(
+        BatchSpec(prefixes=pre1_think, cap=config.think_cap, stop_strs=["</think>"]),
+        context,
+    )
 
-            pre2_think: List[str] = []
-            for row_i in range(len(pre1_think)):
-                ex_idx = row_to_ex_idx[row_i]
-                base2 = base2_per_ex[ex_idx]
-                pre2_think.append(base2 + "<think>\n" + cue_str)
+    pre1_answer: List[str] = []
+    for pre_think, think_text in zip(pre1_think, think1_texts):
+        prefix = pre_think + think_text + "</think>\n<answer>\n"
+        pre1_answer.append(prefix)
+    answer1_texts, answer1_ents, _, _, answer1_stop = _gen_batch(
+        BatchSpec(prefixes=pre1_answer, cap=config.answer_cap, stop_strs=["</answer>"]),
+        context,
+    )
 
-            think2_texts_only_new, think2_ents, _, _, think2_stop = _gen_batch(pre2_think, think_cap, ["</think>"])
-            think2_texts = [cue_str + t for t in think2_texts_only_new]
+    full_texts = [
+        f"<think>{think_text}</think>\n<answer>{answer_text}</answer>"
+        for think_text, answer_text in zip(think1_texts, answer1_texts)
+    ]
 
-            pre2_answer = []
-            for row_i in range(len(pre2_think)):
-                pre = pre2_think[row_i] + think2_texts_only_new[row_i] + "</think>\n<answer>\n"
-                pre2_answer.append(pre)
-            answer2_texts, answer2_ents, _, _, answer2_stop = _gen_batch(pre2_answer, answer_cap, ["</answer>"])
+    return PassOutputs(
+        full_texts=full_texts,
+        ent_think=think1_ents,
+        ent_answer=answer1_ents,
+        stop_reason_think=think1_stop,
+        stop_reason_answer=answer1_stop,
+    )
 
-            pass2_full_rows = [
-                f"<think>{think2_texts[row_i]}</think>\n<answer>{answer2_texts[row_i]}</answer>"
-                for row_i in range(len(pre2_think))
-            ]
-        else:
-            think2_ents = [[] for _ in range(len(pre1_think))]
-            answer2_ents = [[] for _ in range(len(pre1_think))]
-            think2_stop = [""] * len(pre1_think)
-            answer2_stop = [""] * len(pre1_think)
-            pass2_full_rows = [""] * len(pre1_think)
 
-        # ===== WRITE JSON (append) =====
-        with open(outpath, "a", encoding="utf-8") as f:
-            for row_i in range(len(pass1_full_rows)):
-                ex_idx = row_to_ex_idx[row_i]
-                ex = work_items[ex_idx]
-                prob = ex["_normalized_problem"]
-                gold = ex["_normalized_gold"]
-                canon_gold = _canon_math(gold)
-                k = row_target_sample_idx[row_i]
+def _run_pass1_for_batch(
+    work_items: List[Dict[str, Any]],
+    context: MathInferenceContext,
+) -> Tuple[PassOutputs, List[int], List[int], List[str]]:
+    """Run pass-1 (think + answer) for a batch of math problems."""
+    pre1_think, row_to_ex_idx, row_target_sample_idx = _build_pass1_prefixes(
+        work_items,
+        context.tokenizer,
+    )
+    outputs = _run_pass1_generations(pre1_think, context)
+    return outputs, row_to_ex_idx, row_target_sample_idx, pre1_think
 
-                p1 = _pack_pass_result(
+
+@dataclass
+class FirstPassChoiceInputs:
+    """Inputs required to choose a representative pass-1 sample per example."""
+
+    layout: BatchLayout
+    existing_state: ExistingPassState
+    new_pass1_by_ex_and_sample: Dict[Tuple[int, int], str]
+    pass1_full_texts: List[str]
+    config: MathInferenceConfig
+
+
+def _index_new_pass1_by_example_and_sample(
+    pass1_full_texts: List[str],
+    row_to_ex_idx: List[int],
+    row_target_sample_idx: List[int],
+) -> Dict[Tuple[int, int], str]:
+    """Build an index mapping (example_idx, sample_idx) to pass-1 full text."""
+    mapping: Dict[Tuple[int, int], str] = {}
+    for row_index, full_text in enumerate(pass1_full_texts):
+        example_idx = row_to_ex_idx[row_index]
+        sample_idx = row_target_sample_idx[row_index]
+        mapping[(example_idx, sample_idx)] = full_text
+    return mapping
+
+
+def _select_first_pass_choice(
+    problem: str,
+    ex_idx: int,
+    inputs: FirstPassChoiceInputs,
+) -> str:
+    """Choose which pass-1 output to show in the pass-2 cue for one example."""
+    config = inputs.config
+    existing_state = inputs.existing_state
+    mapping = inputs.new_pass1_by_ex_and_sample
+
+    num_samples = max(1, int(config.num_samples))
+    k_choice = max(0, min(config.second_pass_use_sample_idx, num_samples - 1))
+
+    prev_text = existing_state.existing_pass1.get((problem, k_choice))
+    if prev_text is not None:
+        return prev_text
+
+    prev_text = mapping.get((ex_idx, k_choice))
+    if prev_text is not None:
+        return prev_text
+
+    have_sorted = sorted(existing_state.existing_samples.get(problem, set()))
+    if have_sorted:
+        prev_text = existing_state.existing_pass1.get((problem, have_sorted[0]))
+        if prev_text is not None:
+            return prev_text
+
+    new_indices = sorted(
+        sample_idx
+        for (example_idx, sample_idx) in mapping
+        if example_idx == ex_idx
+    )
+    if new_indices:
+        prev_text = mapping.get((ex_idx, new_indices[0]))
+        if prev_text is not None:
+            return prev_text
+
+    for row_index, full_text in enumerate(inputs.pass1_full_texts):
+        if inputs.layout.row_to_ex_idx[row_index] == ex_idx:
+            return full_text
+
+    return ""
+
+
+def _build_first_pass_choice(
+    *,
+    layout: BatchLayout,
+    pass1_full_texts: List[str],
+    existing_state: ExistingPassState,
+    config: MathInferenceConfig,
+) -> List[str]:
+    """Select which pass-1 sample feeds pass-2 per example."""
+    if not config.two_pass:
+        return [""] * len(layout.work_items)
+
+    new_pass1_by_ex_and_idx = _index_new_pass1_by_example_and_sample(
+        pass1_full_texts,
+        layout.row_to_ex_idx,
+        layout.row_target_sample_idx,
+    )
+    choice_inputs = FirstPassChoiceInputs(
+        layout=layout,
+        existing_state=existing_state,
+        new_pass1_by_ex_and_sample=new_pass1_by_ex_and_idx,
+        pass1_full_texts=pass1_full_texts,
+        config=config,
+    )
+
+    choice_texts: List[str] = []
+    for ex_idx, work_item in enumerate(layout.work_items):
+        problem = work_item["_normalized_problem"]
+        prev_text = _select_first_pass_choice(problem, ex_idx, choice_inputs)
+        choice_texts.append(prev_text or "")
+    return choice_texts
+
+
+def _build_second_pass_base_prompts(
+    *,
+    tokenizer,
+    work_items: List[Dict[str, Any]],
+    firstpass_choice_text_per_ex: List[str],
+    phrase: str,
+) -> List[str]:
+    """Build base chat prompts for pass 2 for each example."""
+    return [
+        chat_base_for_pass2(
+            tokenizer,
+            work_item["_normalized_problem"],
+            firstpass_choice_text_per_ex[ex_idx],
+            phrase,
+        )
+        for ex_idx, work_item in enumerate(work_items)
+    ]
+
+
+def _build_second_pass_think_prefixes(
+    *,
+    base2_per_ex: List[str],
+    pre1_think: List[str],
+    row_to_ex_idx: List[int],
+    cue_str: str,
+) -> List[str]:
+    """Build pass-2 <think> prefixes aligned with pass-1 rows."""
+    pre2_think: List[str] = []
+    for row_index, _ in enumerate(pre1_think):
+        ex_idx = row_to_ex_idx[row_index]
+        base2 = base2_per_ex[ex_idx]
+        pre2_think.append(base2 + "<think>\n" + cue_str)
+    return pre2_think
+
+
+def _run_second_pass_generations(
+    *,
+    context: MathInferenceContext,
+    pre2_think: List[str],
+) -> Tuple[List[str], List[List[float]], List[str], List[str], List[List[float]], List[str]]:
+    """Run second-pass think and answer generations for prepared prefixes."""
+    config = context.config
+    think2_texts_only_new, think2_ents, _, _, think2_stop = _gen_batch(
+        BatchSpec(prefixes=pre2_think, cap=config.think_cap, stop_strs=["</think>"]),
+        context,
+    )
+
+    pre2_answer = [
+        pre_think + think_new + "</think>\n<answer>\n"
+        for pre_think, think_new in zip(pre2_think, think2_texts_only_new)
+    ]
+    answer2_texts, answer2_ents, _, _, answer2_stop = _gen_batch(
+        BatchSpec(prefixes=pre2_answer, cap=config.answer_cap, stop_strs=["</answer>"]),
+        context,
+    )
+    return (
+        think2_texts_only_new,
+        think2_ents,
+        think2_stop,
+        answer2_texts,
+        answer2_ents,
+        answer2_stop,
+    )
+
+
+def _run_pass2_for_batch(
+    *,
+    context: MathInferenceContext,
+    second_pass_inputs: SecondPassInputs,
+) -> PassOutputs:
+    """Run pass-2 (think + answer) for a batch of math problems."""
+    config = context.config
+    if not config.two_pass:
+        total_rows = len(second_pass_inputs.pre1_think)
+        return PassOutputs(
+            full_texts=[""] * total_rows,
+            ent_think=[[] for _ in range(total_rows)],
+            ent_answer=[[] for _ in range(total_rows)],
+            stop_reason_think=[""] * total_rows,
+            stop_reason_answer=[""] * total_rows,
+        )
+
+    phrase = config.second_pass_phrase.strip()
+    base2_per_ex = _build_second_pass_base_prompts(
+        tokenizer=context.tokenizer,
+        work_items=second_pass_inputs.layout.work_items,
+        firstpass_choice_text_per_ex=second_pass_inputs.firstpass_choice_text_per_ex,
+        phrase=phrase,
+    )
+    pre2_think = _build_second_pass_think_prefixes(
+        base2_per_ex=base2_per_ex,
+        pre1_think=second_pass_inputs.pre1_think,
+        row_to_ex_idx=second_pass_inputs.layout.row_to_ex_idx,
+        cue_str=second_pass_inputs.cue_str,
+    )
+    (
+        think2_texts_only_new,
+        think2_ents,
+        think2_stop,
+        answer2_texts,
+        answer2_ents,
+        answer2_stop,
+    ) = _run_second_pass_generations(
+        context=context,
+        pre2_think=pre2_think,
+    )
+    think2_texts = [second_pass_inputs.cue_str + text for text in think2_texts_only_new]
+
+    full_texts = [
+        f"<think>{think_text}</think>\n<answer>{answer_text}</answer>"
+        for think_text, answer_text in zip(think2_texts, answer2_texts)
+    ]
+
+    return PassOutputs(
+        full_texts=full_texts,
+        ent_think=think2_ents,
+        ent_answer=answer2_ents,
+        stop_reason_think=think2_stop,
+        stop_reason_answer=answer2_stop,
+    )
+
+
+def _norm_fields(example: dict) -> Tuple[Optional[str], Optional[str]]:
+    """Normalize raw record fields into (problem, gold_answer)."""
+    problem, gold = extract_problem_and_answer(example)
+    if gold and not any(
+        key in example for key in ("answer", "final_answer", "target", "boxed_answer", "solution")
+    ):
+        match = re.search(r"\\boxed\{([^}]*)\}", str(gold))
+        if not match:
+            match = re.search(r"\\boxed\(([^)]*)\)", str(gold))
+        if match:
+            gold = match.group(1)
+    return problem, gold
+
+
+def _write_results_for_batch(
+    *,
+    layout: BatchLayout,
+    outputs: TwoPassBatchOutputs,
+    context: BatchWriteContext,
+) -> None:
+    """Write pass-1/2 results for a batch to JSONL."""
+    with open(context.outpath, "a", encoding="utf-8") as outfile:
+        for row_index, full_row in enumerate(outputs.pass1.full_texts):
+            sample_idx = layout.row_target_sample_idx[row_index]
+            item = layout.work_items[layout.row_to_ex_idx[row_index]]
+            prob = item["_normalized_problem"]
+            gold = item["_normalized_gold"]
+            canon_gold = _canon_math(gold)
+
+            pass1_result = _pack_pass_result(
+                full_text=full_row,
+                ent_think=outputs.pass1.ent_think[row_index],
+                ent_answer=outputs.pass1.ent_answer[row_index],
+                meta=build_math_pass_meta(
                     problem=prob,
-                    full_text=pass1_full_rows[row_i],
-                    ent_think=think1_ents[row_i],
-                    ent_answer=answer1_ents[row_i],
                     canon_gold=canon_gold,
                     injected_cue=False,
                     prev_output=None,
                     cue_prefix_str="",
-                    stop_reason_think=think1_stop[row_i],
-                    stop_reason_answer=answer1_stop[row_i],
-                )
+                    stop_reason_think=outputs.pass1.stop_reason_think[row_index],
+                    stop_reason_answer=outputs.pass1.stop_reason_answer[row_index],
+                ),
+            )
 
-                p2 = None
-                if two_pass:
-                    p2 = _pack_pass_result(
+            pass2_result = None
+            if context.config.two_pass and outputs.pass2 is not None:
+                pass2_result = _pack_pass_result(
+                    full_text=outputs.pass2.full_texts[row_index],
+                    ent_think=outputs.pass2.ent_think[row_index],
+                    ent_answer=outputs.pass2.ent_answer[row_index],
+                    meta=build_math_pass_meta(
                         problem=prob,
-                        full_text=pass2_full_rows[row_i],
-                        ent_think=think2_ents[row_i],
-                        ent_answer=answer2_ents[row_i],
                         canon_gold=canon_gold,
                         injected_cue=True,
-                        prev_output=firstpass_choice_text_per_ex[ex_idx],
-                        cue_prefix_str=cue_str,
-                        stop_reason_think=think2_stop[row_i],
-                        stop_reason_answer=answer2_stop[row_i],
-                    )
-                    p2["improved_over_pass1"] = bool(p2.get("is_correct_pred")) and not bool(p1.get("is_correct_pred"))
+                        prev_output=context.firstpass_choice_text_per_ex[
+                            layout.row_to_ex_idx[row_index]
+                        ],
+                        cue_prefix_str=context.cue_str,
+                        stop_reason_think=outputs.pass2.stop_reason_think[row_index],
+                        stop_reason_answer=outputs.pass2.stop_reason_answer[row_index],
+                    ),
+                )
+                pass2_result["improved_over_pass1"] = bool(
+                    pass2_result.get("is_correct_pred"),
+                ) and not bool(
+                    pass1_result.get("is_correct_pred"),
+                )
 
-                row = {
+            json.dump(
+                {
                     "problem": prob,
                     "gold_answer": gold,
                     "gold_answer_canon": canon_gold,
-                    "step": step,
-                    "split": split_name,
-                    "sample_idx": k,
-                    "pass1": p1,
-                    "pass2": p2,
-                }
-                json.dump(row, f, ensure_ascii=False); f.write("\n")
+                    "step": context.config.step,
+                    "split": context.config.split_name,
+                    "sample_idx": sample_idx,
+                    "pass1": pass1_result,
+                    "pass2": pass2_result,
+                },
+                outfile,
+                ensure_ascii=False,
+            )
+            outfile.write("\n")
 
-                # Update in-memory resume maps so later batches see the new rows
-                existing_samples[prob].add(k)
-                existing_pass1[(prob, k)] = p1["output"]
+            context.existing_state.existing_samples.setdefault(prob, set()).add(sample_idx)
+            context.existing_state.existing_pass1[(prob, sample_idx)] = pass1_result["output"]
 
-        # logging
-        filled = sum(len(ex["_todo_samples"]) for ex in work_items)
-        logger.info("Filled %d missing samples across %d problems in this batch.", filled, B)
+    filled = sum(len(item["_todo_samples"]) for item in layout.work_items)
+    logger.info(
+        "Filled %d missing samples across %d problems in this batch.",
+        filled,
+        len(layout.work_items),
+    )
+
+
+def _run_inference_batch(
+    *,
+    slice_ds,
+    context: MathInferenceContext,
+    outpath: str,
+    existing_state: ExistingPassState,
+) -> None:
+    """Run inference for a single dataset slice and append JSONL rows."""
+    work_items = _build_work_items_for_slice(
+        slice_ds,
+        existing_state.existing_samples,
+        context.config,
+    )
+    if not work_items:
+        return
+
+    pass1_outputs, row_to_ex_idx, row_target_sample_idx, pre1_think = _run_pass1_for_batch(
+        work_items,
+        context,
+    )
+    layout = BatchLayout(
+        work_items=work_items,
+        row_to_ex_idx=row_to_ex_idx,
+        row_target_sample_idx=row_target_sample_idx,
+    )
+
+    cue_str = context.config.second_pass_phrase.strip() + " "
+    firstpass_choice_text_per_ex = _build_first_pass_choice(
+        layout=layout,
+        pass1_full_texts=pass1_outputs.full_texts,
+        existing_state=existing_state,
+        config=context.config,
+    )
+
+    pass2_outputs = _run_pass2_for_batch(
+        context=context,
+        second_pass_inputs=SecondPassInputs(
+            layout=layout,
+            pre1_think=pre1_think,
+            firstpass_choice_text_per_ex=firstpass_choice_text_per_ex,
+            cue_str=cue_str,
+        ),
+    )
+
+    write_context = BatchWriteContext(
+        outpath=outpath,
+        config=context.config,
+        cue_str=cue_str,
+        existing_state=existing_state,
+        firstpass_choice_text_per_ex=firstpass_choice_text_per_ex,
+    )
+    _write_results_for_batch(
+        layout=layout,
+        outputs=TwoPassBatchOutputs(
+            pass1=pass1_outputs,
+            pass2=pass2_outputs if context.config.two_pass else None,
+        ),
+        context=write_context,
+    )
+
+
+# ───────────────────── Inference Loop (two-phase per pass) ─────────────────────
+def run_inference_on_split(
+    examples,  # datasets.Dataset
+    tokenizer,
+    model,
+    config: MathInferenceConfig,
+) -> None:
+    """
+    Run math inference over a dataset, respecting existing results and filling
+    missing sample indices per problem up to `config.num_samples`.
+    """
+
+    if (config.temperature is None or float(config.temperature) == 0.0) and config.num_samples > 1:
+        logger.warning(
+            "temperature=0 with num_samples=%d → all samples will be identical (greedy).",
+            config.num_samples,
+        )
+
+    outpath = os.path.join(
+        config.output_dir,
+        f"step{config.step:04d}_{config.split_name}.jsonl",
+    )
+    existing_samples, existing_pass1 = _scan_existing_results(outpath)
+    logger.info("Resume scan: %d problems already present", len(existing_samples))
+
+    os.makedirs(os.path.dirname(outpath), exist_ok=True)
+
+    existing_state = ExistingPassState(
+        existing_samples=existing_samples,
+        existing_pass1=existing_pass1,
+    )
+    context = MathInferenceContext(
+        tokenizer=tokenizer,
+        model=model,
+        config=config,
+    )
+
+    for start_idx in range(0, len(examples), config.batch_size):
+        end_idx = min(start_idx + config.batch_size, len(examples))
+        slice_ds = examples.select(range(start_idx, end_idx))
+        _run_inference_batch(
+            slice_ds=slice_ds,
+            context=context,
+            outpath=outpath,
+            existing_state=existing_state,
+        )
 
 def load_math500(cache_dir: str, split: str, seed: int, dataset_path: Optional[str] = None):
-    from datasets import load_dataset
+    """Load MATH-500 (or a competition-math fallback) and normalize fields."""
+    _, load_dataset = require_datasets()
+
     if dataset_path:
         logger.info("Loading MATH-500 from local file: %s", dataset_path)
         return load_local_json_dataset(dataset_path)
+
     candidates = [
         "HuggingFaceH4/MATH-500",
         "AI-MO/MATH-500",
@@ -606,141 +873,27 @@ def load_math500(cache_dir: str, split: str, seed: int, dataset_path: Optional[s
     for repo in candidates:
         try:
             logger.info("Trying remote MATH-500 candidate: %s", repo)
-            ds_full = load_dataset(repo, split="test", cache_dir=cache_dir)
+            ds_full = load_dataset(repo, split=split, cache_dir=cache_dir)
             colnames = set(ds_full.column_names)
-            def _norm(ex):
-                problem = (ex.get("problem") or ex.get("question") or
-                           ex.get("prompt") or ex.get("instruction") or ex.get("query"))
-                ans = (ex.get("answer") or ex.get("solution") or
-                       ex.get("final_answer") or ex.get("boxed_answer") or ex.get("target"))
-                return {"problem": problem, "answer": ans}
-            ds = ds_full.map(_norm, remove_columns=list(colnames))
-            ds = ds.filter(lambda ex: ex["problem"] is not None and ex["answer"] is not None)
-            if len(ds) == 0:
+
+            def _norm(example):
+                problem, answer = extract_problem_and_answer(example)
+                return {"problem": problem, "answer": answer}
+
+            normalized_ds = ds_full.map(_norm, remove_columns=list(colnames))
+            normalized_ds = normalized_ds.filter(
+                lambda row: row["problem"] is not None and row["answer"] is not None,
+            )
+            if len(normalized_ds) == 0:
                 raise ValueError(f"{repo} contained no usable (problem,answer) pairs")
-            logger.info("Loaded MATH-500 from %s | N=%d", repo, len(ds))
-            return ds
-        except Exception as e:
-            logger.warning("Skipping %s (%r)", repo, e)
+            logger.info("Loaded MATH-500 from %s | N=%d", repo, len(normalized_ds))
+            return normalized_ds
+        except (OSError, ValueError, RuntimeError) as load_exc:
+            logger.warning("Skipping %s (%r)", repo, load_exc)
+
     try:
-        ds_full = load_dataset("hendrycks/competition_math", split="test", cache_dir=cache_dir)
-        n = min(500, len(ds_full))
-        return ds_full.shuffle(seed=seed).select(range(n))
-    except Exception as e:
-        raise RuntimeError(f"Could not load MATH-500 or fallback dataset: {e}")
-
-# ─────────────────────────── Main ───────────────────────────
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--model_name_or_path", required=True)
-    ap.add_argument("--revision")
-    ap.add_argument("--output_dir", required=True)
-
-    # Data selection
-    ap.add_argument("--dataset_id", default="MATH-500", help="Use 'MATH-500' (default) or a HF dataset path.")
-    ap.add_argument("--split", default="test", help="Split name to run on.")
-    ap.add_argument("--num_examples", type=int, default=None, help="Optional cap if you want fewer than 500.")
-
-    # Decoding + sampling
-    ap.add_argument("--batch_size", type=int, default=8)
-    ap.add_argument("--num_samples", type=int, default=1)
-    ap.add_argument("--temperature", type=float, default=0.0)
-    ap.add_argument("--top_p", type=float, default=0.95)
-
-    # Budgets (per pass)
-    ap.add_argument("--think_cap", type=int, default=750)
-    ap.add_argument("--answer_cap", type=int, default=50)
-
-    # System/runtime
-    ap.add_argument("--dtype", default="float16", choices=["float16", "bfloat16"])
-    ap.add_argument("--step", type=int, default=0)
-    ap.add_argument("--tokenizer_path", default=None)
-    ap.add_argument("--seed", type=int, default=42)
-
-    # Entropy + attention impl
-    ap.add_argument("--entropy_mode", choices=["full","reconsider","none"], default="reconsider")
-    ap.add_argument("--attn_implementation", default="sdpa",
-                    choices=["sdpa", "eager", "flash_attention_2"])
-
-    # Two-pass controls
-    ap.add_argument("--two_pass", action="store_true")
-    ap.add_argument("--second_pass_phrase", default="Wait, we need to reconsider. Let's think this through step by step.")
-    ap.add_argument("--second_pass_use_sample_idx", type=int, default=0)
-
-    args = ap.parse_args()
-
-    HF_CACHE_DIR = os.path.abspath("./.hf_cache")
-    tok_src = args.tokenizer_path or args.model_name_or_path
-    tokenizer = AutoTokenizer.from_pretrained(
-        tok_src,
-        revision=args.revision,
-        trust_remote_code=True,
-        cache_dir=HF_CACHE_DIR,
-    )
-    tokenizer.padding_side = "left"
-    tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
-    tokenizer.truncation_side = "left"
-
-    # EOS set
-    eos_ids = set()
-    if tokenizer.eos_token_id is not None:
-        eos_ids.add(int(tokenizer.eos_token_id))
-    for tok in ("<|im_end|>", "<|endoftext|>"):
-        tid = tokenizer.convert_tokens_to_ids(tok)
-        if tid is not None and tid != tokenizer.pad_token_id:
-            eos_ids.add(int(tid))
-    eos_ids = sorted(eos_ids) if eos_ids else None
-
-    dtype = torch.float16 if args.dtype == "float16" else torch.bfloat16
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_name_or_path,
-        revision=args.revision,
-        trust_remote_code=True,
-        cache_dir=HF_CACHE_DIR,
-        torch_dtype=dtype,
-        device_map="auto",
-        attn_implementation=args.attn_implementation,
-    ).eval()
-
-    from datasets import load_dataset
-    if args.dataset_id.upper() == "MATH-500":
-        ds = load_math500(HF_CACHE_DIR, args.split, args.seed)
-        dataset_name_for_log = "MATH-500"
-    else:
-        ds = load_dataset(args.dataset_id, split=args.split, cache_dir=HF_CACHE_DIR)
-        dataset_name_for_log = args.dataset_id
-
-    if args.num_examples is not None and args.num_examples > 0:
-        ds = ds.select(range(min(args.num_examples, len(ds))))
-
-    ds = ds.shuffle(seed=int.from_bytes(os.urandom(4), "little"))
-
-    os.makedirs(args.output_dir, exist_ok=True)
-    logger.info("Model: %s @ %s | dtype=%s", args.model_name_or_path, args.revision, dtype)
-    logger.info("Dataset: %s split=%s | N=%d", dataset_name_for_log, args.split, len(ds))
-    logger.info("Output dir: %s", args.output_dir)
-
-    run_inference_on_split(
-        split_name=args.split,
-        examples=ds,
-        tokenizer=tokenizer,
-        model=model,
-        step=args.step,
-        outdir=args.output_dir,
-        batch_size=args.batch_size,
-        num_samples=args.num_samples,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        entropy_mode=args.entropy_mode,
-        eos_ids=eos_ids,
-        two_pass=args.two_pass,
-        second_pass_phrase=args.second_pass_phrase,
-        second_pass_use_sample_idx=args.second_pass_use_sample_idx,
-        think_cap=args.think_cap,
-        answer_cap=args.answer_cap,
-    )
-
-    logger.info("All inference complete.")
-
-if __name__ == "__main__":
-    main()
+        ds_full = load_dataset("hendrycks/competition_math", split=split, cache_dir=cache_dir)
+        max_examples = min(500, len(ds_full))
+        return ds_full.shuffle(seed=seed).select(range(max_examples))
+    except (OSError, RuntimeError) as load_exc:
+        raise RuntimeError(f"Could not load MATH-500 or fallback dataset: {load_exc}") from load_exc

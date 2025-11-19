@@ -61,9 +61,10 @@ Notes:
 
 
 # ----------------------------- config ------------------------------
+import math
 import re
 import unicodedata
-from typing import Any, List, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 # ----------------------------- config ------------------------------
 
@@ -295,11 +296,8 @@ def pure_accuracy_reward(
     shaping = crossword_accuracy_reward(completions, answer, **kw)
     return [min(1.0, base + 0.25 * s) for base, s in zip(outs, shaping)]
 
-import unicodedata
-import re
-from typing import Any, List
-    
-def _canon_crossword_letters(s: str) -> str:
+
+def _canon_crossword_letters(text: str) -> str:
     """
     Canonicalize a crossword answer to LETTERS-ONLY A–Z string:
       - Unicode NFKD + strip combining marks (remove accents)
@@ -307,97 +305,44 @@ def _canon_crossword_letters(s: str) -> str:
       - Uppercase
       - Drop everything that's not A–Z
     """
-    if s is None:
+    if text is None:
         return ""
 
     # Normalize unicode + strip accents
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
 
     # Normalize common punctuation variants
-    s = s.translate(str.maketrans({
-        "’": "'", "‘": "'", "“": '"', "”": '"',
-        "—": "-", "–": "-", "−": "-",
-    }))
+    text = text.translate(
+        str.maketrans(
+            {"’": "'", "‘": "'", "“": '"', "”": '"', "—": "-", "–": "-", "−": "-"},
+        ),
+    )
 
     # Map symbols that semantically carry letters
-    s = s.replace("&", "AND")
+    text = text.replace("&", "AND")
 
     # Uppercase, then keep letters only
-    s = s.upper()
-    return "".join(ch for ch in s if "A" <= ch <= "Z")
+    text = text.upper()
+    return "".join(ch for ch in text if "A" <= ch <= "Z")
 
-
-
-import re
-from typing import Any, Dict, Iterable, List, Optional, Union
 
 # ── helpers you referenced ──────────────────────────────────────────────
-MOVE_RE  = re.compile(r"^[A-Z][<>^v]\d+$")
+MOVE_RE = re.compile(r"^[A-Z][<>^v]\d+$")
 TOK_LIST = re.compile(r"\s*,\s*")
-ANS_TAG  = re.compile(r"(?is)<answer>(.*?)</answer>")
+ANS_TAG = re.compile(r"(?is)<answer>(.*?)</answer>")
+
 
 def _extract_answer_text(text: str) -> str:
     """Return inner text of <answer>…</answer> if present; else the whole string."""
-    m = ANS_TAG.search(text or "")
-    return (m.group(1) if m else (text or "")).strip()
+    match = ANS_TAG.search(text or "")
+    return (match.group(1) if match else (text or "")).strip()
+
 
 def _canon_token(tok: str) -> Optional[str]:
     """Uppercase, strip spaces, ensure it looks like PIECE+DIR+STEPS."""
-    t = (tok or "").strip().upper().replace(" ", "")
-    return t if MOVE_RE.match(t) else None
-
-from typing import List, Optional, Any
-import re
-
-def _canon_seq(x: Any) -> Optional[List[str]]:
-    """
-    Parse a Rush Hour move sequence out of raw model text or a Python list.
-    Normalizes:
-      - extracts <answer>...</answer> if present (ignores <think>...)
-      - accepts commas or whitespace as separators
-      - maps U/D/L/R and Unicode arrows to ^/v/</>
-      - uppercases piece letters; strips spaces; removes leading zeros in steps
-    Returns list like ["E^1","G<1","Bv1","A>3"] or None if nothing parseable.
-    """
-    # Coerce to a single string
-    if isinstance(x, (list, tuple)):
-        s = ",".join(str(t) for t in x)
-    else:
-        s = str(x)
-
-    # Strip <think> and isolate <answer> if present
-    s = re.sub(r"(?is)<think>.*?</think>", "", s)
-    m = re.search(r"(?is)<answer>\s*(.*?)\s*</answer>", s)
-    if m:
-        s = m.group(1)
-
-    # Normalize arrows
-    s = (s
-         .replace("↑", "^").replace("↓", "v")
-         .replace("←", "<").replace("→", ">"))
-
-    # Find tokens in order, allowing spaces like "A > 3"
-    tokens = []
-    for m in re.finditer(r"([A-Za-z])\s*([><\^vUDLR])\s*([0-9]+)", s):
-        piece = m.group(1).upper()
-        d_raw = m.group(2)  # one of <,>,^,v or U/D/L/R (sometimes V)
-        # Map symbols as-is; map letters case-insensitively to canonical symbols
-        if d_raw in ("<", ">", "^", "v"):
-            d = d_raw
-        else:
-            d = {"U":"^", "D":"v", "L":"<", "R":">", "V":"v"}.get(d_raw.upper(), d_raw)
-            
-        steps = str(int(m.group(3)))  # drop leading zeros
-        tokens.append(f"{piece}{d}{steps}")
-
-    return tokens or None
-
-import re
-import math
-from typing import List, Tuple, Optional, Dict
-
-TOKEN_RE = re.compile(r"^[A-Z][<>^v]\d+$")
+    token_str = (tok or "").strip().upper().replace(" ", "")
+    return token_str if MOVE_RE.match(token_str) else None
 
 # ---------- Parsing helpers ----------
 
@@ -477,45 +422,44 @@ def _len_tokens(tokens: Optional[List[str]]) -> int:
 # - We accept 'V' and normalize to 'v'.
 # - We prefer answers inside <answer>...</answer>, but will fall back to the first token list.
 
-import re
-import math
-from typing import List, Tuple, Optional, Dict, Any, Iterable
-
 # ---------- Token utilities ----------
 
 # Directions allowed; accept uppercase 'V' too
 _TOKEN_RE = re.compile(r"^[A-Z][<>^vV]\d+$")
 
-def _parse_and_normalize_token(p: str) -> Optional[Tuple[str, str, int]]:
+
+def _parse_and_normalize_token(token: str) -> Optional[Tuple[str, str, int]]:
     """
     Parse a single token (e.g., 'Bv3', 'A>2', 'C^1') and normalize to:
       (piece_upper, dir_norm, steps_int)
     dir_norm ∈ {'<','>','^','v'}
     """
-    if not isinstance(p, str):
+    if not isinstance(token, str):
         return None
-    p = p.strip().replace(" ", "")
-    if not _TOKEN_RE.match(p):
+    token = token.strip().replace(" ", "")
+    if not _TOKEN_RE.match(token):
         return None
-    piece = p[0].upper()
-    d = p[1]
-    d = 'v' if d in ('v', 'V') else d
-    try:
-        n = int(p[2:])
-    except Exception:
-        return None
-    if n <= 0:
-        return None
-    return (piece, d, n)
 
-def _looks_like_token_list(s: str) -> bool:
-    s = (s or "").strip().replace(" ", "")
-    if not s:
+    piece = token[0].upper()
+    direction = token[1]
+    direction = "v" if direction in ("v", "V") else direction
+    try:
+        steps = int(token[2:])
+    except (TypeError, ValueError):
+        return None
+    if steps <= 0:
+        return None
+    return (piece, direction, steps)
+
+
+def _looks_like_token_list(text: str) -> bool:
+    normalized = (text or "").strip().replace(" ", "")
+    if not normalized:
         return False
-    parts = s.split(",")
-    for p in parts:
-        tup = _parse_and_normalize_token(p)
-        if tup is None:
+    parts = normalized.split(",")
+    for raw_token in parts:
+        token_tuple = _parse_and_normalize_token(raw_token)
+        if token_tuple is None:
             return False
     return True
 
@@ -527,31 +471,30 @@ def _canon_seq(seq: Any) -> Optional[List[str]]:
     Returns None if invalid.
     """
     if isinstance(seq, (list, tuple)):
-        parts = [str(x) for x in seq]
+        parts = [str(element) for element in seq]
     elif isinstance(seq, str):
-        s = seq.strip()
-        s = s.replace(" ", "")
-        if not s:
+        seq_str = seq.strip().replace(" ", "")
+        if not seq_str:
             return None
-        parts = s.split(",")
+        parts = seq_str.split(",")
     else:
         return None
 
-    toks: List[Tuple[str, str, int]] = []
-    for p in parts:
-        tup = _parse_and_normalize_token(p)
-        if tup is None:
+    tokens: List[Tuple[str, str, int]] = []
+    for raw_token in parts:
+        token_tuple = _parse_and_normalize_token(raw_token)
+        if token_tuple is None:
             return None
-        toks.append(tup)
+        tokens.append(token_tuple)
 
     # Merge consecutive same (piece, dir)
     merged: List[Tuple[str, str, int]] = []
-    for (piece, d, n) in toks:
-        if merged and merged[-1][0] == piece and merged[-1][1] == d:
-            merged[-1] = (piece, d, merged[-1][2] + n)
+    for (piece, direction, steps) in tokens:
+        if merged and merged[-1][0] == piece and merged[-1][1] == direction:
+            merged[-1] = (piece, direction, merged[-1][2] + steps)
         else:
-            merged.append((piece, d, n))
-    return [f"{c}{d}{k}" for (c, d, k) in merged]
+            merged.append((piece, direction, steps))
+    return [f"{piece}{direction}{steps}" for (piece, direction, steps) in merged]
 
 def _extract_answer_block(text: str) -> Optional[str]:
     """Prefer <answer>...</answer>; otherwise find the first token list."""
@@ -572,38 +515,49 @@ _TOKEN_SCAN = re.compile(r"([A-Za-z])\s*([><\^vVUDLR])\s*([0-9]+)")
 def _canon_seq_from_text(text: Any) -> Optional[List[str]]:
     """Extract tokens anywhere in the prediction (favoring <answer>...</answer> if present)."""
     if isinstance(text, (list, tuple)):
-        text = ",".join(str(t) for t in text)
-    s = str(text or "")
+        raw_text = ",".join(str(token) for token in text)
+    else:
+        raw_text = str(text or "")
     # Prefer the <answer> block if present
-    m = re.search(r"(?is)<answer>\s*(.*?)\s*</answer>", s)
-    s = m.group(1) if m else s
+    match = re.search(r"(?is)<answer>\s*(.*?)\s*</answer>", raw_text)
+    scan_text = match.group(1) if match else raw_text
 
-    toks: List[Tuple[str,str,int]] = []
-    for m in _TOKEN_SCAN.finditer(s):
-        piece = m.group(1).upper()
-        d_raw = m.group(2)  # one of <,>,^,v or U/D/L/R (sometimes V)
+    moves: List[Tuple[str, str, int]] = []
+    for match_obj in _TOKEN_SCAN.finditer(scan_text):
+        piece = match_obj.group(1).upper()
+        direction_raw = match_obj.group(2)  # one of <,>,^,v or U/D/L/R (sometimes V)
         # Map symbols as-is; map letters case-insensitively to canonical symbols
-        if d_raw in ("<", ">", "^", "v"):
-            d = d_raw
+        if direction_raw in ("<", ">", "^", "v"):
+            direction = direction_raw
         else:
-            d = {"U":"^", "D":"v", "L":"<", "R":">", "V":"v"}.get(d_raw.upper(), d_raw)
-            
-        n     = int(m.group(3))
-        if n <= 0: 
-            continue
-        toks.append((piece, d, n))
+            direction = {
+                "U": "^",
+                "D": "v",
+                "L": "<",
+                "R": ">",
+                "V": "v",
+            }.get(direction_raw.upper(), direction_raw)
 
-    if not toks:
+        steps = int(match_obj.group(3))
+        if steps <= 0:
+            continue
+        moves.append((piece, direction, steps))
+
+    if not moves:
         return None
 
     # merge consecutive same (piece,dir)
-    merged: List[Tuple[str,str,int]] = []
-    for (c, d, n) in toks:
-        if merged and merged[-1][0]==c and merged[-1][1]==d:
-            merged[-1] = (c, d, merged[-1][2] + n)
+    merged_moves: List[Tuple[str, str, int]] = []
+    for (piece, direction, steps) in moves:
+        if merged_moves and merged_moves[-1][0] == piece and merged_moves[-1][1] == direction:
+            merged_moves[-1] = (
+                piece,
+                direction,
+                merged_moves[-1][2] + steps,
+            )
         else:
-            merged.append((c, d, n))
-    return [f"{c}{d}{k}" for (c, d, k) in merged]
+            merged_moves.append((piece, direction, steps))
+    return [f"{piece}{direction}{steps}" for (piece, direction, steps) in merged_moves]
 
 
 def _len_tokens(tokens: Optional[List[str]]) -> int:
@@ -780,58 +734,68 @@ class Board:
             self.grid[r][c] = car
         self.cars[car] = sorted(cells)
 
-    def _step_move(self, car: str, d: str) -> bool:
+    def _step_move(self, car: str, direction: str) -> bool:
         """
-        Move 'car' one cell in direction d if legal.
-        Returns False if illegal (wrong axis, off board, or blocked).
+        Attempt to move ``car`` one cell in ``direction``.
+
+        Returns ``True`` if the move is legal and applied, otherwise ``False``.
         """
         cells = self._cells_for(car)
         if not cells:
             return False
 
         ori = self.orient.get(car, 'H')
-        if d in '<>' and ori != 'H':
+        if direction in '<>' and ori != 'H':
             return False
-        if d in '^v' and ori != 'V':
+        if direction in '^v' and ori != 'V':
             return False
 
-        if d == '<':
+        blocked = False
+        new_cells: List[Tuple[int, int]]
+
+        if direction == '<':
             leftmost = min(c for (_, c) in cells)
-            r = cells[0][0]
-            nc = leftmost - 1
-            if nc < 0 or self.grid[r][nc] != 'o':
-                return False
-            new_cells = [(r, c - 1) for (r, c) in cells]
-        elif d == '>':
+            row = cells[0][0]
+            next_col = leftmost - 1
+            blocked = next_col < 0 or self.grid[row][next_col] != 'o'
+            new_cells = [(row, col - 1) for (row, col) in cells]
+        elif direction == '>':
             rightmost = max(c for (_, c) in cells)
-            r = cells[0][0]
-            nc = rightmost + 1
-            if nc >= self.N or self.grid[r][nc] != 'o':
-                return False
-            new_cells = [(r, c + 1) for (r, c) in cells]
-        elif d == '^':
+            row = cells[0][0]
+            next_col = rightmost + 1
+            blocked = next_col >= self.N or self.grid[row][next_col] != 'o'
+            new_cells = [(row, col + 1) for (row, col) in cells]
+        elif direction == '^':
             top = min(r for (r, _) in cells)
-            c = cells[0][1]
-            nr = top - 1
-            if nr < 0 or self.grid[nr][c] != 'o':
-                return False
-            new_cells = [(r - 1, c) for (r, c) in cells]
+            col = cells[0][1]
+            next_row = top - 1
+            blocked = next_row < 0 or self.grid[next_row][col] != 'o'
+            new_cells = [(row - 1, col) for (row, col) in cells]
         else:  # 'v'
-            bot = max(r for (r, _) in cells)
-            c = cells[0][1]
-            nr = bot + 1
-            if nr >= self.N or self.grid[nr][c] != 'o':
-                return False
-            new_cells = [(r + 1, c) for (r, c) in cells]
+            bottom = max(r for (r, _) in cells)
+            col = cells[0][1]
+            next_row = bottom + 1
+            blocked = next_row >= self.N or self.grid[next_row][col] != 'o'
+            new_cells = [(row + 1, col) for (row, col) in cells]
+
+        if blocked:
+            return False
 
         self._clear_cells(cells)
         self._occupy_cells(car, new_cells)
         return True
 
     def apply_token(self, token: str) -> bool:
-        car, d, steps = token[0], token[1], int(token[2:])
+        """
+        Apply a compact move token like ``A>2`` to the board.
+
+        Returns ``True`` if all steps are legal and applied, otherwise ``False``.
+        """
+        car = token[0]
+        direction = token[1]
+        steps = int(token[2:])
         for _ in range(steps):
-            if not self._step_move(car, d):
+            if not self._step_move(car, direction):
                 return False
         return True
 
@@ -841,16 +805,16 @@ def _simulate_prefix(board: Board, tokens: List[str]) -> Tuple[int, bool, Board]
     Apply tokens in order until one fails or goal is reached.
     Returns (valid_prefix_len, solved, final_board_state).
     """
-    b = board.clone()
+    board_copy = board.clone()
     valid = 0
-    for t in tokens:
-        ok = b.apply_token(t)
-        if not ok:
-            return valid, False, b
+    for token in tokens:
+        token_ok = board_copy.apply_token(token)
+        if not token_ok:
+            return valid, False, board_copy
         valid += 1
-        if b.is_solved():
-            return valid, True, b
-    return valid, b.is_solved(), b
+        if board_copy.is_solved():
+            return valid, True, board_copy
+    return valid, board_copy.is_solved(), board_copy
 
 
 # ---------- Gold handling ----------
@@ -864,13 +828,13 @@ def _canon_gold_candidates(gold: Any) -> List[List[str]]:
         seq = _canon_seq(gold)
         return [seq] if seq is not None else []
 
-    cands: List[List[str]] = []
+    candidates: List[List[str]] = []
     if isinstance(gold, (list, tuple)):
-        for g in gold:
-            seq = _canon_seq(g)
+        for gold_entry in gold:
+            seq = _canon_seq(gold_entry)
             if seq is not None:
-                cands.append(seq)
-    return cands
+                candidates.append(seq)
+    return candidates
 
 # ---------- Rewards ----------
 
@@ -878,13 +842,139 @@ def _canon_gold_candidates(gold: Any) -> List[List[str]]:
 _THINK_BLOCK = re.compile(r"(?is)<think>\s*(.*?)\s*</think>")
 
 def _count_think_tokens(text: str) -> int:
-    m = _THINK_BLOCK.search(text or "")
-    if not m:
+    match = _THINK_BLOCK.search(text or "")
+    if not match:
         return 0
     # whitespace-delimited proxy for token count (keeps it fast & robust)
-    return len(re.findall(r"\S+", m.group(1)))
+    return len(re.findall(r"\S+", match.group(1)))
 
-def rush_solution_shaped(
+
+def _rush_formatting_bonus(
+    pred_text: str,
+    think_min_tokens: int,
+    think_full_tokens: int,
+    think_bonus_cap: float,
+) -> float:
+    """Tiny formatting bonus when we spot token patterns and sufficient thinking."""
+    fmt_bonus = 0.0
+    think_bonus = 0.0
+
+    try:
+        num_tokens = len(list(_TOKEN_SCAN.finditer(pred_text)))
+    except re.error:
+        num_tokens = 0
+    if num_tokens > 0:
+        fmt_bonus = 0.01
+
+    num_think_tokens = _count_think_tokens(pred_text)
+    if num_think_tokens > think_min_tokens:
+        ramp = (num_think_tokens - think_min_tokens) / max(
+            1, (think_full_tokens - think_min_tokens),
+        )
+        think_bonus = think_bonus_cap * min(1.0, max(0.0, ramp))
+
+    return min(0.01, fmt_bonus + think_bonus)
+
+
+def _rush_build_board_and_moves(
+    prompts: Any,
+    board_str: str | None,
+    size: int | None,
+) -> Tuple[Board | None, int | None]:
+    """Construct a Board from explicit params or from the prompt, plus gold moves."""
+    board: Board | None = None
+    gold_moves_from_prompt: int | None = None
+
+    if board_str is not None and size is not None:
+        try:
+            board = Board(board_str, int(size))
+        except (TypeError, ValueError):
+            board = None
+        return board, gold_moves_from_prompt
+
+    prompt_text = _stringify_prompt(prompts)
+    prompt_board_str, prompt_size, gold_moves_from_prompt = _extract_puzzle_from_prompt(
+        prompt_text,
+    )
+    if prompt_board_str and prompt_size:
+        try:
+            board = Board(prompt_board_str, int(prompt_size))
+        except (TypeError, ValueError):
+            board = None
+
+    return board, gold_moves_from_prompt
+
+
+def _rush_prefix_credit(pred_can: List[str], gold_cands: List[List[str]]) -> float:
+    """Fractional credit based on longest common prefix against any gold sequence."""
+    if not gold_cands or not pred_can:
+        return 0.0
+
+    best_lcp = 0
+    denom = 1
+    for gold_candidate in gold_cands:
+        if not gold_candidate:
+            continue
+        lcp = 0
+        for pred_token, gold_token in zip(pred_can, gold_candidate):
+            if pred_token != gold_token:
+                break
+            lcp += 1
+        best_lcp = max(best_lcp, lcp)
+        denom = max(denom, _len_tokens(gold_candidate))
+
+    return best_lcp / max(1, denom)
+
+
+def _rush_solve_terms(
+    pred_can: List[str],
+    board: Board | None,
+    target_moves: int | None,
+) -> Tuple[float, float, float]:
+    """
+    Compute (prefix_fraction, solve_term, phi_term) for a predicted sequence.
+
+    prefix_fraction is the legal-prefix fraction if a board is available, else 0.
+    """
+    solve_term = 0.0
+    phi_term = 0.0
+
+    if board is None:
+        if target_moves is not None:
+            sequence_len = _len_tokens(pred_can)
+            target = int(target_moves)
+            solve_term = (
+                1.0
+                if sequence_len <= target
+                else 1.0 / (1.0 + (sequence_len - target))
+            )
+        return 0.0, solve_term, phi_term
+
+    valid_k, solved, final_board = _simulate_prefix(board, pred_can)
+    prefix_fraction = valid_k / max(1, _len_tokens(pred_can))
+
+    if solved:
+        sequence_len = _len_tokens(pred_can)
+        target = target_moves if target_moves is not None else sequence_len
+        solve_term = (
+            1.0
+            if sequence_len <= target
+            else 1.0 / (1.0 + (sequence_len - target))
+        )
+
+    blockers_start, dist_start = board.blockers_and_distance()
+    blockers_end, dist_end = final_board.blockers_and_distance()
+    heuristic_start = blockers_start + dist_start
+    heuristic_end = blockers_end + dist_end
+    if heuristic_start > 0:
+        phi_term = max(0.0, (heuristic_start - heuristic_end) / heuristic_start)
+    else:
+        phi_term = 1.0 if solved else 0.0
+
+    return prefix_fraction, solve_term, phi_term
+
+
+def rush_solution_shaped(  # pylint: disable=too-many-locals
     *, 
     prompts,
     completions,
@@ -922,24 +1012,19 @@ def rush_solution_shaped(
     gold_min_len = min((_len_tokens(gc) for gc in gold_cands if gc is not None), default=None)
 
     # Prefer explicit board/moves if provided; else try parsing prompt for convenience
-    board = None
-    gm_from_prompt = None
-    if board_str is not None and N is not None:
-        try:
-            board = Board(board_str, int(N))
-        except Exception:
-            board = None
-    else:
-        prompt_text = _stringify_prompt(prompts)
-        b2, N2, gm_from_prompt = _extract_puzzle_from_prompt(prompt_text)
-        if b2 and N2:
-            try:
-                board = Board(b2, int(N2))
-            except Exception:
-                board = None
+    board, gm_from_prompt = _rush_build_board_and_moves(prompts, board_str, N)
 
     # Choose a gold_moves target for boardless solve shaping
-    target_moves = gold_moves if (gold_moves is not None) else (gm_from_prompt if gm_from_prompt is not None else gold_min_len)
+    if gold_moves is not None:
+        target_moves = gold_moves
+    elif gm_from_prompt is not None:
+        target_moves = gm_from_prompt
+    else:
+        target_moves = gold_min_len
+
+    think_min_tokens = int(kw.get("think_min_tokens", 25))
+    think_full_tokens = int(kw.get("think_full_tokens", 100))
+    think_bonus_cap = float(kw.get("think_bonus_cap", 0.02))
 
     out_scores: List[float] = []
     for pred in completions:
@@ -948,83 +1033,28 @@ def rush_solution_shaped(
 
         # 0) Formatting bonus when we see at least one valid token but parser fails
         if pred_can is None:
-            # --- always initialize locals to avoid UnboundLocalError ---
-            fmt_bonus   = 0.0
-            think_bonus = 0.0
-
-            # tiny formatting bonus if we can spot at least one token pattern
-            try:
-                n_tokens = len(list(_TOKEN_SCAN.finditer(pred_text)))
-            except Exception:
-                n_tokens = 0
-            fmt_bonus = 0.01 if n_tokens > 0 else 0.0  # == min(0.01, 0.01 * n_tokens)
-
-            # bonus for longer <think>
-            tmin = int(kw.get("think_min_tokens", 25))
-            tmax = int(kw.get("think_full_tokens", 100))
-            tcap = float(kw.get("think_bonus_cap", 0.02))
-
-            n_think = _count_think_tokens(pred_text)
-            if n_think > tmin:
-                ramp = (n_think - tmin) / max(1, (tmax - tmin))
-                think_bonus = tcap * min(1.0, max(0.0, ramp))
-
-            # keep this branch "tiny" so it never dominates signal
-            out_scores.append(min(0.01, fmt_bonus + think_bonus))
+            bonus = _rush_formatting_bonus(
+                pred_text,
+                think_min_tokens,
+                think_full_tokens,
+                think_bonus_cap,
+            )
+            out_scores.append(bonus)
             continue
 
         # 1) Exact match
         exact = 1.0 if any(pred_can == gc for gc in gold_cands if gc is not None) else 0.0
 
         # 2) Prefix credit (LCP vs best gold candidate)
-        prefix = 0.0
-        if gold_cands:
-            best = 0
-            denom = 1
-            for gc in gold_cands:
-                if not gc:
-                    continue
-                lcp = 0
-                for a, b in zip(pred_can, gc):
-                    if a == b:
-                        lcp += 1
-                    else:
-                        break
-                best  = max(best, lcp)
-                denom = max(denom, _len_tokens(gc))
-            prefix = best / max(1, denom)
+        prefix_from_gold = _rush_prefix_credit(pred_can, gold_cands)
 
-        # 3) Solve & Φ terms
-        solve_term = 0.0
-        phi_term   = 0.0
-        if board is not None:
-            # Use legality-aware simulation when board is available
-            valid_k, solved, b_final = _simulate_prefix(board, pred_can)
-
-            # Prefix is at least the legal prefix fraction of our own sequence
-            prefix = max(prefix, valid_k / max(1, _len_tokens(pred_can)))
-
-            if solved:
-                L = _len_tokens(pred_can)
-                m = target_moves if target_moves is not None else L
-                solve_term = 1.0 if L <= m else 1.0 / (1.0 + (L - m))
-
-            blk0, dist0 = board.blockers_and_distance()
-            blk1, dist1 = b_final.blockers_and_distance()
-            h0, h1 = (blk0 + dist0), (blk1 + dist1)
-            if h0 > 0:
-                phi_term = max(0.0, (h0 - h1) / h0)
-            else:
-                phi_term = 1.0 if solved else 0.0
-
-        else:
-            # --- GOLD-ONLY SHAPING (no board) ---
-            # Reward being at or under minimal/target moves softly
-            if target_moves is not None:
-                L = _len_tokens(pred_can)
-                m = int(target_moves)
-                solve_term = 1.0 if L <= m else 1.0 / (1.0 + (L - m))
-            # phi_term stays 0 without a board
+        # 3) Solve & Φ terms (and legal-prefix fraction if a board is present)
+        legal_prefix, solve_term, phi_term = _rush_solve_terms(
+            pred_can,
+            board,
+            target_moves,
+        )
+        prefix = max(prefix_from_gold, legal_prefix)
 
         score = (
             w_exact  * exact +
@@ -1036,53 +1066,58 @@ def rush_solution_shaped(
 
     return out_scores
 
-def rush_solution_exact(*, prompts, completions, answer=None, gold=None, **kwargs):
+
+def rush_solution_exact(
+    *,
+    prompts,
+    completions,
+    answer=None,
+    gold=None,
+    **kwargs,
+) -> List[float]:
+    """
+    Exact-match Rush Hour reward with a small formatting bonus.
+
+    Returns 1.0 for canonical sequence matches, otherwise 0.0, with a tiny bonus
+    when the parser fails but the format shows some valid token structure.
+    """
+    # prompts accepted for API parity; not used directly in this reward
+    _ = prompts
     if isinstance(completions, str):
         completions = [completions]
     else:
         completions = list(completions)
 
-    gold_cands = _canon_gold_candidates(gold or answer or kwargs.get("answers") or kwargs.get("gold_answers"))
+    gold_cands = _canon_gold_candidates(
+        gold or answer or kwargs.get("answers") or kwargs.get("gold_answers"),
+    )
+    think_min_tokens = int(kwargs.get("think_min_tokens", 25))
+    think_full_tokens = int(kwargs.get("think_full_tokens", 100))
+    think_bonus_cap = float(kwargs.get("think_bonus_cap", 0.02))
 
     scores: List[float] = []
     for pred in completions:
         pred_text = str(pred or "")
-        pred_can  = _canon_seq_from_text(pred_text)
+        pred_can = _canon_seq_from_text(pred_text)
 
         # 0) Formatting bonus when we see at least one valid token but parser fails
         if pred_can is None:
-            # --- always initialize locals to avoid UnboundLocalError ---
-            fmt_bonus   = 0.0
-            think_bonus = 0.0
-
-            # tiny formatting bonus if we can spot at least one token pattern
-            try:
-                n_tokens = len(list(_TOKEN_SCAN.finditer(pred_text)))
-            except Exception:
-                n_tokens = 0
-            fmt_bonus = 0.01 if n_tokens > 0 else 0.0  # equivalent to min(0.01, 0.01 * n_tokens)
-
-            # bonus for longer <think>
-            tmin = int(kwargs.get("think_min_tokens", 25))
-            tmax = int(kwargs.get("think_full_tokens", 100))
-            tcap = float(kwargs.get("think_bonus_cap", 0.02))
-
-            n_think = _count_think_tokens(pred_text)
-            if n_think > tmin:
-                ramp = (n_think - tmin) / max(1, (tmax - tmin))
-                think_bonus = tcap * min(1.0, max(0.0, ramp))
-
-            # keep this branch "tiny" so it never dominates signal
-            scores.append(min(0.01, fmt_bonus + think_bonus))
+            bonus = _rush_formatting_bonus(
+                pred_text,
+                think_min_tokens,
+                think_full_tokens,
+                think_bonus_cap,
+            )
+            scores.append(bonus)
             continue
 
-        ok = any(pred_can == gc for gc in gold_cands if gc is not None)
-        scores.append(1.0 if ok else 0.0)
+        exact_match = any(pred_can == gc for gc in gold_cands if gc is not None)
+        scores.append(1.0 if exact_match else 0.0)
 
     return scores
 
 
-def _canon_math(s: str) -> str:
+def _canon_math(text: str) -> str:
     """
     Canonicalize math answers:
     - strip leading/trailing whitespace
@@ -1092,42 +1127,42 @@ def _canon_math(s: str) -> str:
     - remove spaces inside the expression unless inside LaTeX commands
     - unify parentheses usage for single-number expressions
     """
-    s = s.strip()
+    text = text.strip()
 
     # Remove LaTeX math mode markers
-    s = s.replace('$', '')
+    text = text.replace("$", "")
 
     # Remove LaTeX spacing commands
-    s = re.sub(r"\\\s+", "", s)
+    text = re.sub(r"\\\s+", "", text)
 
     # Remove outer braces around a single token
-    if re.fullmatch(r"\{[^{}]+\}", s):
-        s = s[1:-1]
+    if re.fullmatch(r"\{[^{}]+\}", text):
+        text = text[1:-1]
 
     # Drop surrounding parentheses if they enclose just a number/frac/root
-    if re.fullmatch(r"\([^()]+\)", s):
-        s_inner = s[1:-1].strip()
+    if re.fullmatch(r"\([^()]+\)", text):
+        inner = text[1:-1].strip()
         # only drop if it doesn't change grouping meaning
-        if re.match(r"^[\d\.\-\\sqrt]+$", s_inner):
-            s = s_inner
+        if re.match(r"^[\d\.\-\\sqrt]+$", inner):
+            text = inner
 
     # Strip spaces
-    s = s.replace(" ", "")
+    text = text.replace(" ", "")
 
     # Convert -0 to 0
-    if s in ("-0", "+0"):
-        s = "0"
+    if text in ("-0", "+0"):
+        text = "0"
 
     # Remove trailing .0 from integers
-    if re.fullmatch(r"-?\d+\.0+", s):
-        s = s.split('.')[0]
+    if re.fullmatch(r"-?\d+\.0+", text):
+        text = text.split(".")[0]
 
-    return s
+    return text
 
 def pure_accuracy_reward_math(
     completions: List[Any],
     answer:      List[str],
-    **kw,
+    **_unused_kwargs,
 ) -> List[float]:
     """
     Pure exact-match for math problems with format requirement:
@@ -1144,14 +1179,14 @@ def pure_accuracy_reward_math(
             outs.append(0.0)
             continue
 
-        m = _answer_pat.search(txt)
-        if not m:
+        match = _answer_pat.search(txt)
+        if not match:
             outs.append(0.0)
             continue
 
-        pred = m.group(1)
-        ok = (_canon_math(pred) == _canon_math(gold))
-        outs.append(1.0 if ok else 0.0)
+        pred = match.group(1)
+        is_correct_match = (_canon_math(pred) == _canon_math(gold))
+        outs.append(1.0 if is_correct_match else 0.0)
 
     return outs
 
@@ -1161,10 +1196,10 @@ def pure_accuracy_reward_math(
 def _extract_answer_letters(comp: Any) -> str:
     """Pull the inner <answer>…</answer> text and canon to LETTERS-ONLY A–Z."""
     raw = _extract_content(comp)
-    m = _answer_pat.search(raw or "")
-    if not m:
+    match = _answer_pat.search(raw or "")
+    if not match:
         return ""
-    return _canon_crossword_letters(m.group(1))
+    return _canon_crossword_letters(match.group(1))
 
 
 def crossword_format_reward(
@@ -1180,6 +1215,7 @@ def crossword_format_reward(
         * the submitted answer is all-uppercase (no lowercase letters).
     Otherwise 0.
     """
+    _ = prompt  # kept for API parity; not used in scoring
     outs: List[float] = []
     for comp, gold in zip(completions, answer):
         raw = _extract_content(comp) or ""
@@ -1216,17 +1252,17 @@ def crossword_length_reward(
                 if isinstance(msg, dict) and msg.get("role") == "user":
                     user_txt = str(msg.get("content", ""))
                     break
-        m = re.search(r"\((\d+)\)", user_txt)
-        if not m:
+        match = re.search(r"\((\d+)\)", user_txt)
+        if not match:
             outs.append(0.0)
             continue
-        expected_len = int(m.group(1))
+        expected_len = int(match.group(1))
         ans_len = len(_extract_answer_letters(comp))
         outs.append(1.0 if ans_len == expected_len else 0.0)
     return outs
 
 
-def formating(completions, **kwargs):
+def formating(completions, **_unused_kwargs):
     """
     Check that the reasoning/answer are wrapped in <think>…</think><answer>…</answer>
     with newlines; used as a formatting bonus in tests.

@@ -45,7 +45,7 @@ export WANDB_CACHE_DIR=/n/fs/similarity/wandb-offload/cache
 mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
 
 # Steps and temps
@@ -71,14 +71,14 @@ TEMP=${TEMPS[$TEMP_IDX]}
 CKPT_DIR="$MODEL_ROOT/checkpoint-$STEP"
 test -d "$CKPT_DIR" || { echo "Missing $CKPT_DIR"; exit 1; }
 
-# Map temperature → output root
+# Map temperature → output root (under artifacts/results)
 temp_to_root () {
   case "$1" in
-    0.7)  echo "$PROJECT_ROOT/results/GRPO-1.5B-math-temp-0.7" ;;
-    0.3)  echo "$PROJECT_ROOT/results/GRPO-1.5B-low-temp" ;;
-    0.05) echo "$PROJECT_ROOT/results/GRPO-1.5B-math-temp-0.05" ;;
-    0|0.0) echo "$PROJECT_ROOT/results/GRPO-1.5B-math-temp-0.0" ;;
-    *)    echo "$PROJECT_ROOT/results/GRPO-1.5B-math-temp-${1}" ;;
+    0.7)  echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.7" ;;
+    0.3)  echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-low-temp" ;;
+    0.05) echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.05" ;;
+    0|0.0) echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.0" ;;
+    *)    echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-${1}" ;;
   esac
 }
 OUTPUT_ROOT="$(temp_to_root "$TEMP")"

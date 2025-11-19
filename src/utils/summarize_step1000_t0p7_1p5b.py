@@ -15,11 +15,14 @@ Bin logic
 • Binning key: pass-1 entropy_think and entropy_answer combined via --combine {sum|mean}
 • --binning {equal_count|equal_width}, default equal_count (quantiles per domain)
 • Samples missing either entropy_think/entropy_answer are skipped from binning
-
 """
-import os, re, json, argparse
+from dataclasses import dataclass
+import argparse
+import json
+import os
+import re
 from bisect import bisect_right
-from typing import Dict, Any, Optional, Tuple, List, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 DOM_MAP = {
     "carpark": "Carpark",
@@ -27,27 +30,37 @@ DOM_MAP = {
     "math":    "Math",
 }
 
-# ---------- helpers ----------
 def nat_step_from_path(path: str) -> Optional[int]:
-    m = re.search(r"step(\d+)", path)
-    return int(m.group(1)) if m else None
+    """Extract the training step number from a path like .../step1000/...."""
+    match = re.search(r"step(\d+)", path)
+    return int(match.group(1)) if match else None
 
-def _substr(hay: Optional[str], needle: Optional[str]) -> bool:
-    if not hay or not needle:
+
+def _substr(haystack: Optional[str], needle: Optional[str]) -> bool:
+    """Return True if needle appears in haystack, handling None safely."""
+    if not haystack or not needle:
         return False
-    return needle in hay
+    return needle in haystack
 
-def _exact(a: Optional[str], b: Optional[str]) -> bool:
-    if a is None or b is None:
+
+def _exact(left: Optional[str], right: Optional[str]) -> bool:
+    """Return True if two strings are exactly equal, handling None safely."""
+    if left is None or right is None:
         return False
-    return a == b
+    return left == right
 
-def compute_correct(pass_dict: Dict[str, Any], gold_canon: Optional[str], mode: str) -> Optional[bool]:
+
+def compute_correct(
+    pass_dict: Dict[str, Any],
+    gold_canon: Optional[str],
+    mode: str,
+) -> Optional[bool]:
+    """Compute correctness for a pass-1/2 record given a mode."""
     if pass_dict is None:
         return None
     if mode == "none":
-        v = pass_dict.get("is_correct_pred")
-        return None if v is None else bool(v)
+        value = pass_dict.get("is_correct_pred")
+        return None if value is None else bool(value)
     pred = pass_dict.get("pred_answer_canon")
     if mode == "substring":
         return _substr(pred, gold_canon)
@@ -55,404 +68,824 @@ def compute_correct(pass_dict: Dict[str, Any], gold_canon: Optional[str], mode: 
         return _exact(pred, gold_canon)
     return None
 
+
 def get_soft(pass_dict: Dict[str, Any]) -> Optional[float]:
+    """Return soft_reward (or 'soft reward') as a float, when available."""
     if pass_dict is None:
         return None
-    v = pass_dict.get("soft_reward", pass_dict.get("soft reward"))
+    value = pass_dict.get("soft_reward", pass_dict.get("soft reward"))
+    if value is None:
+        return None
     try:
-        return float(v) if v is not None else None
-    except Exception:
+        return float(value)
+    except (TypeError, ValueError):
         return None
 
-def domain_from_dirname(dname: str) -> Optional[str]:
+
+def domain_from_dirname(dir_name: str) -> Optional[str]:
+    """Map a GRPO directory name to a pretty domain label."""
     for key, label in DOM_MAP.items():
-        if f"-{key}-" in dname:
+        if f"-{key}-" in dir_name:
             return label
     return None
 
-def label_to_token(label: str) -> str:
-    t = label.strip().lower()
-    if t in ("carpark", "rush hour", "rush_hour", "rushhour"): return "carpark"
-    if t in ("crossword", "xword", "crosswords"):              return "xword"
-    if t in ("math", "math2"):                                 return "math"
-    return t
 
-def parse_cond_soft_domains(s: Optional[str]) -> Set[str]:
-    if not s: return set()
-    toks = set()
-    for part in s.split(","):
-        p = part.strip().lower()
-        if p in ("carpark", "rush hour", "rush_hour", "rushhour"): toks.add("carpark")
-        elif p in ("crossword", "xword", "crosswords"):            toks.add("xword")
-        elif p in ("math", "math2"):                               toks.add("math")
-        else:                                                      toks.add(p)
-    return toks
+def label_to_token(label: str) -> str:
+    """Normalize a human-readable domain label to a token."""
+    token = label.strip().lower()
+    if token in ("carpark", "rush hour", "rush_hour", "rushhour"):
+        return "carpark"
+    if token in ("crossword", "xword", "crosswords"):
+        return "xword"
+    if token in ("math", "math2"):
+        return "math"
+    return token
+
+
+def parse_cond_soft_domains(raw: Optional[str]) -> Set[str]:
+    """Parse --cond-soft-domains into a normalized set of domain tokens."""
+    if not raw:
+        return set()
+    tokens: Set[str] = set()
+    for part in raw.split(","):
+        normalized = part.strip().lower()
+        if normalized in ("carpark", "rush hour", "rush_hour", "rushhour"):
+            tokens.add("carpark")
+        elif normalized in ("crossword", "xword", "crosswords"):
+            tokens.add("xword")
+        elif normalized in ("math", "math2"):
+            tokens.add("math")
+        else:
+            tokens.add(normalized)
+    return tokens
+
 
 def find_model_dirs(results_root: str, target_temp: float) -> List[Tuple[str, str]]:
-    out: List[Tuple[str, str]] = []
+    """Return (domain_label, dirpath) pairs matching GRPO-1.5B temp folders."""
+    candidates: List[Tuple[str, str]] = []
     for name in os.listdir(results_root):
         if not name.startswith("GRPO-1.5B-"):
             continue
-        m = re.search(r"-temp-([0-9.]+)$", name)
-        if not m:
+        match = re.search(r"-temp-([0-9.]+)$", name)
+        if not match:
             continue
         try:
-            temp_val = float(m.group(1))
+            temp_val = float(match.group(1))
         except ValueError:
             continue
         if abs(temp_val - target_temp) > 1e-12:
             continue
-        dom = domain_from_dirname(name)
-        if dom is None:
+        domain_label = domain_from_dirname(name)
+        if domain_label is None:
             continue
-        full = os.path.join(results_root, name)
-        if os.path.isdir(full):
-            out.append((dom, full))
+        full_path = os.path.join(results_root, name)
+        if os.path.isdir(full_path):
+            candidates.append((domain_label, full_path))
     chosen: Dict[str, str] = {}
-    for dom, path in sorted(out, key=lambda x: x[1]):
-        chosen[dom] = path
-    return sorted(chosen.items(), key=lambda x: x[0])
+    for domain_label, path in sorted(candidates, key=lambda item: item[1]):
+        chosen[domain_label] = path
+    return sorted(chosen.items(), key=lambda item: item[0])
+
 
 def iter_jsonl_files(root: str, split_substr: Optional[str]) -> List[str]:
-    paths = []
-    for dp, _, fns in os.walk(root):
-        for fn in fns:
-            if not fn.endswith(".jsonl"):
+    """Collect all JSONL files under root whose names contain split_substr."""
+    paths: List[str] = []
+    for dirpath, _, filenames in os.walk(root):
+        for filename in filenames:
+            if not filename.endswith(".jsonl"):
                 continue
-            if split_substr and split_substr not in fn:
+            if split_substr and split_substr not in filename:
                 continue
-            paths.append(os.path.join(dp, fn))
+            paths.append(os.path.join(dirpath, filename))
     return paths
 
-def extract_problem_key(rec: Dict[str, Any]) -> str:
-    for k in ("problem", "problem_id", "question", "clue", "title", "id", "uid", "example_id", "idx"):
-        v = rec.get(k)
-        if v is not None:
-            return str(v)
-    return f"__line_{id(rec)}"
 
-# ---------- bin helpers ----------
-def p1_think_answer_value(p1: Dict[str, Any], combine: str) -> Optional[float]:
-    def _f(x):
-        try: return float(x)
-        except: return None
-    t = _f(p1.get("entropy_think"))
-    a = _f(p1.get("entropy_answer"))
-    if t is None or a is None:
+def extract_problem_key(record: Dict[str, Any]) -> str:
+    """Derive a stable per-example key from a record."""
+    for key in (
+        "problem",
+        "problem_id",
+        "question",
+        "clue",
+        "title",
+        "id",
+        "uid",
+        "example_id",
+        "idx",
+    ):
+        value = record.get(key)
+        if value is not None:
+            return str(value)
+    return f"__line_{id(record)}"
+
+def p1_think_answer_value(pass1_record: Dict[str, Any], combine: str) -> Optional[float]:
+    """Combine entropy_think and entropy_answer for pass-1 using sum or mean."""
+    def _to_float(value: Any) -> Optional[float]:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    think_entropy = _to_float(pass1_record.get("entropy_think"))
+    answer_entropy = _to_float(pass1_record.get("entropy_answer"))
+    if think_entropy is None or answer_entropy is None:
         return None
-    return 0.5*(t + a) if combine == "mean" else (t + a)
+    if combine == "mean":
+        return 0.5 * (think_entropy + answer_entropy)
+    return think_entropy + answer_entropy
+
 
 def compute_equal_width_edges(vmin: float, vmax: float, bins: int) -> List[float]:
-    if bins <= 0: return [vmin, vmax]
-    if vmax <= vmin: return [vmin]*(bins) + [vmax]
-    w = (vmax - vmin) / bins
-    edges = [vmin + i*w for i in range(bins)]
+    """Return equally spaced bin edges between vmin and vmax."""
+    if bins <= 0:
+        return [vmin, vmax]
+    if vmax <= vmin:
+        return [vmin] * bins + [vmax]
+    width = (vmax - vmin) / bins
+    edges = [vmin + i * width for i in range(bins)]
     edges.append(vmax)
     edges[-1] = vmax
     return edges
 
+
 def compute_equal_count_edges(values: List[float], bins: int) -> List[float]:
-    # Quantile-style edges: edges[0]=min, edges[-1]=max; interior edges are bin starts
-    vs = sorted(values)
-    n = len(vs)
-    if n == 0:
+    """Return quantile-style bin edges with approximately equal counts per bin."""
+    sorted_values = sorted(values)
+    num_values = len(sorted_values)
+    if num_values == 0:
         return [0.0, 0.0]
-    bins = max(1, min(bins, n))
-    # boundaries are start indices of each bin in sorted order
-    boundaries = [int(round(i * n / bins)) for i in range(bins + 1)]
+    bins = max(1, min(bins, num_values))
+    boundaries = [int(round(i * num_values / bins)) for i in range(bins + 1)]
     boundaries[0] = 0
-    boundaries[-1] = n
-    edges = [vs[boundaries[i]] for i in range(bins)]
-    edges.append(vs[-1])
+    boundaries[-1] = num_values
+    edges = [sorted_values[boundaries[i]] for i in range(bins)]
+    edges.append(sorted_values[-1])
     return edges
 
+
 def assign_bin_equal_width(value: float, edges: List[float]) -> int:
-    B = len(edges) - 1
-    if B <= 0: return 0
+    """Assign a value to an equal-width bin defined by edges."""
+    num_bins = len(edges) - 1
+    if num_bins <= 0:
+        return 0
     vmin, vmax = edges[0], edges[-1]
-    if vmax <= vmin: return 0
-    w = (vmax - vmin) / B
-    if w == 0: return 0
-    idx = int((value - vmin) / w)
-    if idx < 0: idx = 0
-    if idx >= B: idx = B - 1
+    if vmax <= vmin:
+        return 0
+    width = (vmax - vmin) / num_bins
+    if width == 0:
+        return 0
+    idx = int((value - vmin) / width)
+    idx = max(idx, 0)
+    if idx >= num_bins:
+        idx = num_bins - 1
     return idx
 
+
 def assign_bin_equal_count(value: float, edges: List[float]) -> int:
-    # edges = [start0, start1, ..., start_{B-1}, max]; use interior starts as cutpoints
+    """Assign a value to an equal-count bin defined by edges."""
     if len(edges) <= 2:  # one bin
         return 0
-    cut = edges[1:-1]  # starts of bins 1..B-1
-    # number of starts <= value gives the bin index
-    return bisect_right(cut, value)
+    cutpoints = edges[1:-1]
+    return bisect_right(cutpoints, value)
 
-def bin_label(i: int, edges: List[float]) -> str:
-    B = len(edges) - 1
-    lo = edges[i]; hi = edges[i+1]
-    if i < B - 1:
-        return f"[{lo:.3f}, {hi:.3f})"
-    else:
-        return f"[{lo:.3f}, {hi:.3f}]"
+
+def bin_label(index: int, edges: List[float]) -> str:
+    """Human-readable bin label from edges (inclusive on right for last bin)."""
+    num_bins = len(edges) - 1
+    low = edges[index]
+    high = edges[index + 1]
+    if index < num_bins - 1:
+        return f"[{low:.3f}, {high:.3f})"
+    return f"[{low:.3f}, {high:.3f}]"
 
 # ---------- per-bin aggregator ----------
-class BinAgg:
+
+
+@dataclass
+class BinCountStats:
+    """Hard/soft counts for a single pass within a bin."""
+
+    hard_total: int = 0
+    hard_correct: int = 0
+    soft_total: int = 0
+    soft_correct: int = 0
+
+
+class BinAggregate:
+    """Per-bin aggregate statistics for pass-1 and pass-2."""
+
     __slots__ = (
-        "n1S","c1S","n2S","c2S",
-        "n1_soft","c1_soft","n2_soft","c2_soft",
-        "ex_seen","ex_has_p1","ex_p1_any_ok_cond","ex_p2_any_ok_cond"
+        "pass1",
+        "pass2",
+        "ex_seen",
+        "ex_has_p1",
+        "ex_p1_any_ok_cond",
+        "ex_p2_any_ok_cond",
     )
-    def __init__(self):
-        self.n1S = self.c1S = self.n2S = self.c2S = 0
-        self.n1_soft = self.c1_soft = self.n2_soft = self.c2_soft = 0
+
+    def __init__(self) -> None:
+        self.pass1 = BinCountStats()
+        self.pass2 = BinCountStats()
         self.ex_seen: Set[str] = set()
         self.ex_has_p1: Set[str] = set()
         self.ex_p1_any_ok_cond: Dict[str, bool] = {}
         self.ex_p2_any_ok_cond: Dict[str, bool] = {}
 
-# ---------- main summarizer ----------
-def summarize_dir_binned(
-    dirpath: str,
-    domain_label: str,
-    target_step: int,
-    split_substr: Optional[str],
-    recompute: str,
-    soft_threshold: Optional[float],
-    use_soft_for_conditionals: bool,
-    bins: int,
-    combine: str,
-    binning: str
-) -> Tuple[List[BinAgg], List[float], int]:
-    """
-    Returns:
-      (per-bin BinAgg list, edges list, skipped_count_missing_entropy)
-    """
-    files = iter_jsonl_files(dirpath, split_substr)
+    # Convenience properties exposing pass-1/2 hard/soft counts.
+    @property
+    def n1_s(self) -> int:
+        """Total number of pass-1 samples (hard correctness)."""
+        return self.pass1.hard_total
 
-    # pass 1: collect pass-1 think+answer values for quantiles (or min/max for equal-width)
-    vals: List[float] = []
-    vmin = float("inf"); vmax = float("-inf"); have_any = False
+    @n1_s.setter
+    def n1_s(self, value: int) -> None:
+        """Set the total number of pass-1 samples (hard correctness)."""
+        self.pass1.hard_total = value
+
+    @property
+    def c1_s(self) -> int:
+        """Total number of correct pass-1 samples (hard correctness)."""
+        return self.pass1.hard_correct
+
+    @c1_s.setter
+    def c1_s(self, value: int) -> None:
+        """Set the total number of correct pass-1 samples (hard correctness)."""
+        self.pass1.hard_correct = value
+
+    @property
+    def n2_s(self) -> int:
+        """Total number of pass-2 samples (hard correctness)."""
+        return self.pass2.hard_total
+
+    @n2_s.setter
+    def n2_s(self, value: int) -> None:
+        """Set the total number of pass-2 samples (hard correctness)."""
+        self.pass2.hard_total = value
+
+    @property
+    def c2_s(self) -> int:
+        """Total number of correct pass-2 samples (hard correctness)."""
+        return self.pass2.hard_correct
+
+    @c2_s.setter
+    def c2_s(self, value: int) -> None:
+        """Set the total number of correct pass-2 samples (hard correctness)."""
+        self.pass2.hard_correct = value
+
+    @property
+    def n1_soft(self) -> int:
+        """Total number of pass-1 samples with a soft score."""
+        return self.pass1.soft_total
+
+    @n1_soft.setter
+    def n1_soft(self, value: int) -> None:
+        """Set the total number of pass-1 samples with a soft score."""
+        self.pass1.soft_total = value
+
+    @property
+    def c1_soft(self) -> int:
+        """Total number of correct pass-1 samples under the soft metric."""
+        return self.pass1.soft_correct
+
+    @c1_soft.setter
+    def c1_soft(self, value: int) -> None:
+        """Set the total number of correct pass-1 samples under the soft metric."""
+        self.pass1.soft_correct = value
+
+    @property
+    def n2_soft(self) -> int:
+        """Total number of pass-2 samples with a soft score."""
+        return self.pass2.soft_total
+
+    @n2_soft.setter
+    def n2_soft(self, value: int) -> None:
+        """Set the total number of pass-2 samples with a soft score."""
+        self.pass2.soft_total = value
+
+    @property
+    def c2_soft(self) -> int:
+        """Total number of correct pass-2 samples under the soft metric."""
+        return self.pass2.soft_correct
+
+    @c2_soft.setter
+    def c2_soft(self, value: int) -> None:
+        """Set the total number of correct pass-2 samples under the soft metric."""
+        self.pass2.soft_correct = value
+
+
+@dataclass
+class ConditionalCounts:
+    """Example-level conditional counts for a bin."""
+
+    p1_none_total: int
+    p1_none_and_p2: int
+    p1_any_total: int
+    p1_any_and_p2: int
+
+
+@dataclass
+class BinRowInputs:
+    """Inputs required to build a single output row for a bin."""
+
+    domain_label: str
+    bin_index: int
+    edges: List[float]
+    agg: BinAggregate
+    conditional: ConditionalCounts
+    use_soft_for_conditionals: bool
+
+
+@dataclass
+class ConditionalConfig:
+    """Configuration for soft-threshold conditionals."""
+
+    soft_threshold: Optional[float]
+    use_soft_for_conditionals: bool
+
+
+@dataclass
+class BinningConfig:
+    """Configuration for binning and correctness aggregation."""
+
+    target_step: int
+    split_substr: Optional[str]
+    recompute_mode: str
+    bins: int
+    combine_mode: str
+    binning_mode: str
+    conditional: ConditionalConfig
+
+
+def _collect_pass1_values(
+    files: List[str],
+    config: BinningConfig,
+) -> Tuple[List[float], float, float]:
+    """Collect pass-1 entropy values and global min/max for binning."""
+    values: List[float] = []
+    vmin = float("inf")
+    vmax = float("-inf")
     for path in files:
         step_from_name = nat_step_from_path(path)
-        with open(path, "r", encoding="utf-8") as fh:
-            for line in fh:
-                s = line.strip()
-                if not s: continue
-                try: rec = json.loads(s)
-                except Exception: continue
-                step = rec.get("step", step_from_name)
-                if step != target_step: continue
-                p1 = rec.get("pass1") or {}
-                val = p1_think_answer_value(p1, combine)
-                if val is None: continue
-                have_any = True
-                vals.append(val)
-                if val < vmin: vmin = val
-                if val > vmax: vmax = val
+        with open(path, "r", encoding="utf-8") as file_handle:
+            for line in file_handle:
+                stripped_line = line.strip()
+                if not stripped_line:
+                    continue
+                try:
+                    record = json.loads(stripped_line)
+                except json.JSONDecodeError:
+                    continue
+                step = record.get("step", step_from_name)
+                if step != config.target_step:
+                    continue
+                pass1_record = record.get("pass1") or {}
+                value = p1_think_answer_value(pass1_record, config.combine_mode)
+                if value is None:
+                    continue
+                values.append(value)
+                vmin = min(vmin, value)
+                vmax = max(vmax, value)
+    return values, vmin, vmax
 
-    if not have_any:
-        return [BinAgg()], [0.0, 0.0], 0
 
-    if binning == "equal_count":
-        edges = compute_equal_count_edges(vals, bins)
-    else:
-        edges = compute_equal_width_edges(vmin, vmax, bins)
-
-    # pass 2: populate per-bin aggregates
-    aggs = [BinAgg() for _ in range(len(edges) - 1)]
+def _populate_bin_aggregates(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    files: List[str],
+    edges: List[float],
+    config: BinningConfig,
+) -> Tuple[List[BinAggregate], int]:
+    """Populate per-bin aggregates for pass-1 and pass-2."""
+    aggs = [BinAggregate() for _ in range(len(edges) - 1)]
     skipped_missing = 0
 
     for path in files:
         step_from_name = nat_step_from_path(path)
-        with open(path, "r", encoding="utf-8") as fh:
-            for line in fh:
-                s = line.strip()
-                if not s: continue
-                try: rec = json.loads(s)
-                except Exception: continue
-                step = rec.get("step", step_from_name)
-                if step != target_step: continue
+        with open(path, "r", encoding="utf-8") as file_handle:
+            for line in file_handle:
+                stripped_line = line.strip()
+                if not stripped_line:
+                    continue
+                try:
+                    record = json.loads(stripped_line)
+                except json.JSONDecodeError:
+                    continue
+                step = record.get("step", step_from_name)
+                if step != config.target_step:
+                    continue
 
-                gold = rec.get("gold_answer_canon")
-                prob_key = extract_problem_key(rec)
+                gold = record.get("gold_answer_canon")
+                prob_key = extract_problem_key(record)
 
-                p1 = rec.get("pass1") or {}
-                val = p1_think_answer_value(p1, combine)
-                if val is None:
+                pass1_record = record.get("pass1") or {}
+                value = p1_think_answer_value(pass1_record, config.combine_mode)
+                if value is None:
                     skipped_missing += 1
                     continue
 
-                if binning == "equal_count":
-                    b = assign_bin_equal_count(val, edges)
+                if config.binning_mode == "equal_count":
+                    bin_index = assign_bin_equal_count(value, edges)
                 else:
-                    b = assign_bin_equal_width(val, edges)
+                    bin_index = assign_bin_equal_width(value, edges)
 
-                agg = aggs[b]
+                agg = aggs[bin_index]
                 agg.ex_seen.add(prob_key)
 
                 # ----- pass-1
-                if p1:
+                if pass1_record:
                     agg.ex_has_p1.add(prob_key)
 
-                    ok1_hard = compute_correct(p1, gold, recompute)
+                    ok1_hard = compute_correct(pass1_record, gold, config.recompute_mode)
                     if ok1_hard is not None:
-                        agg.n1S += 1
-                        agg.c1S += int(bool(ok1_hard))
+                        agg.n1_s += 1
+                        agg.c1_s += int(bool(ok1_hard))
 
-                    sr1 = get_soft(p1)
+                    sr1 = get_soft(pass1_record)
                     if sr1 is not None:
                         agg.n1_soft += 1
-                        if (soft_threshold is not None) and (sr1 >= soft_threshold):
+                        if (
+                            config.conditional.soft_threshold is not None
+                            and sr1 >= config.conditional.soft_threshold
+                        ):
                             agg.c1_soft += 1
 
-                    if use_soft_for_conditionals and (soft_threshold is not None):
-                        ok1_cond = (sr1 is not None) and (sr1 >= soft_threshold)
+                    if (
+                        config.conditional.use_soft_for_conditionals
+                        and config.conditional.soft_threshold is not None
+                    ):
+                        ok1_cond = (sr1 is not None) and (sr1 >= config.conditional.soft_threshold)
                     else:
                         ok1_cond = bool(ok1_hard) if ok1_hard is not None else False
                     if ok1_cond:
                         agg.ex_p1_any_ok_cond[prob_key] = True
 
                 # ----- pass-2 (categorized by the same p1 bin)
-                p2 = rec.get("pass2") or {}
-                if p2:
-                    ok2_hard = compute_correct(p2, gold, recompute)
+                pass2_section = record.get("pass2") or {}
+                if pass2_section:
+                    ok2_hard = compute_correct(pass2_section, gold, config.recompute_mode)
                     if ok2_hard is not None:
-                        agg.n2S += 1
-                        agg.c2S += int(bool(ok2_hard))
+                        agg.n2_s += 1
+                        agg.c2_s += int(bool(ok2_hard))
 
-                    sr2 = get_soft(p2)
+                    sr2 = get_soft(pass2_section)
                     if sr2 is not None:
                         agg.n2_soft += 1
-                        if (soft_threshold is not None) and (sr2 >= soft_threshold):
+                        if (
+                            config.conditional.soft_threshold is not None
+                            and sr2 >= config.conditional.soft_threshold
+                        ):
                             agg.c2_soft += 1
 
-                    if use_soft_for_conditionals and (soft_threshold is not None):
-                        ok2_cond = (sr2 is not None) and (sr2 >= soft_threshold)
+                    if (
+                        config.conditional.use_soft_for_conditionals
+                        and config.conditional.soft_threshold is not None
+                    ):
+                        ok2_cond = (sr2 is not None) and (sr2 >= config.conditional.soft_threshold)
                     else:
                         ok2_cond = bool(ok2_hard) if ok2_hard is not None else False
                     if ok2_cond:
                         agg.ex_p2_any_ok_cond[prob_key] = True
 
+    return aggs, skipped_missing
+
+
+def summarize_dir_binned(
+    dirpath: str,
+    config: BinningConfig,
+) -> Tuple[List[BinAggregate], List[float], int]:
+    """
+    Summarize a directory of JSONL files into entropy bins.
+
+    Returns:
+      (per-bin BinAggregate list, edges list, skipped_count_missing_entropy)
+    """
+    files = iter_jsonl_files(dirpath, config.split_substr)
+
+    values, vmin, vmax = _collect_pass1_values(files, config)
+    if not values:
+        return [BinAggregate()], [0.0, 0.0], 0
+
+    if config.binning_mode == "equal_count":
+        edges = compute_equal_count_edges(values, config.bins)
+    else:
+        edges = compute_equal_width_edges(vmin, vmax, config.bins)
+
+    aggs, skipped_missing = _populate_bin_aggregates(files, edges, config)
     return aggs, edges, skipped_missing
+
 
 # ---------- pretty helpers ----------
 def fmt_prob(num: int, den: int) -> str:
+    """Format num/den as a probability, or '-' if undefined."""
     return "-" if den == 0 else f"{num/den:.3f}"
 
-def yes_no_na(n: int, k: int) -> str:
-    if n == 0: return "NA"
-    return "Yes" if k == 0 else "No"
 
-def none_right_label(agg: BinAgg, use_soft_for_conditionals: bool, tau_set: bool) -> str:
-    # Mirror conditional semantics: if conditionals use SOFT>=τ, reflect that here too
+def yes_no_na(num_total: int, num_yes: int) -> str:
+    """Return 'Yes'/'No'/'NA' based on counts."""
+    if num_total == 0:
+        return "NA"
+    return "Yes" if num_yes == 0 else "No"
+
+
+def none_right_label(
+    agg: BinAggregate,
+    use_soft_for_conditionals: bool,
+    tau_set: bool,
+) -> str:
+    """
+    Mirror conditional semantics for the 'none_right_p1' column.
+
+    If conditionals use SOFT>=τ, base the label on soft counts; otherwise,
+    align it with the hard correctness counts.
+    """
     if use_soft_for_conditionals and tau_set:
         return yes_no_na(agg.n1_soft, agg.c1_soft)
-    else:
-        return yes_no_na(agg.n1S, agg.c1S)
+    return yes_no_na(agg.n1_s, agg.c1_s)
+
 
 def domain_order_key(label: str) -> int:
-    # Xword, Math, Rush Hour
+    """Provide a stable sort key for domain labels (xword, math, carpark)."""
     tok = label_to_token(label)
     order = {"xword": 0, "math": 1, "carpark": 2}
     return order.get(tok, 99)
 
 # ---------- main ----------
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--results-root", default="results", help="Path containing GRPO-* result folders")
-    ap.add_argument("--temperature", type=float, default=0.05, help="Temperature to select (e.g., 0.05, 0.3, 0.7)")
-    ap.add_argument("--target-step", type=int, default=1000, help="Step to summarize (default: 1000)")
-    ap.add_argument("--split", default=None, help="Only include files whose names contain this substring (e.g., 'test').")
-    ap.add_argument("--recompute", choices=["none", "substring", "exact"], default="none",
-                    help="Recompute correctness from *_canon fields (useful for crosswords).")
-    ap.add_argument("--soft-threshold", type=float, default=None,
-                    help="If set, also compute soft accuracy columns where soft_reward >= τ.")
-    ap.add_argument("--none-right-col", action="store_true",
-                    help="Add 'none_right_p1' (within-bin; semantics aligned with conditionals).")
-    ap.add_argument("--cond-col", action="store_true",
-                    help="Add example-level conditional columns.")
-    ap.add_argument("--cond-soft-domains", default="",
-                    help="Comma-separated domains whose conditionals use SOFT>=τ (e.g., 'carpark').")
-    ap.add_argument("--bins", type=int, default=4, help="Number of bins (default: 4).")
-    ap.add_argument("--combine", choices=["sum","mean"], default="sum",
-                    help="Combine pass-1 entropy_think and entropy_answer via 'sum' or 'mean'.")
-    ap.add_argument("--binning", choices=["equal_count","equal_width"], default="equal_count",
-                    help="Bin strategy: equal_count (quantiles) or equal_width (ranges).")
-    args = ap.parse_args()
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Create and configure the CLI argument parser."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--results-root",
+        default="results",
+        help="Path containing GRPO-* result folders",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.05,
+        help="Temperature to select (e.g., 0.05, 0.3, 0.7)",
+    )
+    parser.add_argument(
+        "--target-step",
+        type=int,
+        default=1000,
+        help="Step to summarize (default: 1000)",
+    )
+    parser.add_argument(
+        "--split",
+        default=None,
+        help=(
+            "Only include files whose names contain this substring "
+            "(e.g., 'test')."
+        ),
+    )
+    parser.add_argument(
+        "--recompute",
+        choices=["none", "substring", "exact"],
+        default="none",
+        help="Recompute correctness from *_canon fields (useful for crosswords).",
+    )
+    parser.add_argument(
+        "--soft-threshold",
+        type=float,
+        default=None,
+        help=(
+            "If set, also compute soft accuracy columns where "
+            "soft_reward >= τ."
+        ),
+    )
+    parser.add_argument(
+        "--none-right-col",
+        action="store_true",
+        help=(
+            "Add 'none_right_p1' (within-bin; semantics aligned "
+            "with conditionals)."
+        ),
+    )
+    parser.add_argument(
+        "--cond-col",
+        action="store_true",
+        help="Add example-level conditional columns.",
+    )
+    parser.add_argument(
+        "--cond-soft-domains",
+        default="",
+        help=(
+            "Comma-separated domains whose conditionals use "
+            "SOFT>=τ (e.g., 'carpark')."
+        ),
+    )
+    parser.add_argument(
+        "--bins",
+        type=int,
+        default=4,
+        help="Number of bins (default: 4).",
+    )
+    parser.add_argument(
+        "--combine",
+        choices=["sum", "mean"],
+        default="sum",
+        help=(
+            "Combine pass-1 entropy_think and entropy_answer "
+            "via 'sum' or 'mean'."
+        ),
+    )
+    parser.add_argument(
+        "--binning",
+        choices=["equal_count", "equal_width"],
+        default="equal_count",
+        help="Bin strategy: equal_count (quantiles) or equal_width (ranges).",
+    )
+    return parser
+
+
+def build_header(args: argparse.Namespace) -> List[str]:
+    """Build the table header row based on CLI options."""
+    header = [
+        f"{'Domain':<10}",
+        f"{'Bin':<16}",
+        f"{'Number of Samples':>16}",
+        f"{'p(correct_p1)':>16}",
+        f"{'p(correct_p2)':>16}",
+    ]
+    if args.soft_threshold is not None:
+        tau = args.soft_threshold
+        header += [
+            f"{f'p_soft@{tau:g}(p1)':>16}",
+            f"{f'p_soft@{tau:g}(p2)':>16}",
+            f"{'n_soft_p1':>16}",
+            f"{'n_soft_p2':>16}",
+        ]
+    if args.none_right_col:
+        header.append(f"{'none_right_p1':>16}")
+    if args.cond_col:
+        header += [
+            f"{'p(p2|p1_none)':>16}",
+            f"{'nE_p1_none':>16}",
+            f"{'nE_p1_none&p2':>16}",
+            f"{'p(p2|p1_any)':>16}",
+            f"{'nE_p1_any':>16}",
+            f"{'nE_p1_any&p2':>16}",
+        ]
+    return header
+
+
+def compute_example_conditionals(agg: BinAggregate) -> Tuple[int, int, int, int]:
+    """Compute example-level conditional counts within a bin."""
+    ex_p1_none_total = ex_p1_none_and_p2 = 0
+    ex_p1_any_total = ex_p1_any_and_p2 = 0
+    for problem_key in agg.ex_seen:
+        if problem_key in agg.ex_has_p1:
+            if agg.ex_p1_any_ok_cond.get(problem_key, False):
+                ex_p1_any_total += 1
+                if agg.ex_p2_any_ok_cond.get(problem_key, False):
+                    ex_p1_any_and_p2 += 1
+            else:
+                ex_p1_none_total += 1
+                if agg.ex_p2_any_ok_cond.get(problem_key, False):
+                    ex_p1_none_and_p2 += 1
+    return (
+        ex_p1_none_total,
+        ex_p1_none_and_p2,
+        ex_p1_any_total,
+        ex_p1_any_and_p2,
+    )
+
+
+def build_row_for_bin(
+    row_inputs: BinRowInputs,
+    args: argparse.Namespace,
+) -> List[str]:
+    """Format a single output row for a given bin."""
+    agg = row_inputs.agg
+    sample_count = agg.n2_s if agg.n2_s > 0 else agg.n1_s
+    pass1_prob = fmt_prob(agg.c1_s, agg.n1_s)
+    pass2_prob = fmt_prob(agg.c2_s, agg.n2_s)
+    parts = [
+        f"{row_inputs.domain_label:<10}",
+        f"{bin_label(row_inputs.bin_index, row_inputs.edges):<16}",
+        f"{sample_count:>16d}",
+        f"{pass1_prob:>16}",
+        f"{pass2_prob:>16}",
+    ]
+    if args.soft_threshold is not None:
+        pass1_soft_prob = fmt_prob(agg.c1_soft, agg.n1_soft)
+        pass2_soft_prob = fmt_prob(agg.c2_soft, agg.n2_soft)
+        parts += [
+            f"{pass1_soft_prob:>16}",
+            f"{pass2_soft_prob:>16}",
+            f"{agg.n1_soft:>16d}",
+            f"{agg.n2_soft:>16d}",
+        ]
+    if args.none_right_col:
+        none_right_value = none_right_label(
+            agg,
+            row_inputs.use_soft_for_conditionals,
+            args.soft_threshold is not None,
+        )
+        parts.append(f"{none_right_value:>16}")
+        if args.cond_col:
+            cond = row_inputs.conditional
+            parts += [
+                f"{fmt_prob(cond.p1_none_and_p2, cond.p1_none_total):>16}",
+                f"{cond.p1_none_total:>16d}",
+                f"{cond.p1_none_and_p2:>16d}",
+                f"{fmt_prob(cond.p1_any_and_p2, cond.p1_any_total):>16}",
+                f"{cond.p1_any_total:>16d}",
+                f"{cond.p1_any_and_p2:>16d}",
+            ]
+    return parts
+
+
+@dataclass
+class DomainSummaryInputs:
+    """Inputs required to summarize a single domain."""
+
+    domain_label: str
+    dirpath: str
+    args: argparse.Namespace
+    cond_soft_domains: Set[str]
+
+
+def summarize_domain(summary_inputs: DomainSummaryInputs) -> None:
+    """Summarize a single domain and print per-bin rows."""
+    token = label_to_token(summary_inputs.domain_label)
+    use_soft_for_conditionals = token in summary_inputs.cond_soft_domains
+
+    bin_config = BinningConfig(
+        target_step=summary_inputs.args.target_step,
+        split_substr=summary_inputs.args.split,
+        recompute_mode=summary_inputs.args.recompute,
+        bins=summary_inputs.args.bins,
+        combine_mode=summary_inputs.args.combine,
+        binning_mode=summary_inputs.args.binning,
+        conditional=ConditionalConfig(
+            soft_threshold=summary_inputs.args.soft_threshold,
+            use_soft_for_conditionals=use_soft_for_conditionals,
+        ),
+    )
+
+    aggs, edges, skipped_missing = summarize_dir_binned(
+        summary_inputs.dirpath,
+        bin_config,
+    )
+
+    for bin_index, agg in enumerate(aggs):
+        (
+            ex_p1_none_total,
+            ex_p1_none_and_p2,
+            ex_p1_any_total,
+            ex_p1_any_and_p2,
+        ) = compute_example_conditionals(agg)
+
+        row_inputs = BinRowInputs(
+            domain_label=summary_inputs.domain_label,
+            bin_index=bin_index,
+            edges=edges,
+            agg=agg,
+            conditional=ConditionalCounts(
+                p1_none_total=ex_p1_none_total,
+                p1_none_and_p2=ex_p1_none_and_p2,
+                p1_any_total=ex_p1_any_total,
+                p1_any_and_p2=ex_p1_any_and_p2,
+            ),
+            use_soft_for_conditionals=use_soft_for_conditionals,
+        )
+        parts = build_row_for_bin(row_inputs, summary_inputs.args)
+        print("  ".join(parts))
+
+    if skipped_missing > 0:
+        print(
+            f"[{summary_inputs.domain_label}] skipped {skipped_missing} rows missing "
+            "pass-1 entropy_think or entropy_answer for binning.",
+        )
+
+
+def main() -> None:
+    """CLI entrypoint for the entropy-binned summarizer."""
+    parser = build_arg_parser()
+    args = parser.parse_args()
 
     cond_soft_domains = parse_cond_soft_domains(args.cond_soft_domains)
     dirs = find_model_dirs(args.results_root, args.temperature)
     if not dirs:
-        print(f"No matching GRPO-1.5B * temp-{args.temperature:g} result folders found.")
+        print(
+            f"No matching GRPO-1.5B * temp-{args.temperature:g} "
+            "result folders found.",
+        )
         return
 
-    # Header
-    hdr = [
-        f"{'Domain':<10}", f"{'Bin':<16}",
-        f"{'Number of Samples':>16}", f"{'p(correct_p1)':>16}", f"{'p(correct_p2)':>16}"
-    ]
-    if args.soft_threshold is not None:
-        tau = args.soft_threshold
-        hdr += [f"{f'p_soft@{tau:g}(p1)':>16}", f"{f'p_soft@{tau:g}(p2)':>16}", f"{'n_soft_p1':>16}", f"{'n_soft_p2':>16}"]
-    if args.none_right_col:
-        hdr += [f"{'none_right_p1':>16}"]
-    if args.cond_col:
-        hdr += [f"{'p(p2|p1_none)':>16}", f"{'nE_p1_none':>16}", f"{'nE_p1_none&p2':>16}",
-                f"{'p(p2|p1_any)':>16}",  f"{'nE_p1_any':>16}",  f"{'nE_p1_any&p2':>16}"]
-    print("  ".join(hdr))
-    print("-" * (sum(len(h) for h in hdr) + 2*(len(hdr)-1)))
+    header = build_header(args)
+    print("  ".join(header))
+    print("-" * (sum(len(h) for h in header) + 2 * (len(header) - 1)))
 
-    # Per-domain, per-bin
-    for domain_label, dpath in sorted(dirs, key=lambda x: domain_order_key(x[0])):
-        token = label_to_token(domain_label)
-        use_soft_for_conditionals = (token in cond_soft_domains)
-
-        aggs, edges, skipped_missing = summarize_dir_binned(
-            dpath, domain_label, args.target_step, args.split, args.recompute,
-            args.soft_threshold, use_soft_for_conditionals,
-            args.bins, args.combine, args.binning
+    for domain_label, dirpath in sorted(dirs, key=lambda item: domain_order_key(item[0])):
+        summary_inputs = DomainSummaryInputs(
+            domain_label=domain_label,
+            dirpath=dirpath,
+            args=args,
+            cond_soft_domains=cond_soft_domains,
         )
+        summarize_domain(summary_inputs)
 
-        for bi, agg in enumerate(aggs):
-            # Example-level conditional tallies (bin-restricted)
-            ex_p1_none_total = ex_p1_none_and_p2 = 0
-            ex_p1_any_total  = ex_p1_any_and_p2  = 0
-            for pk in agg.ex_seen:
-                if pk in agg.ex_has_p1:
-                    if agg.ex_p1_any_ok_cond.get(pk, False):
-                        ex_p1_any_total += 1
-                        if agg.ex_p2_any_ok_cond.get(pk, False):
-                            ex_p1_any_and_p2 += 1
-                    else:
-                        ex_p1_none_total += 1
-                        if agg.ex_p2_any_ok_cond.get(pk, False):
-                            ex_p1_none_and_p2 += 1
-
-            N = agg.n2S if agg.n2S > 0 else agg.n1S
-            p1 = fmt_prob(agg.c1S, agg.n1S)
-            p2 = fmt_prob(agg.c2S, agg.n2S)
-            parts = [
-                f"{domain_label:<10}", f"{bin_label(bi, edges):<16}",
-                f"{N:>16d}", f"{p1:>16}", f"{p2:>16}",
-            ]
-            if args.soft_threshold is not None:
-                p1s = fmt_prob(agg.c1_soft, agg.n1_soft)
-                p2s = fmt_prob(agg.c2_soft, agg.n2_soft)
-                parts += [f"{p1s:>16}", f"{p2s:>16}", f"{agg.n1_soft:>16d}", f"{agg.n2_soft:>16d}"]
-            if args.none_right_col:
-                parts += [f"{none_right_label(agg, use_soft_for_conditionals, args.soft_threshold is not None):>16}"]
-            if args.cond_col:
-                parts += [
-                    f"{fmt_prob(ex_p1_none_and_p2, ex_p1_none_total):>16}",
-                    f"{ex_p1_none_total:>16d}",
-                    f"{ex_p1_none_and_p2:>16d}",
-                    f"{fmt_prob(ex_p1_any_and_p2,  ex_p1_any_total):>16}",
-                    f"{ex_p1_any_total:>16d}",
-                    f"{ex_p1_any_and_p2:>16d}",
-                ]
-            print("  ".join(parts))
-
-        if skipped_missing > 0:
-            print(f"[{domain_label}] skipped {skipped_missing} rows missing pass-1 entropy_think or entropy_answer for binning.")
 
 if __name__ == "__main__":
     main()

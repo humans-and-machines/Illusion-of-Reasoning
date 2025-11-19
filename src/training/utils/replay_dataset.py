@@ -1,37 +1,51 @@
-import torch
-from torch.utils.data import Dataset
-import os, random, copy, torch
+"""Replay-aware dataset and collate helpers used during GRPO training."""
+
+from __future__ import annotations
+
+import copy
+from typing import Any, Iterable, List, Mapping
 
 
-class ReplayMixDataset(Dataset):
-    def __init__(self, base_ds, tok):
-        self.base_ds  = base_ds
-        self.tok      = tok          # just for the debug assert
+class ReplayMixDataset:
+    """Thin wrapper that tracks `is_replay` on items from a base dataset."""
 
-    def __len__(self):                       # unchanged
-        return len(self.base_ds)
+    def __init__(self, base_dataset: Iterable[Mapping[str, Any]], tokenizer: Any):
+        self.base_dataset = base_dataset
+        self.tokenizer = tokenizer
 
-    def __getitem__(self, idx):              # no replay logic here
-        item = copy.deepcopy(self.base_ds[idx])
+    def __len__(self) -> int:
+        return len(self.base_dataset)  # type: ignore[arg-type]
 
-        # → quick sanity–check only if already tokenised
+    def __getitem__(self, index: int) -> Mapping[str, Any]:
+        """Return a deep-copied item with `is_replay` set to 0."""
+        item = copy.deepcopy(self.base_dataset[index])  # type: ignore[index]
+
+        # Quick sanity check only if already tokenised
         if "input_ids" in item:
-            last_user = next(m for m in reversed(item["prompt"])
-                             if m["role"] == "user")
-            assert last_user["content"] in self.tok.decode(item["input_ids"]), \
-                   "⛔ clue missing from encoded prompt!"
+            last_user = next(
+                message
+                for message in reversed(item["prompt"])
+                if message["role"] == "user"
+            )
+            decoded = self.tokenizer.decode(item["input_ids"])
+            assert last_user["content"] in decoded, "⛔ clue missing from encoded prompt!"
 
-        item["is_replay"] = 0                # mark as fresh
+        item["is_replay"] = 0
         return item
 
-def replay_collate(batch, *, replay_buffer, replay_prob):
+
+def replay_collate(
+    batch: List[Mapping[str, Any]],
+    *,
+    _replay_buffer: Any,
+    _replay_prob: float,
+) -> List[Mapping[str, Any]]:
     """
     Identity collate — no sampling here.
+
     We only want to clear the old `is_replay` flag,
     but we *must not* drop 'accuracy'.
     """
-    for ex in batch:
-        ex["is_replay"] = 0
-        # do NOT pop accuracy here!
-        # ex.pop("accuracy", None)    ← remove this line
+    for example in batch:
+        example["is_replay"] = 0
     return batch

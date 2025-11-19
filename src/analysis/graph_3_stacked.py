@@ -11,9 +11,9 @@ Use --normalize to make each bin sum to 1.0 (proportions).
 Usage
 -----
 python graph_3_stacked.py \
-  --root_crossword results/GRPO-1.5B-xword-temp-0.7 \
-  --root_math      results/GRPO-1.5B-math-temp-0.7 \
-  --root_carpark   results/GRPO-1.5B-carpark-temp-0.7 \
+  --root_crossword artifacts/results/GRPO-1.5B-xword-temp-0.7 \
+  --root_math      artifacts/results/GRPO-1.5B-math-temp-0.7 \
+  --root_carpark   artifacts/results/GRPO-1.5B-carpark-temp-0.7 \
   --split test \
   --gpt_mode canonical \
   --bins 10 \

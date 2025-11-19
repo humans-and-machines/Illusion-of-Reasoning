@@ -205,7 +205,7 @@ export TORCH_FORCE_FULL_STATE_DICT=1
 export FLASH_ATTENTION_FORCE_DISABLED=1
 export TRANSFORMERS_NO_FLASH_ATTN=1
 export WANDB_DATA_DIR="${WANDB_DATA_DIR:-$PROJECT_ROOT/wandb}"
-export RESUME_CKPT="${RESUME_CKPT:-$PROJECT_ROOT/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b/checkpoint-500}"
+export RESUME_CKPT="${RESUME_CKPT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b/checkpoint-500}"
 
 # -----------------------------------
 # Launch vLLM + trainer in one srun

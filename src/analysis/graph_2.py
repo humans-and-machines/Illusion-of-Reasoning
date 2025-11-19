@@ -48,6 +48,20 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 
+try:
+    # Package imports
+    from .labels import aha_gpt_for_rec
+    from .utils import coerce_bool, coerce_float, get_problem_id, nat_step_from_path
+except ImportError:  # pragma: no cover - script fallback
+    import os as _os
+    import sys as _sys
+
+    _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _ROOT not in _sys.path:
+        _sys.path.append(_ROOT)
+    from analysis.labels import aha_gpt_for_rec  # type: ignore
+    from analysis.utils import coerce_bool, coerce_float, get_problem_id, nat_step_from_path  # type: ignore
+
 # ---------- Style (Times-like) ----------
 STYLE_PARAMS = {
     "axes.titlesize" : 14,
@@ -63,11 +77,6 @@ STYLE_PARAMS = {
 mpl.rcParams.update(STYLE_PARAMS)
 
 # ---------- Filename step parser ----------
-STEP_PAT = re.compile(r"step(\d+)", re.I)
-def nat_step_from_path(path: str) -> Optional[int]:
-    m = STEP_PAT.search(path)
-    return int(m.group(1)) if m else None
-
 def scan_files(root: str, split_substr: Optional[str]) -> List[str]:
     out = []
     for dp, _, fns in os.walk(root):
@@ -79,64 +88,6 @@ def scan_files(root: str, split_substr: Optional[str]) -> List[str]:
             out.append(os.path.join(dp, fn))
     out.sort()
     return out
-
-# ---------- Coercers ----------
-def coerce_bool(x) -> Optional[int]:
-    if x is None:
-        return None
-    if isinstance(x, bool):
-        return int(x)
-    if isinstance(x, (int, np.integer)):
-        return int(bool(x))
-    if isinstance(x, str):
-        s = x.strip().lower()
-        if s in ("1","true","t","yes","y"): return 1
-        if s in ("0","false","f","no","n"): return 0
-    try:
-        return int(bool(x))
-    except Exception:
-        return None
-
-def coerce_float(x) -> Optional[float]:
-    if x is None:
-        return None
-    try:
-        return float(x)
-    except Exception:
-        return None
-
-# ---------- Aha! gating (domain-aware; mirrors your prior logic) ----------
-def _any_keys_true(p1: Dict[str, Any], rec: Dict[str, Any], keys: List[str]) -> int:
-    for k in keys:
-        v = p1.get(k, rec.get(k, None))
-        if v is None:
-            continue
-        out = coerce_bool(v)
-        if out is not None and out == 1:
-            return 1
-    return 0
-
-def _cue_gate_for_llm(p1: Dict[str, Any], domain: Optional[str]) -> int:
-    has_reconsider = coerce_bool(p1.get("has_reconsider_cue")) == 1
-    rec_marks = p1.get("reconsider_markers") or []
-    injected = ("injected_cue" in rec_marks)
-    reconsider_ok = has_reconsider and not injected
-    prefilter_cues = p1.get("_shift_prefilter_markers") or []
-    judge_cues     = p1.get("shift_markers_v1") or []
-    if str(domain).lower() == "crossword":
-        return int(reconsider_ok or bool(prefilter_cues) or bool(judge_cues))
-    else:
-        return int(reconsider_ok or bool(prefilter_cues))
-
-def aha_gpt_for_rec(p1: Dict[str, Any], rec: Dict[str, Any],
-                    gpt_subset_native: bool,
-                    gpt_keys: List[str],
-                    domain: Optional[str]) -> int:
-    gpt_raw = _any_keys_true(p1, rec, gpt_keys)
-    if not gpt_subset_native:
-        return int(gpt_raw)
-    gate = _cue_gate_for_llm(p1, domain)
-    return int(gpt_raw & gate)
 
 # ---------- Carpark success policy ----------
 def _extract_soft_reward(rec: Dict[str, Any], p1: Dict[str, Any]) -> Optional[float]:
@@ -153,14 +104,6 @@ def _make_carpark_success_fn(op: str, thr: float):
     return _cmp
 
 # ---------- Row loader ----------
-def get_problem_id(rec: Dict[str, Any]) -> Optional[str]:
-    for k in ("problem_id","example_id","id","question","problem","clue","title","uid"):
-        v = rec.get(k)
-        if v is not None and not isinstance(v, (dict, list)):
-            return str(v)
-    v = rec.get("sample_idx")
-    return None if v is None else f"sample_{v}"
-
 def load_rows(files_by_domain: Dict[str, List[str]],
               gpt_keys: List[str],
               gpt_subset_native: bool,

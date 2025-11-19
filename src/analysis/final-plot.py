@@ -38,197 +38,41 @@ python final-plot.py \
   --dpi 600 --make_plot
 """
 
-import os, re, json, argparse, sys, gzip, math
-from typing import Optional, List, Dict, Any, Tuple, Iterable
+import os
+import sys
+import argparse
+import math
+from typing import Optional, List, Dict, Any, Tuple
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-# ------------------------------- Helpers -------------------------------
+try:
+    # Preferred when analysis is installed as a package
+    from .io import iter_records_from_file, scan_files_step_only
+    from .metrics import carpark_success_from_soft_reward, extract_correct
+    from .utils import coerce_bool, coerce_float, nat_step_from_path
+except ImportError:  # pragma: no cover - script fallback
+    # Fallback for running this file directly: add project src root and import
+    import os as _os
+    import sys as _sys
 
-STEP_DIR_PAT = re.compile(r"(?:^|/)(step[-_]?\d{1,5})(?:/|$)", re.I)
-STEP_FILE_PAT = re.compile(r"^(?:step|global[_-]?step|checkpoint)[-_]?\d{1,5}", re.I)
-STEP_PATS = [
-    re.compile(r"step\s*[-_]?(\d+)", re.I),
-    re.compile(r"global[_-]?step\s*[-_]?(\d+)", re.I),
-    re.compile(r"checkpoint\s*[-_]?(\d+)", re.I),
-    re.compile(r"/(\d{2,5})(?=/|$)")
-]
-SKIP_DIR_DEFAULT = {"compare-1shot", "1shot", "hf_cache", "__pycache__"}
+    _ROOT = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _ROOT not in _sys.path:
+        _sys.path.append(_ROOT)
+    from analysis.io import iter_records_from_file, scan_files_step_only  # type: ignore
+    from analysis.metrics import carpark_success_from_soft_reward, extract_correct  # type: ignore
+    from analysis.utils import coerce_bool, coerce_float, nat_step_from_path  # type: ignore
 
-def nat_step_from_path(path: str) -> Optional[int]:
-    s = str(path)
-    for pat in STEP_PATS:
-        m = pat.search(s)
-        if m:
-            try:
-                return int(m.group(1))
-            except Exception:
-                return None
-    return None
-
-def scan_files(root: str, split_substr: Optional[str], skip_substrings: set) -> List[str]:
-    out = []
-    for dp, _, fns in os.walk(root):
-        dp_norm = dp.replace("\\", "/").lower()
-        if any(s in dp_norm for s in skip_substrings):
-            continue
-        dir_has_step = STEP_DIR_PAT.search(dp_norm) is not None
-        for fn in fns:
-            low = fn.lower()
-            if not (low.endswith(".jsonl") or low.endswith(".jsonl.gz") or low.endswith(".json")):
-                continue
-            if split_substr and split_substr not in fn:
-                continue
-            file_has_step = STEP_FILE_PAT.search(fn) is not None
-            if not (dir_has_step or file_has_step):
-                continue
-            out.append(os.path.join(dp, fn))
-    out.sort()
-    return out
-
-def iter_records_from_file(path: str) -> Iterable[Dict[str, Any]]:
-    opener = gzip.open if path.endswith(".jsonl.gz") else open
-    mode = "rt"
-    try:
-        with opener(path, mode, encoding="utf-8") as f:
-            if path.endswith(".json"):
-                txt = f.read().strip()
-                if not txt:
-                    return
-                try:
-                    obj = json.loads(txt)
-                    if isinstance(obj, list):
-                        for r in obj:
-                            if isinstance(r, dict): yield r
-                    elif isinstance(obj, dict):
-                        yield obj
-                except Exception:
-                    for line in txt.splitlines():
-                        s = line.strip()
-                        if not s: continue
-                        try:
-                            r = json.loads(s)
-                            if isinstance(r, dict): yield r
-                        except Exception:
-                            continue
-            else:
-                for line in f:
-                    s = line.strip()
-                    if not s: continue
-                    try:
-                        r = json.loads(s)
-                        if isinstance(r, dict): yield r
-                    except Exception:
-                        continue
-    except Exception:
-        return
-
-def coerce_bool(x) -> Optional[int]:
-    if x is None: return None
-    if isinstance(x, bool): return int(x)
-    if isinstance(x, (int, np.integer)): return int(bool(x))
-    if isinstance(x, str):
-        s = x.strip().lower()
-        if s in ("1","true","t","yes","y"): return 1
-        if s in ("0","false","f","no","n"): return 0
-    try:
-        return int(bool(x))
-    except Exception:
-        return None
-
-def coerce_float(x) -> Optional[float]:
-    if x is None: return None
-    try: return float(x)
-    except Exception: return None
-
-CORRECT_KEYS = {
-    "is_correct","is_correct_pred","correct","pred_correct","y_is_correct",
-    "exact_match","em","acc","pass1_is_correct","pass1_correct",
-    "answer_correct","label_correct"
-}
-
-def _find_in_obj(obj, keys: set) -> Optional[int]:
-    """Depth-first search for correctness-ish booleans / [0,1] floats."""
-    q = [obj]
-    while q:
-        cur = q.pop(0)
-        if isinstance(cur, dict):
-            for k, v in cur.items():
-                kl = str(k).lower()
-                if any(cand in kl for cand in keys):
-                    cb = coerce_bool(v)
-                    if cb is not None:
-                        return int(cb)
-                if kl in {"acc","accuracy","score"}:
-                    fv = coerce_float(v)
-                    if fv is not None:
-                        if fv in (0.0, 1.0): return int(fv)
-                        if 0.0 <= fv <= 1.0: return int(fv >= 0.5)
-            q.extend(cur.values())
-        elif isinstance(cur, list):
-            q.extend(cur)
-    return None
-
-def _first_str(*xs) -> Optional[str]:
-    for x in xs:
-        if isinstance(x, str) and x.strip():
-            return x.strip()
-    return None
-
-def canon_equal(pred_canon: Optional[str], gold: Any) -> Optional[int]:
-    if pred_canon is None: return None
-    if gold is None: return None
-    if isinstance(gold, (list, tuple, set)):
-        gold_set = set(str(g).strip() for g in gold if isinstance(g, str))
-        return int(pred_canon in gold_set) if gold_set else None
-    if isinstance(gold, str):
-        return int(pred_canon.strip() == gold.strip())
-    return None
-
-def extract_correct(obj_like: Dict[str, Any], rec: Dict[str, Any]) -> Optional[int]:
-    """Robust correctness from an object (pass1 or pass2) with rec as context for gold."""
-    cb = _find_in_obj(obj_like, CORRECT_KEYS)
-    if cb is not None: return cb
-    pred_canon = _first_str(
-        obj_like.get("pred_answer_canon"), rec.get("pred_answer_canon"),
-        obj_like.get("final_answer_canon"), rec.get("final_answer_canon")
-    )
-    gold_canon = rec.get("gold_answer_canon_set") or rec.get("gold_answer_canon")
-    ce = canon_equal(pred_canon, gold_canon)
-    if ce is not None: return ce
-    pred_raw = _first_str(
-        obj_like.get("pred_answer"), rec.get("pred_answer"),
-        obj_like.get("final_answer"), rec.get("final_answer"),
-        obj_like.get("prediction"), rec.get("prediction")
-    )
-    gold_raw = _first_str(
-        rec.get("gold_answer"), rec.get("answer"),
-        rec.get("target"), rec.get("label")
-    )
-    if pred_raw is not None and gold_raw is not None:
-        return int(pred_raw.strip() == gold_raw.strip())
-    return None
-
-def carpark_success_from_soft_reward(rec: Dict[str, Any], p: Dict[str, Any], op: str, thr: float) -> Optional[int]:
-    def cmp(val: Any) -> Optional[int]:
-        x = coerce_float(val)
-        if x is None: return None
-        if op == "gt": return int(x > thr)
-        if op == "ge": return int(x >= thr)
-        if op == "eq": return int(x == thr)
-        return int(x > thr)
-    sr = rec.get("soft_reward", p.get("soft_reward"))
-    return cmp(sr)
 
 def example_key(rec: Dict[str, Any]) -> Optional[str]:
-    for k in ("example_id","problem_id","id","uid","question","clue","title"):
+    for k in ("example_id", "problem_id", "id", "uid", "question", "clue", "title"):
         v = rec.get(k)
         if v is not None and not isinstance(v, (dict, list)):
             return f"{k}:{v}"
     v = rec.get("sample_idx")
     return None if v is None else f"sample_{v}"
+
 
 def step_from_rec_or_path(rec: Dict[str, Any], path: str) -> int:
     step = rec.get("step") or rec.get("global_step") or rec.get("training_step")
@@ -239,14 +83,18 @@ def step_from_rec_or_path(rec: Dict[str, Any], path: str) -> int:
     except Exception:
         return 0
 
+
 def entropy_from_pass1(p1: Dict[str, Any]) -> Optional[float]:
     # Prefer combined 'entropy' if present; else avg(think, answer) when both exist
     e = coerce_float(p1.get("entropy"))
     et = coerce_float(p1.get("entropy_think"))
     ea = coerce_float(p1.get("entropy_answer"))
-    if e is not None: return e
-    if et is not None and ea is not None: return 0.5*(et + ea)
+    if e is not None:
+        return e
+    if et is not None and ea is not None:
+        return 0.5 * (et + ea)
     return et if et is not None else ea
+
 
 def pass2_triggered(p2: Dict[str, Any]) -> int:
     h = coerce_bool(p2.get("has_reconsider_cue"))
@@ -441,8 +289,11 @@ def main():
     args = ap.parse_args()
 
     # Scan
-    skip_set = set(s.lower() for s in SKIP_DIR_DEFAULT)
-    files = scan_files(args.scan_root, args.split, skip_set)
+    files = scan_files_step_only(
+        root=args.scan_root,
+        split_substr=args.split,
+        skip_substrings=None,
+    )
     if not files:
         sys.exit("No files found. Check --scan_root / --split.")
 

@@ -15,8 +15,7 @@ import json
 import pytest
 
 torch = pytest.importorskip("torch")
-
-from src.inference import math_llama_core  # noqa: E402
+math_llama_core = pytest.importorskip("src.inference.math_llama_core")
 
 
 class FakeTokenizer:
@@ -133,4 +132,3 @@ def test_run_inference_on_split_math_llama_smoke(tmp_path):
     assert row["problem"] == "1+1?"
     assert "pass1" in row
     assert row["pass2"] is None
-

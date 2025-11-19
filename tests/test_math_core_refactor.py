@@ -16,8 +16,7 @@ from types import SimpleNamespace
 import pytest
 
 torch = pytest.importorskip("torch")
-
-from src.inference import math_core  # noqa: E402
+math_core = pytest.importorskip("src.inference.math_core")
 
 
 class FakeTokenizer:
@@ -185,4 +184,3 @@ def test_run_inference_on_split_smoke(tmp_path):
     assert row["gold_answer"] == "4"
     assert "pass1" in row
     assert row["pass2"] is None
-

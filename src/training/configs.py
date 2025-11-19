@@ -16,6 +16,7 @@
 """Configuration dataclasses for training scripts (SFT/GRPO)."""
 
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any, Optional
 
 import importlib
@@ -23,30 +24,35 @@ import importlib
 try:
     trl = importlib.import_module("trl")
 except ImportError:  # pragma: no cover - optional dependency
-    class _ScriptArgumentsBase:  # pylint: disable=too-few-public-methods
-        """Fallback ScriptArguments base when `trl` is absent."""
+    class _ConfigBase:
+        """Fallback base for TRL-style config/argument classes.
 
-    class _GRPOConfigBase:  # pylint: disable=too-few-public-methods
-        """Fallback GRPOConfig base when `trl` is absent."""
+        Provides a minimal dictionary-like interface so that downstream code
+        which expects TRL dataclasses can run in a degraded mode when the
+        optional dependency is not installed.
+        """
 
-    class _SFTConfigBase:  # pylint: disable=too-few-public-methods
-        """Fallback SFTConfig base when `trl` is absent."""
+        def to_dict(self) -> dict[str, Any]:
+            """Return a shallow dict of attributes."""
+            return vars(self).copy()
 
-    class _TrlNamespace:  # pylint: disable=too-few-public-methods
-        """Lightweight stand-in for the `trl` module."""
+        def update_from_dict(self, values: dict[str, Any]) -> None:
+            """Update attributes from a mapping of key/value pairs."""
+            for key, value in values.items():
+                setattr(self, key, value)
 
-        ScriptArguments = _ScriptArgumentsBase
-        GRPOConfig = _GRPOConfigBase
-        SFTConfig = _SFTConfigBase
-
-    trl = _TrlNamespace()
+    trl = SimpleNamespace(
+        ScriptArguments=_ConfigBase,
+        GRPOConfig=_ConfigBase,
+        SFTConfig=_ConfigBase,
+    )
 
 
 @dataclass
 class DatasetConfig:
     """Configuration for a dataset in a mixture."""
 
-    id: str  # pylint: disable=invalid-name
+    dataset_id: str
     config: Optional[str] = None
     split: str = "train"
     columns: Optional[list[str]] = None
@@ -124,7 +130,7 @@ class ScriptArguments(trl.ScriptArguments):
                 for dataset_config in datasets_data:
                     datasets_list.append(
                         DatasetConfig(
-                            id=dataset_config.get("id"),
+                            dataset_id=dataset_config.get("id"),
                             config=dataset_config.get("config"),
                             split=dataset_config.get("split", "train"),
                             columns=dataset_config.get("columns"),
@@ -159,7 +165,7 @@ class ScriptArguments(trl.ScriptArguments):
 
 # Note: shared options could use a mixin to reduce code duplication.
 @dataclass
-class GRPOConfig(trl.GRPOConfig):  # pylint: disable=too-many-instance-attributes
+class GRPOConfig(trl.GRPOConfig):
     """
     args for callbacks, benchmarks etc
     """
@@ -218,7 +224,7 @@ class GRPOConfig(trl.GRPOConfig):  # pylint: disable=too-many-instance-attribute
     )
 
 @dataclass
-class SFTConfig(trl.SFTConfig):  # pylint: disable=too-many-instance-attributes
+class SFTConfig(trl.SFTConfig):
     """
     args for callbacks, benchmarks etc
     """
@@ -266,7 +272,7 @@ class SFTConfig(trl.SFTConfig):  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass
-class GRPOScriptArguments(ScriptArguments):  # pylint: disable=too-many-instance-attributes
+class GRPOScriptArguments(ScriptArguments):
     """
     Script arguments for the GRPO training script.
 

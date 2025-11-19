@@ -11,7 +11,7 @@ torch directly so that callers control the runtime dependency.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple, Union
 
 
@@ -115,6 +115,17 @@ def _concat_anchor(
 
 
 @dataclass
+class SamplingConfig:
+    """Sampling-related configuration for generation."""
+
+    ban_eos_steps: int = 0
+    do_sample: bool = False
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+
+
+@dataclass
 class GenerationConfig:
     """Configuration bundle for _generate to avoid many positional args."""
 
@@ -124,25 +135,34 @@ class GenerationConfig:
     stop_criteria: Any
     eos_token_ids: Union[int, List[int]]
     num_return_sequences: int = 1
-    ban_eos_steps: int = 0
-    do_sample: bool = False
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    top_k: Optional[int] = None
+    sampling: SamplingConfig = field(default_factory=SamplingConfig)
+
+
+@dataclass
+class GenerationRuntime:
+    """Runtime bundle for generation primitives."""
+
+    torch_mod: Any
+    model: Any
+    tokenizer: Any
 
 
 def _generate(
-    torch_mod,
-    model,
-    tok,
+    runtime: GenerationRuntime,
     input_ids,
     attention_mask,
     config: GenerationConfig,
 ):
     """Run model.generate with a stable configuration."""
+    torch_mod = runtime.torch_mod
+    model = runtime.model
+    tok = runtime.tokenizer
+
     logits_processors = []
-    if config.ban_eos_steps:
-        logits_processors.append(BanEosForSteps(config.eos_token_ids, config.ban_eos_steps))
+    if config.sampling.ban_eos_steps:
+        logits_processors.append(
+            BanEosForSteps(config.eos_token_ids, config.sampling.ban_eos_steps)
+        )
 
     min_new = (
         config.min_new_tokens
@@ -151,18 +171,18 @@ def _generate(
     )
     beams = (
         config.num_beams
-        if (config.num_beams and config.num_beams > 1 and not config.do_sample)
+        if (config.num_beams and config.num_beams > 1 and not config.sampling.do_sample)
         else 1
     )
-    temperature = config.temperature if config.do_sample else None
+    temperature = config.sampling.temperature if config.sampling.do_sample else None
     top_p = (
-        config.top_p
-        if (config.do_sample and config.top_p not in (None, 0))
+        config.sampling.top_p
+        if (config.sampling.do_sample and config.sampling.top_p not in (None, 0))
         else None
     )
     top_k = (
-        config.top_k
-        if (config.do_sample and config.top_k not in (None, 0))
+        config.sampling.top_k
+        if (config.sampling.do_sample and config.sampling.top_k not in (None, 0))
         else None
     )
 
@@ -173,7 +193,7 @@ def _generate(
             max_new_tokens=config.max_new_tokens,
             min_new_tokens=min_new,
             num_beams=beams,
-            do_sample=config.do_sample,
+            do_sample=config.sampling.do_sample,
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
@@ -228,6 +248,16 @@ def _first_eos_pos(tensor_row: Any, eos_ids: Optional[List[int]]) -> Optional[in
     return earliest_position
 
 
+@dataclass
+class ScoreStreamState:
+    """Simple container for score-stream tensors and metadata."""
+
+    scores: Any
+    sequences: Any
+    input_lens: Any
+    eos_ids: Optional[List[int]]
+
+
 def _compute_effective_lengths(
     sequences,
     input_lens,
@@ -261,54 +291,48 @@ def _token_logprobs_stream(
 ):
     """Per-sequence average token log-probabilities, truncated at EOS."""
     batch_size = sequences.size(0)
-    num_steps = len(scores)
-    logprob_sums = [0.0] * batch_size
-    token_counts = [0] * batch_size
-    if num_steps == 0:
-        return logprob_sums, [0.0] * batch_size, token_counts
+    if not scores:
+        zero_list = [0.0] * batch_size
+        return zero_list, zero_list, [0] * batch_size
 
-    effective_lengths = _compute_effective_lengths(
-        sequences,
-        input_lens,
-        num_steps,
-        eos_ids,
-    )
-
-    max_effective_length = max(effective_lengths) if effective_lengths else 0
-    for time_index in range(max_effective_length):
-        active_indices = [
-            idx
-            for idx, length in enumerate(effective_lengths)
-            if time_index < length
-        ]
-        if not active_indices:
-            break
-
-        token_ids_tensor = torch_mod.tensor(
+    def _per_step_values(
+        torch_module,
+        step_scores,
+        step_index: int,
+        active_indices: List[int],
+    ) -> List[float]:
+        token_ids_tensor = torch_module.tensor(
             [
                 int(
-                    sequences[batch_index, int(input_lens[batch_index].item()) + time_index].item(),
+                    sequences[batch_index, int(input_lens[batch_index].item()) + step_index].item(),
                 )
                 for batch_index in active_indices
             ],
-            device=scores[time_index].device,
-            dtype=torch_mod.long,
+            device=step_scores.device,
+            dtype=torch_module.long,
         )
-        step_logits = scores[time_index][active_indices].float()
-        step_logprobs = torch_mod.log_softmax(step_logits, dim=-1)
+        step_logits = step_scores[active_indices].float()
+        step_logprobs = torch_module.log_softmax(step_logits, dim=-1)
         picked_logprobs = step_logprobs.gather(
             1,
             token_ids_tensor.view(-1, 1),
         ).squeeze(1)
+        return [
+            float(picked_logprobs[position].item())
+            for position in range(len(active_indices))
+        ]
 
-        for pos_in_active, batch_index in enumerate(active_indices):
-            value = float(picked_logprobs[pos_in_active].item())
-            if torch_mod.isfinite(torch_mod.tensor(value)):
-                logprob_sums[batch_index] += value
-                token_counts[batch_index] += 1
-
-        del token_ids_tensor, step_logits, step_logprobs, picked_logprobs
-
+    state = ScoreStreamState(
+        scores=scores,
+        sequences=sequences,
+        input_lens=input_lens,
+        eos_ids=eos_ids,
+    )
+    logprob_sums, token_counts = _stream_reduce_over_scores(
+        torch_mod=torch_mod,
+        state=state,
+        per_step_values_fn=_per_step_values,
+    )
     averages = [
         (sum_val / count if count > 0 else 0.0)
         for sum_val, count in zip(logprob_sums, token_counts)
@@ -325,17 +349,56 @@ def _token_entropy_stream(
 ):
     """Average token entropy per sequence, truncated at EOS."""
     batch_size = sequences.size(0)
-    num_steps = len(scores)
-    entropy_sums = [0.0] * batch_size
+    if not scores:
+        return [0.0] * batch_size, [0] * batch_size
+
+    def _per_step_values(
+        torch_module,
+        step_scores,
+        _step_index: int,
+        active_indices: List[int],
+    ) -> List[float]:
+        step_logits = step_scores[active_indices].float()
+        probs = torch_module.softmax(step_logits, dim=-1)
+        entropies = -(probs * probs.clamp_min(1e-12).log()).sum(dim=-1)
+        return [
+            float(entropies[position].item())
+            for position in range(len(active_indices))
+        ]
+
+    state = ScoreStreamState(
+        scores=scores,
+        sequences=sequences,
+        input_lens=input_lens,
+        eos_ids=eos_ids,
+    )
+    entropy_sums, token_counts = _stream_reduce_over_scores(
+        torch_mod=torch_mod,
+        state=state,
+        per_step_values_fn=_per_step_values,
+    )
+    averages = [
+        (sum_val / count if count > 0 else 0.0)
+        for sum_val, count in zip(entropy_sums, token_counts)
+    ]
+    return averages, token_counts
+
+
+def _stream_reduce_over_scores(
+    torch_mod,
+    state: ScoreStreamState,
+    per_step_values_fn,
+):
+    """Shared reducer for log-probability and entropy streams."""
+    batch_size = state.sequences.size(0)
+    sums = [0.0] * batch_size
     token_counts = [0] * batch_size
-    if num_steps == 0:
-        return [0.0] * batch_size, token_counts
 
     effective_lengths = _compute_effective_lengths(
-        sequences,
-        input_lens,
-        num_steps,
-        eos_ids,
+        state.sequences,
+        state.input_lens,
+        len(state.scores),
+        state.eos_ids,
     )
 
     max_effective_length = max(effective_lengths) if effective_lengths else 0
@@ -348,20 +411,17 @@ def _token_entropy_stream(
         if not active_indices:
             break
 
-        step_logits = scores[time_index][active_indices].float()
-        probs = torch_mod.softmax(step_logits, dim=-1)
-        entropies = -(probs * probs.clamp_min(1e-12).log()).sum(dim=-1)
+        step_values = per_step_values_fn(
+            torch_mod,
+            state.scores[time_index],
+            time_index,
+            active_indices,
+        )
 
-        for pos_in_active, batch_index in enumerate(active_indices):
-            value = float(entropies[pos_in_active].item())
+        for position, batch_index in enumerate(active_indices):
+            value = float(step_values[position])
             if torch_mod.isfinite(torch_mod.tensor(value)):
-                entropy_sums[batch_index] += value
+                sums[batch_index] += value
                 token_counts[batch_index] += 1
 
-        del step_logits, probs, entropies
-
-    averages = [
-        (sum_val / count if count > 0 else 0.0)
-        for sum_val, count in zip(entropy_sums, token_counts)
-    ]
-    return averages, token_counts
+    return sums, token_counts

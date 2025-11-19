@@ -30,16 +30,16 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 from src.annotate.config import load_azure_config
 from src.annotate.llm_client import build_preferred_client
 from src.inference.common import (
-    build_math_gateway_arg_parser,
     append_jsonl_row,
+    build_math_gateway_arg_parser,
     build_math_gateway_row_base,
     build_usage_dict,
-    call_with_retries,
+    call_with_gateway_retries,
     canon_math as _canon_math,
     extract_blocks as _extract_blocks,
     iter_math_gateway_samples,
+    load_remote_dataset_default,
     prepare_math_gateway_dataset_from_args,
-    require_datasets,
     setup_script_logger,
     valid_tag_structure as _valid_tag_structure,
 )
@@ -57,13 +57,6 @@ TASK_SPEC = TASK_REGISTRY.get("math-azure")
 
 # ----------------------- Prompt -----------------------
 SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
-
-
-# ----------------------- Dataset helpers -----------------------
-def _load_remote_dataset(dataset_id: str, split: str, cache_dir: str):
-    """Helper that imports datasets.load_dataset lazily."""
-    _, load_dataset_fn = require_datasets()
-    return load_dataset_fn(dataset_id, split=split, cache_dir=cache_dir)
 
 
 def load_math500(
@@ -170,7 +163,7 @@ def _prepare_dataset(args: argparse.Namespace, outpath: str):
         outpath=outpath,
         logger=logger,
         load_math500_fn=load_math500,
-        load_remote_dataset_fn=_load_remote_dataset,
+        load_remote_dataset_fn=load_remote_dataset_default,
         cache_dir=os.path.abspath("./.hf_cache"),
     )
     return dataset, existing
@@ -197,10 +190,9 @@ def _generate_samples(
             problem,
             call_params,
         )
-        call_result = call_with_retries(
+        call_result = call_with_gateway_retries(
             call_fn,
-            max_retries=args.max_retries,
-            retry_backoff=args.retry_backoff,
+            args=args,
             logger=logger,
             sample_idx=sample_idx,
             problem_snippet=problem,

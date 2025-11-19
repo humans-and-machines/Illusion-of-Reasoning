@@ -11,13 +11,17 @@ import logging
 from typing import Tuple
 
 try:
-    from openai import OpenAI, AzureOpenAI, OpenAIError
+    from openai import OpenAI as _OpenAI, AzureOpenAI as _AzureOpenAI, OpenAIError as _OpenAIError
 except ImportError:  # pragma: no cover - optional dependency
-    OpenAI = None  # type: ignore
-    AzureOpenAI = None  # type: ignore
+    _OpenAI = None
+    _AzureOpenAI = None
 
-    class OpenAIError(Exception):  # type: ignore
+    class _OpenAIError(Exception):
         """Fallback when openai is not installed."""
+
+OpenAI = _OpenAI
+AzureOpenAI = _AzureOpenAI
+OpenAIError = _OpenAIError
 
 
 def build_preferred_client(

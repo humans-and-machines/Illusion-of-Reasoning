@@ -158,6 +158,22 @@ def _compute_pos_exact(pred_tokens: List[str], gold_tokens: List[str], gold_len:
     return exact_matches / gold_len
 
 
+def _piece_dir_match_and_step_score(
+    pred_token: str,
+    gold_token: str,
+) -> Tuple[bool, float]:
+    """Return (piece_dir_match, step_score) for a token pair."""
+    pred_piece, pred_dir = _piece_dir(pred_token)
+    gold_piece, gold_dir = _piece_dir(gold_token)
+    if (pred_piece, pred_dir) != (gold_piece, gold_dir):
+        return False, 0.0
+    _, _, pred_steps = _split_token(pred_token)
+    _, _, gold_steps = _split_token(gold_token)
+    denom = max(gold_steps, 1)
+    step_score = max(0.0, 1.0 - abs(pred_steps - gold_steps) / denom)
+    return True, step_score
+
+
 def _compute_piece_dir_and_step_close(
     pred_tokens: List[str],
     gold_tokens: List[str],
@@ -168,18 +184,13 @@ def _compute_piece_dir_and_step_close(
     step_closeness_vals: List[float] = []
     limit = min(len(pred_tokens), len(gold_tokens))
     for index in range(limit):
-        pred_piece, pred_dir = _piece_dir(pred_tokens[index])
-        gold_piece, gold_dir = _piece_dir(gold_tokens[index])
-        if (pred_piece, pred_dir) == (gold_piece, gold_dir):
+        matches_piece_dir, step_score = _piece_dir_match_and_step_score(
+            pred_tokens[index],
+            gold_tokens[index],
+        )
+        if matches_piece_dir:
             piece_dir_matches += 1
-            _, _, pred_steps = _split_token(pred_tokens[index])
-            _, _, gold_steps = _split_token(gold_tokens[index])
-            denom = max(gold_steps, 1)
-            step_closeness_vals.append(
-                max(0.0, 1.0 - abs(pred_steps - gold_steps) / denom),
-            )
-        else:
-            step_closeness_vals.append(0.0)
+        step_closeness_vals.append(step_score)
     piece_dir = piece_dir_matches / gold_len if gold_len > 0 else 0.0
     step_close = (sum(step_closeness_vals) / gold_len) if gold_len > 0 else 0.0
     return piece_dir, step_close

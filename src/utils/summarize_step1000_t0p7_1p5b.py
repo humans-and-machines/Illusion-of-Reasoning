@@ -416,6 +416,28 @@ class BinningConfig:
     conditional: ConditionalConfig
 
 
+def _iter_records_for_step(
+    files: List[str],
+    target_step: int,
+):
+    """Yield parsed JSON records matching a target training step."""
+    for path in files:
+        step_from_name = nat_step_from_path(path)
+        with open(path, "r", encoding="utf-8") as file_handle:
+            for line in file_handle:
+                stripped_line = line.strip()
+                if not stripped_line:
+                    continue
+                try:
+                    record = json.loads(stripped_line)
+                except json.JSONDecodeError:
+                    continue
+                step = record.get("step", step_from_name)
+                if step != target_step:
+                    continue
+                yield record
+
+
 def _collect_pass1_values(
     files: List[str],
     config: BinningConfig,
@@ -424,31 +446,18 @@ def _collect_pass1_values(
     values: List[float] = []
     vmin = float("inf")
     vmax = float("-inf")
-    for path in files:
-        step_from_name = nat_step_from_path(path)
-        with open(path, "r", encoding="utf-8") as file_handle:
-            for line in file_handle:
-                stripped_line = line.strip()
-                if not stripped_line:
-                    continue
-                try:
-                    record = json.loads(stripped_line)
-                except json.JSONDecodeError:
-                    continue
-                step = record.get("step", step_from_name)
-                if step != config.target_step:
-                    continue
-                pass1_record = record.get("pass1") or {}
-                value = p1_think_answer_value(pass1_record, config.combine_mode)
-                if value is None:
-                    continue
-                values.append(value)
-                vmin = min(vmin, value)
-                vmax = max(vmax, value)
+    for record in _iter_records_for_step(files, config.target_step):
+        pass1_record = record.get("pass1") or {}
+        value = p1_think_answer_value(pass1_record, config.combine_mode)
+        if value is None:
+            continue
+        values.append(value)
+        vmin = min(vmin, value)
+        vmax = max(vmax, value)
     return values, vmin, vmax
 
 
-def _populate_bin_aggregates(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def _populate_bin_aggregates(
     files: List[str],
     edges: List[float],
     config: BinningConfig,
@@ -457,94 +466,106 @@ def _populate_bin_aggregates(  # pylint: disable=too-many-locals,too-many-branch
     aggs = [BinAggregate() for _ in range(len(edges) - 1)]
     skipped_missing = 0
 
-    for path in files:
-        step_from_name = nat_step_from_path(path)
-        with open(path, "r", encoding="utf-8") as file_handle:
-            for line in file_handle:
-                stripped_line = line.strip()
-                if not stripped_line:
-                    continue
-                try:
-                    record = json.loads(stripped_line)
-                except json.JSONDecodeError:
-                    continue
-                step = record.get("step", step_from_name)
-                if step != config.target_step:
-                    continue
+    for record in _iter_records_for_step(files, config.target_step):
+        gold = record.get("gold_answer_canon")
+        prob_key = extract_problem_key(record)
 
-                gold = record.get("gold_answer_canon")
-                prob_key = extract_problem_key(record)
+        pass1_record = record.get("pass1") or {}
+        value = p1_think_answer_value(pass1_record, config.combine_mode)
+        if value is None:
+            skipped_missing += 1
+            continue
 
-                pass1_record = record.get("pass1") or {}
-                value = p1_think_answer_value(pass1_record, config.combine_mode)
-                if value is None:
-                    skipped_missing += 1
-                    continue
+        if config.binning_mode == "equal_count":
+            bin_index = assign_bin_equal_count(value, edges)
+        else:
+            bin_index = assign_bin_equal_width(value, edges)
 
-                if config.binning_mode == "equal_count":
-                    bin_index = assign_bin_equal_count(value, edges)
-                else:
-                    bin_index = assign_bin_equal_width(value, edges)
+        agg = aggs[bin_index]
+        agg.ex_seen.add(prob_key)
 
-                agg = aggs[bin_index]
-                agg.ex_seen.add(prob_key)
+        _update_pass1_agg(agg, prob_key, pass1_record, gold, config)
 
-                # ----- pass-1
-                if pass1_record:
-                    agg.ex_has_p1.add(prob_key)
-
-                    ok1_hard = compute_correct(pass1_record, gold, config.recompute_mode)
-                    if ok1_hard is not None:
-                        agg.n1_s += 1
-                        agg.c1_s += int(bool(ok1_hard))
-
-                    sr1 = get_soft(pass1_record)
-                    if sr1 is not None:
-                        agg.n1_soft += 1
-                        if (
-                            config.conditional.soft_threshold is not None
-                            and sr1 >= config.conditional.soft_threshold
-                        ):
-                            agg.c1_soft += 1
-
-                    if (
-                        config.conditional.use_soft_for_conditionals
-                        and config.conditional.soft_threshold is not None
-                    ):
-                        ok1_cond = (sr1 is not None) and (sr1 >= config.conditional.soft_threshold)
-                    else:
-                        ok1_cond = bool(ok1_hard) if ok1_hard is not None else False
-                    if ok1_cond:
-                        agg.ex_p1_any_ok_cond[prob_key] = True
-
-                # ----- pass-2 (categorized by the same p1 bin)
-                pass2_section = record.get("pass2") or {}
-                if pass2_section:
-                    ok2_hard = compute_correct(pass2_section, gold, config.recompute_mode)
-                    if ok2_hard is not None:
-                        agg.n2_s += 1
-                        agg.c2_s += int(bool(ok2_hard))
-
-                    sr2 = get_soft(pass2_section)
-                    if sr2 is not None:
-                        agg.n2_soft += 1
-                        if (
-                            config.conditional.soft_threshold is not None
-                            and sr2 >= config.conditional.soft_threshold
-                        ):
-                            agg.c2_soft += 1
-
-                    if (
-                        config.conditional.use_soft_for_conditionals
-                        and config.conditional.soft_threshold is not None
-                    ):
-                        ok2_cond = (sr2 is not None) and (sr2 >= config.conditional.soft_threshold)
-                    else:
-                        ok2_cond = bool(ok2_hard) if ok2_hard is not None else False
-                    if ok2_cond:
-                        agg.ex_p2_any_ok_cond[prob_key] = True
+        pass2_section = record.get("pass2") or {}
+        _update_pass2_agg(agg, prob_key, pass2_section, gold, config)
 
     return aggs, skipped_missing
+
+
+def _update_pass1_agg(
+    agg: BinAggregate,
+    prob_key: str,
+    pass1_record: Dict[str, Any],
+    gold: Optional[str],
+    config: BinningConfig,
+) -> None:
+    """Update aggregates for pass-1 metrics."""
+    if not pass1_record:
+        return
+
+    agg.ex_has_p1.add(prob_key)
+
+    ok1_hard = compute_correct(pass1_record, gold, config.recompute_mode)
+    if ok1_hard is not None:
+        agg.n1_s += 1
+        agg.c1_s += int(bool(ok1_hard))
+
+    sr1 = get_soft(pass1_record)
+    if sr1 is not None:
+        agg.n1_soft += 1
+        if (
+            config.conditional.soft_threshold is not None
+            and sr1 >= config.conditional.soft_threshold
+        ):
+            agg.c1_soft += 1
+
+    if (
+        config.conditional.use_soft_for_conditionals
+        and config.conditional.soft_threshold is not None
+    ):
+        ok1_cond = (sr1 is not None) and (sr1 >= config.conditional.soft_threshold)
+    else:
+        ok1_cond = bool(ok1_hard) if ok1_hard is not None else False
+
+    if ok1_cond:
+        agg.ex_p1_any_ok_cond[prob_key] = True
+
+
+def _update_pass2_agg(
+    agg: BinAggregate,
+    prob_key: str,
+    pass2_section: Dict[str, Any],
+    gold: Optional[str],
+    config: BinningConfig,
+) -> None:
+    """Update aggregates for pass-2 metrics (bucketed by pass-1 bin)."""
+    if not pass2_section:
+        return
+
+    ok2_hard = compute_correct(pass2_section, gold, config.recompute_mode)
+    if ok2_hard is not None:
+        agg.n2_s += 1
+        agg.c2_s += int(bool(ok2_hard))
+
+    sr2 = get_soft(pass2_section)
+    if sr2 is not None:
+        agg.n2_soft += 1
+        if (
+            config.conditional.soft_threshold is not None
+            and sr2 >= config.conditional.soft_threshold
+        ):
+            agg.c2_soft += 1
+
+    if (
+        config.conditional.use_soft_for_conditionals
+        and config.conditional.soft_threshold is not None
+    ):
+        ok2_cond = (sr2 is not None) and (sr2 >= config.conditional.soft_threshold)
+    else:
+        ok2_cond = bool(ok2_hard) if ok2_hard is not None else False
+
+    if ok2_cond:
+        agg.ex_p2_any_ok_cond[prob_key] = True
 
 
 def summarize_dir_binned(

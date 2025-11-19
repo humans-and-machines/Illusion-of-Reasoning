@@ -32,19 +32,19 @@ from typing import Any, DefaultDict, Dict, List, Optional, Tuple, TYPE_CHECKING
 from src.inference.backends import _load_torch_and_transformers
 from src.inference.common import (
     PassOutputs,
-    StopOnSubstrings,
-    build_generate_kwargs,
+    SamplingConfigBase,
     build_math_pass_meta,
+    build_second_pass_think_prefixes,
     canon_math as _canon_math,
-    decode_and_score_batch,
+    empty_pass_outputs,
+    extract_problem_and_answer,
     finite_mean as _finite_mean,
     load_local_json_dataset,
     pack_math_pass_result as _pack_pass_result,
     require_datasets,
+    run_generate_batch,
     scan_existing_pass1_results,
     setup_script_logger,
-    tokenize_prefixes_for_generate,
-    extract_problem_and_answer,
 )
 from src.inference.task_registry import MATH_SYSTEM_PROMPT
 
@@ -61,15 +61,11 @@ _fmean = _finite_mean
 
 
 @dataclass
-class MathSamplingConfig:
+class MathSamplingConfig(SamplingConfigBase):
     """Sampling / generation controls shared by math inference loops."""
 
     batch_size: int = 8
     num_samples: int = 1
-    temperature: float = 0.0
-    top_p: float = 0.95
-    entropy_mode: str = "reconsider"
-    eos_ids: Optional[List[int]] = None
 
 
 @dataclass
@@ -211,23 +207,6 @@ def _scan_existing_results(results_path: str) -> tuple[DefaultDict[str, set], Di
     """Wrapper around shared scan_existing_pass1_results helper."""
     return scan_existing_pass1_results(results_path)
 
-def _make_gen_kwargs(cap: int, tokenizer, config: MathInferenceConfig) -> dict:
-    """
-    Build generate kwargs for a given token cap and configuration.
-
-    If temperature <= 0 → greedy (do_sample=False) and omit temperature/top_p.
-    Else → sampling with provided temperature/top_p.
-    """
-    pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
-    return build_generate_kwargs(
-        cap=cap,
-        pad_token_id=pad_token_id,
-        eos_ids=config.eos_ids,
-        entropy_mode=config.entropy_mode,
-        temperature=config.temperature,
-        top_p=config.top_p,
-    )
-
 
 @dataclass
 class BatchSpec:
@@ -299,37 +278,17 @@ def _gen_batch(
 ) -> Tuple[List[str], List[List[float]], Any, Any, List[str]]:
     """Generate a batch of continuations and token-entropy series."""
     torch_mod, _, _, stopping_criteria_list_cls = _load_torch_and_transformers()
-    tokenizer = context.tokenizer
-    model = context.model
-    config = context.config
-
-    inputs, input_lengths = tokenize_prefixes_for_generate(
-        tokenizer,
-        batch_spec.prefixes,
-        max_length=4096,
-    )
-    stop = (
-        stopping_criteria_list_cls([StopOnSubstrings(tokenizer, batch_spec.stop_strs)])
-        if batch_spec.stop_strs
-        else None
-    )
-    gen_kwargs = _make_gen_kwargs(batch_spec.cap, tokenizer, config)
-    with torch_mod.inference_mode():
-        out = model.generate(**inputs, **gen_kwargs, stopping_criteria=stop)
-
-    decs, ent_series, stop_reasons = decode_and_score_batch(
-        tokenizer=tokenizer,
-        sequences=out.sequences,
-        scores=out.scores,
-        input_lengths=input_lengths,
-        stop_strings=batch_spec.stop_strs,
+    return run_generate_batch(
+        prefixes=batch_spec.prefixes,
         cap=batch_spec.cap,
-        eos_ids=config.eos_ids,
-        entropy_mode=config.entropy_mode,
-        model=model,
+        stop_strings=batch_spec.stop_strs,
+        tokenizer=context.tokenizer,
+        model=context.model,
+        config_like=context.config,
+        max_length=4096,
+        torch_module=torch_mod,
+        stopping_criteria_list_cls=stopping_criteria_list_cls,
     )
-
-    return decs, ent_series, input_lengths, out.sequences, stop_reasons
 
 
 def _build_work_items_for_slice(
@@ -549,22 +508,6 @@ def _build_second_pass_base_prompts(
     ]
 
 
-def _build_second_pass_think_prefixes(
-    *,
-    base2_per_ex: List[str],
-    pre1_think: List[str],
-    row_to_ex_idx: List[int],
-    cue_str: str,
-) -> List[str]:
-    """Build pass-2 <think> prefixes aligned with pass-1 rows."""
-    pre2_think: List[str] = []
-    for row_index, _ in enumerate(pre1_think):
-        ex_idx = row_to_ex_idx[row_index]
-        base2 = base2_per_ex[ex_idx]
-        pre2_think.append(base2 + "<think>\n" + cue_str)
-    return pre2_think
-
-
 def _run_second_pass_generations(
     *,
     context: MathInferenceContext,
@@ -604,13 +547,7 @@ def _run_pass2_for_batch(
     config = context.config
     if not config.two_pass:
         total_rows = len(second_pass_inputs.pre1_think)
-        return PassOutputs(
-            full_texts=[""] * total_rows,
-            ent_think=[[] for _ in range(total_rows)],
-            ent_answer=[[] for _ in range(total_rows)],
-            stop_reason_think=[""] * total_rows,
-            stop_reason_answer=[""] * total_rows,
-        )
+        return empty_pass_outputs(total_rows)
 
     phrase = config.second_pass_phrase.strip()
     base2_per_ex = _build_second_pass_base_prompts(
@@ -619,7 +556,7 @@ def _run_pass2_for_batch(
         firstpass_choice_text_per_ex=second_pass_inputs.firstpass_choice_text_per_ex,
         phrase=phrase,
     )
-    pre2_think = _build_second_pass_think_prefixes(
+    pre2_think = build_second_pass_think_prefixes(
         base2_per_ex=base2_per_ex,
         pre1_think=second_pass_inputs.pre1_think,
         row_to_ex_idx=second_pass_inputs.layout.row_to_ex_idx,

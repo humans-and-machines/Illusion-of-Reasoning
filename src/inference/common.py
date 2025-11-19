@@ -4,112 +4,158 @@
 Shared inference helpers used across math/carpark/crossword entrypoints.
 The goal is to keep canonicalization, tag parsing, and small torch utilities
 in one place so the task-specific scripts stay focused on their domain logic.
+
+Note: lightweight, text-only helpers have been moved to ``text_utils`` to keep
+this module smaller and more focused on torch/transformers glue code.
 """
-# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
-import argparse
-import json
-import logging
 import math
-import os
-import re
-import sys
-import time
-from collections import defaultdict
 from dataclasses import dataclass
 from importlib import import_module
-from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
-try:  # pragma: no cover - optional dependency
-    import torch
-    from transformers import StoppingCriteria
-except ImportError:  # pragma: no cover - type-check / lint environments
-    class _TorchStub:
-        """Stub object that raises if torch-dependent utilities are used."""
+from src.inference import gateway_utils as _gateway_utils
+from src.inference import math_pass_utils as _math_pass_utils
 
-        def __getattr__(self, _name: str) -> Any:
-            msg = "torch is required for inference utilities in inference.common."
-            raise ImportError(msg)
+# Explicitly bind selected gateway_utils helpers so that static analyzers see
+# them on this module without treating them as unused imports.
+OPENR1_PROMPT_TEMPLATE = _gateway_utils.OPENR1_PROMPT_TEMPLATE
+PassOutputs = _gateway_utils.PassOutputs
+append_jsonl_row = _gateway_utils.append_jsonl_row
+build_eos_ids_from_tokenizer = _gateway_utils.build_eos_ids_from_tokenizer
+build_math_gateway_arg_parser = _gateway_utils.build_math_gateway_arg_parser
+build_math_gateway_messages = _gateway_utils.build_math_gateway_messages
+build_math_gateway_row_base = _gateway_utils.build_math_gateway_row_base
+build_usage_dict = _gateway_utils.build_usage_dict
+build_two_pass_row_base = _gateway_utils.build_two_pass_row_base
+call_with_gateway_retries = _gateway_utils.call_with_gateway_retries
+call_with_retries = _gateway_utils.call_with_retries
+configure_tokenizer_and_eos = _gateway_utils.configure_tokenizer_and_eos
+configure_unified_runner_common = _gateway_utils.configure_unified_runner_common
+extract_problem_and_answer = _gateway_utils.extract_problem_and_answer
+iter_jsonl_objects = _gateway_utils.iter_jsonl_objects
+iter_math_gateway_samples = _gateway_utils.iter_math_gateway_samples
+limit_dataset_examples = _gateway_utils.limit_dataset_examples
+load_local_json_dataset = _gateway_utils.load_local_json_dataset
+load_remote_dataset_default = _gateway_utils.load_remote_dataset_default
+parse_openai_chat_response = _gateway_utils.parse_openai_chat_response
+prepare_math_gateway_dataset = _gateway_utils.prepare_math_gateway_dataset
+prepare_math_gateway_dataset_from_args = _gateway_utils.prepare_math_gateway_dataset_from_args
+require_datasets = _gateway_utils.require_datasets
+scan_existing_pass1_results = _gateway_utils.scan_existing_pass1_results
+scan_existing_problem_samples = _gateway_utils.scan_existing_problem_samples
+setup_hf_cache_dir_env = _gateway_utils.setup_hf_cache_dir_env
+setup_script_logger = _gateway_utils.setup_script_logger
 
-        def is_available(self) -> bool:
-            """Return False to mirror torch.cuda.is_available-style probes."""
-            return False
+# Explicitly bind selected math_pass_utils helpers as well.
+RECONSIDER_PATTERNS = _math_pass_utils.RECONSIDER_PATTERNS
+add_token_and_tag_fields = _math_pass_utils.add_token_and_tag_fields
+build_entropy_pass_base = _math_pass_utils.build_entropy_pass_base
+build_math_pass_meta = _math_pass_utils.build_math_pass_meta
+canon_math = _math_pass_utils.canon_math
+contains_canon = _math_pass_utils.contains_canon
+extract_blocks = _math_pass_utils.extract_blocks
+finite_mean = _math_pass_utils.finite_mean
+pack_math_pass_result = _math_pass_utils.pack_math_pass_result
+valid_tag_structure = _math_pass_utils.valid_tag_structure
 
-        def device(self) -> str:
-            """Placeholder device accessor to satisfy style checks."""
-            return "cpu"
+# Retain dynamic re-exports so that any additions to __all__ in the helper
+# modules are still reflected here at runtime.
+for _mod in (_math_pass_utils, _gateway_utils):
+    for _name in getattr(_mod, "__all__", []):
+        globals()[_name] = getattr(_mod, _name)
 
-    torch = _TorchStub()  # type: ignore[assignment]
-
-    class StoppingCriteria:  # type: ignore[too-many-ancestors]
-        """Stub StoppingCriteria base when transformers is unavailable."""
-
-        def __call__(self, *args: Any, **kwargs: Any) -> bool:  # noqa: ARG002
-            msg = "transformers is required for StoppingCriteria in inference.common."
-            raise ImportError(msg)
-
-        def clone(self) -> "StoppingCriteria":
-            """Return self; provided solely to satisfy minimal API expectations."""
-            return self
-
-        def has_stops(self) -> bool:
-            """Placeholder method for compatibility with StopOnSubstrings."""
-            return False
-
-
-# Regular expressions reused by multiple scripts.
-RE_THINK = re.compile(r"(?si)<think>(.*?)</think>")
-RE_ANSWER = re.compile(r"(?si)<answer>(.*?)</answer>")
-
-# Optional reconsider-cue detectors shared across math/crossword runners.
-RECONSIDER_PATTERNS: Sequence[Tuple[str, re.Pattern]] = [
-    ("wait_line", re.compile(r"(?im)^\s*wait[,\.\-–—… ]", re.I)),
-    ("wait_reconsider", re.compile(r"\bwait\b.*\breconsider\b", re.I | re.S)),
-    ("reconsider_exact", re.compile(r"\bwait[,!\.\s]*let me reconsider\b", re.I)),
-    ("step_by_step", re.compile(r"\blet'?s take (this|it) step[-\s]?by[-\s]?step\b", re.I)),
-    ("step_by_step_alt", re.compile(r"\bstep[-\s]?by[-\s]?step\b", re.I)),
-    ("recheck", re.compile(r"\bre[-\s]?check(ing)?\b", re.I)),
+_CORE_EXPORTS = [
+    # Core generation / entropy helpers defined in this module
+    "move_inputs_to_device",
+    "tokenize_prefixes_for_generate",
+    "build_generate_kwargs",
+    "make_generate_kwargs_for_cap",
+    "build_second_pass_think_prefixes",
+    "empty_pass_outputs",
+    "decode_generated_row",
+    "decode_and_score_batch",
+    "generate_and_score_batch",
+    "classify_stop_reason",
+    "StopOnSubstrings",
+    "first_eos_any",
+    "entropy_from_start_index",
+    "GenerationLimits",
+    "repeat_for_samples",
+    "SamplingConfigBase",
+    "DecodeBatchConfig",
+    "DecodeBatchContext",
+    "GenerateBatchParams",
+    "GenerateBatchRuntime",
+    "run_generate_batch",
+    "build_math_inference_config_kwargs",
+    "build_math_inference_config_kwargs_from_args",
+    "require_torch",
+    "require_transformers",
+    # Explicitly re-export selected helpers so static analyzers
+    # can see them on this module without relying on dynamic globals().
+    "OPENR1_PROMPT_TEMPLATE",
+    "extract_problem_and_answer",
+    "load_local_json_dataset",
+    "require_datasets",
+    "scan_existing_pass1_results",
+    "setup_script_logger",
+    "build_math_pass_meta",
+    "canon_math",
+    "finite_mean",
+    "pack_math_pass_result",
 ]
 
+_HELPER_EXPORTS = []
+for _mod in (_math_pass_utils, _gateway_utils):
+    _helper_all = getattr(_mod, "__all__", None)
+    if _helper_all:
+        _HELPER_EXPORTS.extend(list(_helper_all))
 
-# ---------------------------------------------------------------------------
-# Text + tag helpers
-# ---------------------------------------------------------------------------
-def extract_blocks(txt: str) -> Tuple[Optional[str], Optional[str]]:
-    """Return (<think>..., <answer>...) contents (whitespace stripped)."""
-    think = ans = None
-    think_match = RE_THINK.search(txt)
-    if think_match:
-        think = think_match.group(1).strip()
-    answer_match = RE_ANSWER.search(txt)
-    if answer_match:
-        ans = answer_match.group(1).strip()
-    return think, ans
+__all__ = _CORE_EXPORTS + _HELPER_EXPORTS
 
+if TYPE_CHECKING:
+    import torch
+    from transformers import StoppingCriteria
+else:  # pragma: no cover - optional dependency at runtime
+    try:
+        torch = import_module("torch")
+        transformers_mod = import_module("transformers")
+        StoppingCriteria = getattr(transformers_mod, "StoppingCriteria")
+    except ImportError:  # pragma: no cover - type-check / lint environments
+        class _TorchStub:
+            """Stub object that raises if torch-dependent utilities are used."""
 
-def valid_tag_structure(full_text: str) -> bool:
-    """Require exactly one <think>…</think> before <answer>…</answer>."""
-    opens_think = len(re.findall(r"(?i)<think>", full_text))
-    closes_think = len(re.findall(r"(?i)</think>", full_text))
-    opens_ans = len(re.findall(r"(?i)<answer>", full_text))
-    closes_ans = len(re.findall(r"(?i)</answer>", full_text))
-    if not (opens_think == closes_think == 1 and opens_ans == closes_ans == 1):
-        return False
-    think_open_match = re.search(r"(?i)<think>", full_text)
-    think_close_match = re.search(r"(?i)</think>", full_text)
-    answer_open_match = re.search(r"(?i)<answer>", full_text)
-    answer_close_match = re.search(r"(?i)</answer>", full_text)
-    if not all(
-        [think_open_match, think_close_match, answer_open_match, answer_close_match],
-    ):
-        return False
-    think_open_pos = think_open_match.start()  # type: ignore[union-attr]
-    think_close_pos = think_close_match.start()  # type: ignore[union-attr]
-    answer_open_pos = answer_open_match.start()  # type: ignore[union-attr]
-    answer_close_pos = answer_close_match.start()  # type: ignore[union-attr]
-    return think_open_pos < think_close_pos < answer_open_pos < answer_close_pos
+            def __getattr__(self, _name: str) -> Any:
+                msg = "torch is required for inference utilities in inference.common."
+                raise ImportError(msg)
+
+            def is_available(self) -> bool:
+                """Return False to mirror torch.cuda.is_available-style probes."""
+                return False
+
+            def device(self) -> str:
+                """Placeholder device accessor to satisfy style checks."""
+                return "cpu"
+
+        torch = _TorchStub()
+
+        class StoppingCriteria:
+            """Stub StoppingCriteria base when transformers is unavailable."""
+
+            def __call__(self, *_: Any, **__: Any) -> bool:
+                msg = "transformers is required for StoppingCriteria in inference.common."
+                raise ImportError(msg)
+
+            def clone(self) -> "StoppingCriteria":
+                """Return self; provided solely to satisfy minimal API expectations."""
+                return self
+
+            def has_stops(self) -> bool:
+                """Placeholder method for compatibility with StopOnSubstrings."""
+                return False
 
 
 # ---------------------------------------------------------------------------
@@ -187,13 +233,75 @@ def build_generate_kwargs(
         try:
             if torch.distributed.is_available() and torch.distributed.is_initialized():
                 kwargs["synced_gpus"] = True
-        except Exception:  # pragma: no cover - defensive
+        except (RuntimeError, AttributeError):  # pragma: no cover - defensive
+            # If distributed is misconfigured, fall back to unsynced generate.
             pass
     if do_sample:
         kwargs["temperature"] = float(temperature)
         if top_p is not None:
             kwargs["top_p"] = float(top_p)
     return kwargs
+
+
+def make_generate_kwargs_for_cap(
+    *,
+    cap: int,
+    tokenizer,
+    eos_ids,
+    entropy_mode: str,
+    temperature: Optional[float],
+    top_p: Optional[float],
+    synced_gpus: bool = False,
+) -> Dict[str, Any]:
+    """
+    Convenience wrapper that derives ``pad_token_id`` from a tokenizer and
+    forwards to ``build_generate_kwargs``.
+    """
+    pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
+    return build_generate_kwargs(
+        cap=cap,
+        pad_token_id=pad_token_id,
+        eos_ids=eos_ids,
+        entropy_mode=entropy_mode,
+        temperature=temperature,
+        top_p=top_p,
+        synced_gpus=synced_gpus,
+    )
+
+
+def build_second_pass_think_prefixes(
+    *,
+    base2_per_ex: Sequence[str],
+    pre1_think: Sequence[str],
+    row_to_ex_idx: Sequence[int],
+    cue_str: str,
+) -> List[str]:
+    """
+    Build pass-2 ``<think>`` prefixes aligned with pass-1 rows.
+
+    This helper is shared by math_core and math_llama_core to avoid duplicating
+    the row→example mapping logic.
+    """
+    pre2_think: List[str] = []
+    for row_index, _ in enumerate(pre1_think):
+        ex_idx = row_to_ex_idx[row_index]
+        base2 = base2_per_ex[ex_idx]
+        pre2_think.append(base2 + "<think>\n" + cue_str)
+    return pre2_think
+
+
+def empty_pass_outputs(total_rows: int) -> "PassOutputs":
+    """
+    Construct an empty ``PassOutputs`` instance for cases where a pass is
+    skipped (e.g., disabled second pass).
+    """
+    return PassOutputs(
+        full_texts=[""] * total_rows,
+        ent_think=[[] for _ in range(total_rows)],
+        ent_answer=[[] for _ in range(total_rows)],
+        stop_reason_think=[""] * total_rows,
+        stop_reason_answer=[""] * total_rows,
+    )
 
 
 def decode_generated_row(tokenizer, seqs: torch.Tensor, input_lengths: torch.Tensor, row_i: int,
@@ -237,26 +345,49 @@ def _trim_and_classify(
     return trimmed.strip(), stop_reason
 
 
+@dataclass
+class _EntropyRowContext:
+    """Container for row-wise entropy computation inputs."""
+
+    scores: Any
+    sequences: Any
+    eos_ids: Optional[Sequence[int]]
+    model: Any
+
+
+@dataclass
+class GenerationLimits:
+    """Shared cap + sampling-count configuration used by multiple runners."""
+
+    batch_size: int
+    num_samples: int
+    think_cap: int
+    answer_cap: int
+
+
+def repeat_for_samples(values: Sequence[str], num_samples: int) -> List[str]:
+    """Repeat each value num_samples times (row-major expansion)."""
+    return [value for value in values for _ in range(num_samples)]
+
+
 def _row_entropy_from_scores(
-    scores,
-    sequences: torch.Tensor,
+    ctx: _EntropyRowContext,
     row_index: int,
     start_tok_idx: int,
-    eos_ids: Optional[Sequence[int]],
-    model,
 ) -> List[float]:
     """
     Compute per-token entropies for a single row, with fallback to
     entropy_from_start_index on NaNs/Infs.
     """
-    gen_ids = sequences[row_index, start_tok_idx:]
-    scores_len = len(scores)
-    eos_limit = first_eos_any(gen_ids, eos_ids) if eos_ids else gen_ids.shape[0]
-    t_stop = min(eos_limit, scores_len)
+    gen_ids = ctx.sequences[row_index, start_tok_idx:]
+    eos_limit = first_eos_any(gen_ids, ctx.eos_ids) if ctx.eos_ids else gen_ids.shape[0]
     token_entropies: List[float] = []
     bad = False
-    for score_index in range(t_stop):
-        logits = scores[score_index][row_index].float()
+
+    for score_index, score_step in enumerate(ctx.scores):
+        if score_index >= eos_limit:
+            break
+        logits = score_step[row_index].float()
         if torch.isnan(logits).any() or torch.isinf(logits).any():
             bad = True
             break
@@ -264,8 +395,8 @@ def _row_entropy_from_scores(
         if torch.isnan(log_probs).any() or torch.isinf(log_probs).any():
             bad = True
             break
-        probabilities = log_probs.exp()
-        entropy_val = float(-(probabilities * log_probs).sum().item())
+        probs = log_probs.exp()
+        entropy_val = float(-(probs * log_probs).sum().item())
         if not math.isfinite(entropy_val):
             bad = True
             break
@@ -274,64 +405,193 @@ def _row_entropy_from_scores(
     if bad or not token_entropies:
         start_index = start_tok_idx - 1
         token_entropies = entropy_from_start_index(
-            model,
-            sequences[row_index : row_index + 1],
+            ctx.model,
+            ctx.sequences[row_index : row_index + 1],
             start_index,
         ) or []
     return token_entropies
 
 
+@dataclass
+class DecodeBatchConfig:
+    """Configuration for decoding and scoring a batch of generations."""
+
+    stop_strings: Sequence[str]
+    cap: int
+    eos_ids: Optional[Sequence[int]]
+    entropy_mode: str
+    model: Any
+
+
+@dataclass
+class DecodeBatchContext:
+    """Inputs required to decode and score a batch of generations."""
+
+    tokenizer: Any
+    sequences: Any
+    scores: Any
+    input_lengths: Any
+    config: DecodeBatchConfig
+
+
 def decode_and_score_batch(
-    *,
-    tokenizer,
-    sequences: torch.Tensor,
-    scores,
-    input_lengths: torch.Tensor,
-    stop_strings: Sequence[str],
-    cap: int,
-    eos_ids: Optional[Sequence[int]],
-    entropy_mode: str,
-    model,
+    ctx: DecodeBatchContext,
 ) -> Tuple[List[str], List[List[float]], List[str]]:
     """
     Shared row-wise decode + entropy loop used by math/carpark/crossword _gen_batch
     helpers. Returns (decoded_texts, entropy_series, stop_reasons).
     """
-    total_rows = sequences.shape[0]
+    total_rows = ctx.sequences.shape[0]
     decoded_texts: List[str] = []
     entropy_series: List[List[float]] = []
     stop_reasons: List[str] = []
 
     for row_index in range(total_rows):
-        start_tok_idx = int(input_lengths[row_index].item())
-        gen_ids = sequences[row_index, start_tok_idx:]
-        raw_text = tokenizer.decode(gen_ids, skip_special_tokens=True)
+        start_tok_idx = int(ctx.input_lengths[row_index].item())
+        gen_ids = ctx.sequences[row_index, start_tok_idx:]
+        raw_text = ctx.tokenizer.decode(gen_ids, skip_special_tokens=True)
 
         trimmed, stop_reason = _trim_and_classify(
             gen_ids,
             raw_text,
-            stop_strings,
-            cap,
-            eos_ids,
+            ctx.config.stop_strings,
+            ctx.config.cap,
+            ctx.config.eos_ids,
         )
         decoded_texts.append(trimmed)
         stop_reasons.append(stop_reason)
 
-        if entropy_mode == "none":
+        if ctx.config.entropy_mode == "none":
             entropy_series.append([])
             continue
 
         entropies = _row_entropy_from_scores(
-            scores,
-            sequences,
+            _EntropyRowContext(
+                scores=ctx.scores,
+                sequences=ctx.sequences,
+                eos_ids=ctx.config.eos_ids,
+                model=ctx.config.model,
+            ),
             row_index,
             start_tok_idx,
-            eos_ids,
-            model,
         )
         entropy_series.append(entropies)
 
     return decoded_texts, entropy_series, stop_reasons
+
+
+@dataclass
+class GenerateBatchParams:
+    """Static parameters for a single generate+decode call."""
+
+    prefixes: Sequence[str]
+    cap: int
+    stop_strings: Sequence[str]
+    config_like: Any
+    max_length: int
+
+
+@dataclass
+class GenerateBatchRuntime:
+    """Runtime dependencies required to run generation."""
+
+    tokenizer: Any
+    model: Any
+    torch_module: Any
+    stopping_criteria_list_cls: Any
+
+
+def run_generate_batch(
+    prefixes: Sequence[str],
+    cap: int,
+    stop_strings: Sequence[str],
+    *,
+    tokenizer: Any,
+    model: Any,
+    config_like: Any,
+    max_length: int,
+    torch_module: Any,
+    stopping_criteria_list_cls: Any,
+) -> Tuple[List[str], List[List[float]], Any, Any, List[str]]:
+    """
+    Convenience wrapper that constructs GenerateBatchParams and GenerateBatchRuntime
+    and delegates to generate_and_score_batch.
+    """
+    params = GenerateBatchParams(
+        prefixes=prefixes,
+        cap=cap,
+        stop_strings=stop_strings,
+        config_like=config_like,
+        max_length=max_length,
+    )
+    runtime = GenerateBatchRuntime(
+        tokenizer=tokenizer,
+        model=model,
+        torch_module=torch_module,
+        stopping_criteria_list_cls=stopping_criteria_list_cls,
+    )
+    return generate_and_score_batch(params, runtime)
+
+
+def generate_and_score_batch(
+    params: GenerateBatchParams,
+    runtime: GenerateBatchRuntime,
+) -> Tuple[List[str], List[List[float]], Any, Any, List[str]]:
+    """
+    Shared generate + decode loop used by math/carpark/crossword cores.
+
+    ``params.config_like`` must expose ``eos_ids``, ``entropy_mode``,
+    and ``top_p`` attributes.
+    """
+    inputs, input_lengths = tokenize_prefixes_for_generate(
+        runtime.tokenizer,
+        params.prefixes,
+        max_length=params.max_length,
+    )
+
+    stop = (
+        runtime.stopping_criteria_list_cls(
+            [StopOnSubstrings(runtime.tokenizer, list(params.stop_strings))],
+        )
+        if params.stop_strings
+        else None
+    )
+
+    config_like = params.config_like
+    eos_ids = getattr(config_like, "eos_ids", None)
+    entropy_mode = getattr(config_like, "entropy_mode")
+    temperature = getattr(config_like, "temperature")
+    top_p = getattr(config_like, "top_p")
+
+    gen_kwargs = make_generate_kwargs_for_cap(
+        cap=params.cap,
+        tokenizer=runtime.tokenizer,
+        eos_ids=eos_ids,
+        entropy_mode=entropy_mode,
+        temperature=temperature,
+        top_p=top_p,
+    )
+
+    with runtime.torch_module.inference_mode():
+        out = runtime.model.generate(**inputs, **gen_kwargs, stopping_criteria=stop)
+
+    decoded_texts, entropy_series, stop_reasons = decode_and_score_batch(
+        DecodeBatchContext(
+            tokenizer=runtime.tokenizer,
+            sequences=out.sequences,
+            scores=out.scores,
+            input_lengths=input_lengths,
+            config=DecodeBatchConfig(
+                stop_strings=list(params.stop_strings) or [],
+                cap=params.cap,
+                eos_ids=eos_ids,
+                entropy_mode=entropy_mode,
+                model=runtime.model,
+            ),
+        ),
+    )
+
+    return decoded_texts, entropy_series, input_lengths, out.sequences, stop_reasons
 
 
 def classify_stop_reason(found_stop: bool, has_eos: bool, hit_max: bool) -> str:
@@ -365,8 +625,8 @@ class StopOnSubstrings(StoppingCriteria):
     def __call__(
         self,
         input_ids: torch.LongTensor,
-        scores: torch.FloatTensor,  # noqa: ARG002 - interface requirement
-        **kwargs: Any,  # noqa: ARG002 - interface requirement
+        _: torch.FloatTensor,
+        **__: Any,
     ) -> bool:
         for row in input_ids:
             for stop_id_seq in self.stop_ids:
@@ -377,148 +637,6 @@ class StopOnSubstrings(StoppingCriteria):
     def has_stops(self) -> bool:
         """Return True if any stop sequences are configured."""
         return bool(self.stop_ids)
-
-
-def build_entropy_pass_base(
-    *,
-    prev_output: Optional[str],
-    full_text: str,
-    pred_answer_text: str,
-    pred_canon: Optional[str],
-    entropy_overall: Optional[float],
-    entropy_think: Optional[float],
-    entropy_answer: Optional[float],
-) -> Dict[str, Any]:
-    """
-    Common core for per-pass result dicts with entropy stats and prediction fields.
-    """
-    return {
-        "prev_output": prev_output,
-        "output": full_text,
-        "pred_answer": pred_answer_text,
-        "pred_answer_canon": pred_canon,
-        "entropy": entropy_overall,
-        "entropy_think": entropy_think,
-        "entropy_answer": entropy_answer,
-    }
-
-
-def add_token_and_tag_fields(
-    base: Dict[str, Any],
-    *,
-    tokens_total: int,
-    tokens_think: int,
-    tokens_answer: int,
-    full_text: str,
-) -> Dict[str, Any]:
-    """
-    Add shared token-count and tag-structure fields to a per-pass result dict.
-    """
-    base.update(
-        {
-            "tokens_total": tokens_total,
-            "tokens_end_think": tokens_think,
-            "tokens_think": tokens_think,
-            "tokens_answer": tokens_answer,
-            "valid_tag_structure": valid_tag_structure(full_text),
-        },
-    )
-    return base
-
-
-def find_markers_and_context(
-    think_text: Optional[str],
-    prompt_text: str,
-    patterns: Sequence[Tuple[str, re.Pattern]],
-    *,
-    skip_prefix_chars: int = 0,
-):  # pylint: disable=too-many-locals
-    """
-    Scan think_text for the earliest match among patterns.
-    Returns (markers, earliest_pos, context_prefix, excerpt).
-    """
-    if not think_text:
-        return [], None, None, None
-    search_text = think_text[skip_prefix_chars:] if skip_prefix_chars > 0 else think_text
-    earliest_pos = None
-    markers: List[str] = []
-    for name, pattern in patterns:
-        match = pattern.search(search_text)
-        if match:
-            markers.append(name)
-            pos_global = (
-                skip_prefix_chars + match.start()
-                if skip_prefix_chars > 0
-                else match.start()
-            )
-            if earliest_pos is None or pos_global < earliest_pos:
-                earliest_pos = pos_global
-    if not markers:
-        return [], None, None, None
-    prefix = think_text[:earliest_pos] if earliest_pos is not None else think_text
-    context = f"{prompt_text}\n\n{prefix}"
-    window_start = max(0, (earliest_pos or 0) - 60)
-    window_end = min(len(think_text), (earliest_pos or 0) + 60)
-    excerpt = think_text[window_start:window_end]
-    return markers, earliest_pos, context, excerpt
-
-
-# ---------------------------------------------------------------------------
-# Canonicalization
-# ---------------------------------------------------------------------------
-RE_LATEX_FRAC = re.compile(r"\\frac\s*\{\s*([^{}]+?)\s*\}\s*\{\s*([^{}]+?)\s*\}", re.I)
-RE_LATEX_CMDS = re.compile(r"\\(left|right|,|;|!|:)", re.I)
-RE_SPACES = re.compile(r"\s+")
-RE_BRACES = re.compile(r"[{}]")
-RE_PARENS_COMMAs = re.compile(r"[()\[\],]")
-
-
-def canon_math(value: Optional[str]) -> Optional[str]:
-    """
-    Permissive canonicalizer for math answers. Lowercases, removes spacing/punctuation,
-    simplifies common LaTeX forms, and normalizes pi.
-    """
-    if value is None:
-        return None
-    canonical = value.strip()
-    canonical = (
-        canonical.replace("–", "-")
-        .replace("—", "-")
-        .replace("−", "-")
-        .replace("π", "pi")
-        .replace("\\pi", "pi")
-    )
-    canonical = RE_LATEX_CMDS.sub("", canonical)
-    canonical = RE_LATEX_FRAC.sub(r"\1/\2", canonical)
-    canonical = RE_BRACES.sub("", canonical)
-    canonical = RE_SPACES.sub("", canonical)
-    canonical = RE_PARENS_COMMAs.sub("", canonical)
-    canonical = canonical.replace("\\boxed", "").replace("$", "")
-    canonical = canonical.lower().rstrip(".")
-    canonical = re.sub(r"/{2,}", "/", canonical)
-    canonical = re.sub(r"\+{2,}", "+", canonical)
-    canonical = re.sub(r"-{2,}", "-", canonical)
-    if canonical.startswith("+"):
-        canonical = canonical[1:]
-    return canonical
-
-
-def contains_canon(hay: Optional[str], needle: Optional[str]) -> bool:
-    """Substring check after both sides are canonicalized."""
-    return bool(hay and needle and (needle in hay))
-
-
-# ---------------------------------------------------------------------------
-# Torch utilities
-# ---------------------------------------------------------------------------
-def finite_mean(values: Iterable[float]) -> Optional[float]:
-    """Return the mean of finite values, ignoring NaNs."""
-    finite_values = [
-        float(value)
-        for value in values
-        if not math.isnan(float(value)) and math.isfinite(float(value))
-    ]
-    return (sum(finite_values) / len(finite_values)) if finite_values else None
 
 
 def first_eos_any(token_ids: torch.Tensor, eos_id_list: Optional[Sequence[int]]) -> int:
@@ -565,622 +683,19 @@ def entropy_from_start_index(model, seq_ids: torch.Tensor, start_idx: int) -> Li
     return entropies
 
 
-# ---------------------------------------------------------------------------
-# HF cache helpers
-# ---------------------------------------------------------------------------
-def setup_hf_cache_dir_env(base_dir: str = "./.hf_cache") -> str:
-    """
-    Initialize HuggingFace cache directory and environment variables.
-
-    Returns the absolute HF cache directory path so callers can pass it to
-    transformers / datasets loaders.
-    """
-    hf_cache_dir = os.path.abspath(base_dir)
-    os.environ.update(
-        HF_HOME=hf_cache_dir,
-        TRANSFORMERS_CACHE=os.path.join(hf_cache_dir, "transformers"),
-        HF_HUB_CACHE=os.path.join(hf_cache_dir, "hub"),
-    )
-    return hf_cache_dir
-
-
-def setup_script_logger(name: str) -> logging.Logger:
-    """
-    Configure a basic process-wide logger using LOGLEVEL env and return a module logger.
-
-    This mirrors the common pattern used in the inference entrypoints.
-    """
-    loglevel = os.getenv("LOGLEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=getattr(logging, loglevel, logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-    return logging.getLogger(name)
-
-
-# ---------------------------------------------------------------------------
-# Dataset helper
-# ---------------------------------------------------------------------------
-def load_local_json_dataset(path: str) -> "Dataset":
-    """
-    Read a JSONL-like local file into a datasets.Dataset.
-    Lines that are empty or not JSON objects are skipped.
-    """
-    dataset_cls, _ = require_datasets()
-
-    records: List[dict] = []
-    with open(path, "r", encoding="utf-8") as file_handle:
-        for line in file_handle:
-            line = line.strip()
-            if not line:
-                continue
-            if not line.startswith("{"):
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            records.append(obj)
-    return dataset_cls.from_list(records)
-
-
-# ---------------------------------------------------------------------------
-# JSONL + dataset field helpers
-# ---------------------------------------------------------------------------
-def append_jsonl_row(path: str, row: Dict[str, Any]) -> None:
-    """
-    Append a single JSON-serializable row to a JSONL file, creating parent
-    directories as needed.
-    """
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "a", encoding="utf-8") as handle:
-        json.dump(row, handle, ensure_ascii=False)
-        handle.write("\n")
-
-
-def scan_existing_problem_samples(path: str) -> Dict[str, set]:
-    """
-    Scan an existing JSONL results file and return a mapping
-    {problem -> {sample_idx,...}}.
-    """
-    if not os.path.exists(path):
-        return {}
-    existing: Dict[str, set] = {}
-    with open(path, "r", encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            problem = obj.get("problem")
-            sample_idx = obj.get("sample_idx")
-            if problem is None or sample_idx is None:
-                continue
-            existing.setdefault(problem, set()).add(int(sample_idx))
-    return existing
-
-
-def scan_existing_pass1_results(
-    path: str,
-) -> tuple[DefaultDict[str, set], Dict[tuple, str]]:
-    """
-    Scan a JSONL results file and recover seen problems and pass-1 outputs.
-
-    Returns:
-      existing_samples: problem -> set(sample_idx) that already exist
-      existing_pass1: (problem, sample_idx) -> pass1['output'] text (if available)
-    """
-    existing_samples: DefaultDict[str, set] = defaultdict(set)
-    existing_pass1: Dict[tuple, str] = {}
-    for obj in iter_jsonl_objects(path):
-        prob = obj.get("problem")
-        sample_idx = obj.get("sample_idx")
-        if prob is None or sample_idx is None:
-            continue
-        existing_samples[prob].add(int(sample_idx))
-        pass1_section = obj.get("pass1") or {}
-        pass1_output = pass1_section.get("output")
-        if isinstance(pass1_output, str):
-            existing_pass1[(prob, int(sample_idx))] = pass1_output
-    return existing_samples, existing_pass1
-
-
-def extract_problem_and_answer(example: Dict[str, Any]) -> Tuple[Optional[str], Any]:
-    """
-    Extract a unified (problem, answer) pair from a heterogeneous example dict.
-    """
-    problem = (
-        example.get("problem")
-        or example.get("question")
-        or example.get("prompt")
-        or example.get("instruction")
-        or example.get("query")
-    )
-    answer = (
-        example.get("answer")
-        or example.get("solution")
-        or example.get("final_answer")
-        or example.get("boxed_answer")
-        or example.get("target")
-    )
-    return problem, answer
-
-
-def build_math_gateway_row_base(
-    *,
-    problem: str,
-    gold_answer: Any,
-    gold_answer_canon: Any,
-    split: str,
-    step: int,
-    sample_idx: int,
-) -> Dict[str, Any]:
-    """
-    Common prefix for single-pass MATH JSONL rows used by gateway scripts.
-    """
-    return {
-        "problem": problem,
-        "gold_answer": gold_answer,
-        "gold_answer_canon": gold_answer_canon,
-        "split": split,
-        "step": step,
-        "sample_idx": sample_idx,
-    }
-
-
-def build_usage_dict(usage: Any) -> Dict[str, Any]:
-    """
-    Build a usage dict from an OpenAI/Portkey-style usage object, tolerating
-    missing attributes.
-    """
-    return {
-        "prompt_tokens": getattr(usage, "prompt_tokens", None),
-        "completion_tokens": getattr(usage, "completion_tokens", None),
-        "total_tokens": getattr(usage, "total_tokens", None),
-    }
-
-
-def iter_jsonl_objects(path: str) -> Iterable[dict]:
-    """
-    Yield JSON objects from a JSONL file, skipping empty or invalid lines.
-    """
-    if not os.path.exists(path):
-        return
-    with open(path, "r", encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            yield obj
-
-
-def build_two_pass_row_base(
-    *,
-    step: int,
-    split_name: str,
-    sample_idx: int,
-    pass1: Dict[str, Any],
-    pass2: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
-    """
-    Shared core fields for two-pass rows (carpark/math-llama style).
-    """
-    return {
-        "step": step,
-        "split": split_name,
-        "sample_idx": sample_idx,
-        "pass1": pass1,
-        "pass2": pass2,
-    }
-
-
 @dataclass
-class PassOutputs:
-    """Container for per-pass outputs used when writing rows."""
-
-    full_texts: List[str]
-    ent_think: List[List[float]]
-    ent_answer: List[List[float]]
-    stop_reason_think: List[str]
-    stop_reason_answer: List[str]
-
-
-def limit_dataset_examples(dataset, num_examples: Optional[int]):
+class SamplingConfigBase:
     """
-    If num_examples is set and positive, return a sliced dataset with at most that
-    many rows; otherwise return the dataset unchanged.
+    Shared sampling defaults used by multiple inference configs.
+
+    This centralizes common fields so that task-specific configs (math,
+    crossword, etc.) can extend it without duplicating dataclass bodies.
     """
-    if num_examples is not None and num_examples > 0:
-        return dataset.select(range(min(num_examples, len(dataset))))
-    return dataset
 
-
-def prepare_math_gateway_dataset(
-    *,
-    dataset_id: str,
-    split: str,
-    seed: int,
-    num_examples: Optional[int],
-    dataset_path: Optional[str],
-    outpath: str,
-    logger: logging.Logger,
-    load_math500_fn,
-    load_remote_dataset_fn,
-    cache_dir: Optional[str] = None,
-):
-    """
-    Load a MATH-style dataset (local MATH-500 or remote HF path), optionally cap
-    the number of examples, shuffle, scan existing results, and log summary
-    stats. Returns (dataset, existing_problem_samples, dataset_name_for_log).
-    """
-    hf_cache_dir = cache_dir or os.path.abspath("./.hf_cache")
-    if dataset_id.upper() == "MATH-500":
-        dataset = load_math500_fn(hf_cache_dir, split, seed, dataset_path=dataset_path)
-        dataset_name_for_log = "MATH-500"
-    else:
-        dataset = load_remote_dataset_fn(dataset_id, split, hf_cache_dir)
-        dataset_name_for_log = dataset_id
-
-    dataset = limit_dataset_examples(dataset, num_examples)
-    dataset = dataset.shuffle(seed=seed)
-    existing = scan_existing_problem_samples(outpath)
-    logger.info(
-        "Dataset: %s split=%s | N=%d | existing=%d",
-        dataset_name_for_log,
-        split,
-        len(dataset),
-        len(existing),
-    )
-    logger.info("Output: %s", outpath)
-    return dataset, existing, dataset_name_for_log
-
-
-def prepare_math_gateway_dataset_from_args(
-    args,
-    *,
-    outpath: str,
-    logger: logging.Logger,
-    load_math500_fn,
-    load_remote_dataset_fn,
-    cache_dir: Optional[str] = None,
-):
-    """
-    Convenience wrapper mapping common CLI args into prepare_math_gateway_dataset.
-    """
-    return prepare_math_gateway_dataset(
-        dataset_id=args.dataset_id,
-        split=args.split,
-        seed=args.seed,
-        num_examples=args.num_examples,
-        dataset_path=args.dataset_path,
-        outpath=outpath,
-        logger=logger,
-        load_math500_fn=load_math500_fn,
-        load_remote_dataset_fn=load_remote_dataset_fn,
-        cache_dir=cache_dir,
-    )
-
-
-# ---------------------------------------------------------------------------
-# CLI helpers
-# ---------------------------------------------------------------------------
-def add_basic_runner_args(arg_parser, *, default_dtype: str = "float16") -> None:
-    """
-    Attach common dataset/decoding/budget/system flags used by unified runners.
-    """
-    # Data selection
-    arg_parser.add_argument("--split", default="test")
-    arg_parser.add_argument("--num_examples", type=int, default=None)
-
-    # Decoding + sampling
-    arg_parser.add_argument("--batch_size", type=int, default=8)
-    arg_parser.add_argument("--num_samples", type=int, default=1)
-    arg_parser.add_argument("--temperature", type=float, default=0.0)
-    arg_parser.add_argument("--top_p", type=float, default=0.95)
-
-    # Budgets (per pass)
-    arg_parser.add_argument("--think_cap", type=int, default=750)
-    arg_parser.add_argument("--answer_cap", type=int, default=50)
-
-    # System/runtime
-    arg_parser.add_argument("--dtype", default=default_dtype, choices=["float16", "bfloat16"])
-
-
-def add_model_and_output_args(arg_parser) -> None:
-    """Attach model + output_dir arguments shared by unified runners."""
-    arg_parser.add_argument("--model_name_or_path", required=True)
-    arg_parser.add_argument("--revision")
-    arg_parser.add_argument("--output_dir", required=True)
-
-
-def add_math_gateway_dataset_args(arg_parser) -> None:
-    """
-    Attach dataset selection arguments shared by simple math gateway scripts
-    (Azure/OpenRouter/Portkey-style single-pass runners).
-    """
-    arg_parser.add_argument(
-        "--dataset_id",
-        default="MATH-500",
-        help="Use 'MATH-500' or a HF dataset path.",
-    )
-    arg_parser.add_argument(
-        "--dataset_path",
-        default=None,
-        help="Optional local JSONL for MATH-500-style records.",
-    )
-    arg_parser.add_argument("--split", default="test")
-    arg_parser.add_argument(
-        "--num_examples",
-        type=int,
-        default=None,
-        help="Optional cap (<500).",
-    )
-    arg_parser.add_argument("--num_samples", type=int, default=1)
-
-
-def build_math_gateway_arg_parser(
-    *,
-    default_temperature: float,
-    description: Optional[str] = None,
-) -> argparse.ArgumentParser:
-    """
-    Construct an ArgumentParser with shared math gateway arguments.
-
-    This includes output_dir, dataset selection, sampling/budget knobs,
-    and basic seed/step controls. Caller should attach backend-specific
-    arguments (Azure/OpenRouter/Portkey) on top.
-    """
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        "--output_dir",
-        required=True,
-        help="Root directory for JSONL outputs.",
-    )
-    add_math_gateway_dataset_args(parser)
-    add_math_gateway_sampling_args(parser, default_temperature=default_temperature)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--step", type=int, default=0)
-    return parser
-
-
-def configure_unified_runner_common(arg_parser, *, default_dtype: str) -> None:
-    """
-    Attach the shared runtime/entropy/two-pass flags used by unified runners.
-    """
-    add_basic_runner_args(arg_parser, default_dtype=default_dtype)
-    arg_parser.add_argument("--step", type=int, default=0)
-    arg_parser.add_argument("--tokenizer_path", default=None)
-    arg_parser.add_argument("--seed", type=int, default=42)
-    arg_parser.add_argument(
-        "--entropy_mode",
-        choices=["full", "reconsider", "none"],
-        default="reconsider",
-    )
-    arg_parser.add_argument(
-        "--attn_implementation",
-        default="sdpa",
-        choices=["sdpa", "eager", "flash_attention_2"],
-    )
-    add_two_pass_args(arg_parser)
-
-
-@dataclass
-class MathPassMeta:
-    """Metadata required to pack a single math pass result."""
-
-    problem: str
-    canon_gold: Optional[str]
-    injected_cue: bool
-    prev_output: Optional[str]
-    cue_prefix_str: str
-    stop_reason_think: Optional[str]
-    stop_reason_answer: Optional[str]
-
-
-@dataclass
-class MathTokenStats:
-    """Token-count summary for a single math pass."""
-
-    tokens_think: int
-    tokens_answer: int
-    tokens_total: int
-
-
-@dataclass
-class MathEntropySummary:
-    """Entropy statistics for a single math pass."""
-
-    overall: Optional[float]
-    think: Optional[float]
-    answer: Optional[float]
-    pre_cue: Optional[float]
-    reconsider_think: Optional[float]
-    reconsider_full: Optional[float]
-
-
-@dataclass
-class MathReconsiderationInfo:
-    """Reconsideration markers and positions for a math pass."""
-
-    markers: List[str]
-    pos_in_think: Optional[int]
-    context: Optional[str]
-    excerpt: Optional[str]
-    t_cue: Optional[int]
-
-
-def _compute_math_token_stats(
-    ent_think: List[float],
-    ent_answer: List[float],
-) -> Tuple[List[float], MathTokenStats]:
-    """Return combined entropy series and basic token counts."""
-    tok_ents_all = (ent_think or []) + (ent_answer or [])
-    tokens_think = len(ent_think or [])
-    tokens_answer = len(ent_answer or [])
-    tokens_total = len(tok_ents_all)
-    return tok_ents_all, MathTokenStats(
-        tokens_think=tokens_think,
-        tokens_answer=tokens_answer,
-        tokens_total=tokens_total,
-    )
-
-
-def _compute_math_reconsideration_info(
-    think_text: str,
-    meta: MathPassMeta,
-    tokens_think: int,
-) -> MathReconsiderationInfo:
-    """Derive reconsideration markers, context, and cue index from metadata."""
-    skip_chars = len(meta.cue_prefix_str) if meta.injected_cue else 0
-    markers, pos_in_think, reconsider_context, reconsider_excerpt = find_markers_and_context(
-        think_text,
-        f"Problem: {meta.problem}",
-        RECONSIDER_PATTERNS,
-        skip_prefix_chars=skip_chars,
-    )
-    if meta.injected_cue:
-        markers = ["injected_cue"] + (markers or [])
-
-    t_cue = 0 if meta.injected_cue else None
-    if (not meta.injected_cue) and (pos_in_think is not None):
-        t_cue = max(0, min(pos_in_think, tokens_think))
-
-    return MathReconsiderationInfo(
-        markers=markers or [],
-        pos_in_think=pos_in_think,
-        context=reconsider_context,
-        excerpt=reconsider_excerpt,
-        t_cue=t_cue,
-    )
-
-
-def _summarize_math_entropies(
-    tok_ents_all: List[float],
-    ent_think: List[float],
-    ent_answer: List[float],
-    tokens_think: int,
-    tokens_total: int,
-    t_cue: Optional[int],
-) -> MathEntropySummary:
-    """Compute overall and segment-wise entropy summaries for a math pass."""
-    entropy_overall = finite_mean(tok_ents_all) if tok_ents_all else None
-    entropy_think = finite_mean(ent_think) if ent_think else None
-    entropy_answer = finite_mean(ent_answer) if ent_answer else None
-    entropy_pre_cue = None
-    entropy_reconsider_think = None
-    entropy_reconsider_full = None
-
-    if t_cue is not None:
-        if tokens_total > t_cue:
-            entropy_reconsider_full = finite_mean(tok_ents_all[t_cue:])
-        if tokens_think > t_cue:
-            entropy_reconsider_think = finite_mean(tok_ents_all[t_cue:tokens_think])
-
-    return MathEntropySummary(
-        overall=entropy_overall,
-        think=entropy_think,
-        answer=entropy_answer,
-        pre_cue=entropy_pre_cue,
-        reconsider_think=entropy_reconsider_think,
-        reconsider_full=entropy_reconsider_full,
-    )
-
-
-def build_math_pass_meta(
-    *,
-    problem: str,
-    canon_gold: Optional[str],
-    injected_cue: bool,
-    prev_output: Optional[str],
-    cue_prefix_str: str,
-    stop_reason_think: Optional[str],
-    stop_reason_answer: Optional[str],
-) -> MathPassMeta:
-    """Helper to construct MathPassMeta consistently across math inference cores."""
-    return MathPassMeta(
-        problem=problem,
-        canon_gold=canon_gold,
-        injected_cue=injected_cue,
-        prev_output=prev_output,
-        cue_prefix_str=cue_prefix_str,
-        stop_reason_think=stop_reason_think,
-        stop_reason_answer=stop_reason_answer,
-    )
-
-
-def pack_math_pass_result(
-    full_text: str,
-    ent_think: List[float],
-    ent_answer: List[float],
-    meta: MathPassMeta,
-) -> Dict[str, Any]:
-    """
-    Assemble per-pass math result dict with entropy, reconsideration markers,
-    and token/tag statistics.
-    """
-    tok_ents_all, token_stats = _compute_math_token_stats(ent_think, ent_answer)
-    think, answer = extract_blocks(full_text)
-    think_text = think or ""
-    pred_answer_text = answer or ""
-
-    reconsider_info = _compute_math_reconsideration_info(
-        think_text,
-        meta,
-        token_stats.tokens_think,
-    )
-    entropy_summary = _summarize_math_entropies(
-        tok_ents_all=tok_ents_all,
-        ent_think=ent_think,
-        ent_answer=ent_answer,
-        tokens_think=token_stats.tokens_think,
-        tokens_total=token_stats.tokens_total,
-        t_cue=reconsider_info.t_cue,
-    )
-
-    pred_canon = canon_math(pred_answer_text)
-    is_correct_pred = contains_canon(pred_canon, meta.canon_gold)
-
-    base = build_entropy_pass_base(
-        prev_output=meta.prev_output,
-        full_text=full_text,
-        pred_answer_text=pred_answer_text,
-        pred_canon=pred_canon,
-        entropy_overall=entropy_summary.overall,
-        entropy_think=entropy_summary.think,
-        entropy_answer=entropy_summary.answer,
-    )
-    base.update(
-        {
-            "entropy_pre_cue": entropy_summary.pre_cue,
-            "entropy_reconsider_think": entropy_summary.reconsider_think,
-            "entropy_reconsider_full": entropy_summary.reconsider_full,
-            "stop_reason_think": meta.stop_reason_think,
-            "stop_reason_answer": meta.stop_reason_answer,
-            "has_reconsider_cue": bool(reconsider_info.markers),
-            "reconsider_markers": reconsider_info.markers,
-            "reconsider_pos": reconsider_info.pos_in_think,
-            "reconsider_context": reconsider_info.context,
-            "reconsider_excerpt": reconsider_info.excerpt,
-            "is_correct_pred": is_correct_pred,
-            "is_correct_after_reconsideration": bool(reconsider_info.markers)
-            and bool(is_correct_pred),
-        },
-    )
-    return add_token_and_tag_fields(
-        base,
-        tokens_total=token_stats.tokens_total,
-        tokens_think=token_stats.tokens_think,
-        tokens_answer=token_stats.tokens_answer,
-        full_text=full_text,
-    )
+    temperature: float = 0.0
+    top_p: float = 0.95
+    entropy_mode: str = "reconsider"
+    eos_ids: Optional[List[int]] = None
 
 
 def build_math_inference_config_kwargs(
@@ -1234,210 +749,27 @@ def build_math_inference_config_kwargs_from_args(args, eos_ids):
     )
 
 
-def add_two_pass_args(arg_parser) -> None:
+def require_torch(caller: str):
     """
-    Attach the common two-pass control flags used by math/carpark/crossword runners.
-    """
-    arg_parser.add_argument("--two_pass", action="store_true")
-    arg_parser.add_argument(
-        "--second_pass_phrase",
-        default="Wait, we need to reconsider. Let's think this through step by step.",
-    )
-    arg_parser.add_argument("--second_pass_use_sample_idx", type=int, default=0)
-
-
-def require_datasets():
-    """
-    Import and return (Dataset, load_dataset), raising with a consistent message if unavailable.
+    Import and return the ``torch`` module, raising a user-friendly RuntimeError if unavailable.
     """
     try:
-        datasets_mod = import_module("datasets")
-    except ImportError:
-        print("datasets is required: pip install datasets", file=sys.stderr)
-        raise
-    dataset_cls = getattr(datasets_mod, "Dataset")
-    load_dataset_fn = getattr(datasets_mod, "load_dataset")
-    return dataset_cls, load_dataset_fn
+        return import_module("torch")
+    except ImportError as exc:  # pragma: no cover - hard dependency
+        raise RuntimeError(
+            f"{caller} requires 'torch'; install the 'torch' package.",
+        ) from exc
 
 
-def build_eos_ids_from_tokenizer(tokenizer, extra_tokens: Sequence[str]) -> Optional[List[int]]:
+def require_transformers(caller: str):
     """
-    Build a sorted list of EOS token IDs from a tokenizer, including its native
-    eos_token_id and any additional tokens provided.
+    Import and return the ``transformers`` module.
+
+    Raise a user-friendly RuntimeError if unavailable.
     """
-    eos_ids: set[int] = set()
-    if tokenizer.eos_token_id is not None:
-        eos_ids.add(int(tokenizer.eos_token_id))
-    for tok in extra_tokens:
-        tid = tokenizer.convert_tokens_to_ids(tok)
-        if tid is not None and tid != tokenizer.pad_token_id:
-            eos_ids.add(int(tid))
-    return sorted(eos_ids) if eos_ids else None
-
-
-def configure_tokenizer_and_eos(
-    tokenizer,
-    *,
-    extra_tokens: Sequence[str],
-) -> Optional[List[int]]:
-    """
-    Apply standard padding/truncation settings and build an EOS-ID list.
-    """
-    tokenizer.padding_side = "left"
-    tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
-    tokenizer.truncation_side = "left"
-    return build_eos_ids_from_tokenizer(tokenizer, extra_tokens)
-
-
-def init_unified_backend_and_eos(
-    *,
-    backend_cls,
-    model_name_or_path: str,
-    revision: Optional[str],
-    cache_dir: str,
-    dtype: str,
-    device_map: str,
-    attn_implementation: Optional[str],
-    tokenizer_path: Optional[str],
-):
-    """
-    Initialize a backend and a standard EOS-ID list for unified runners.
-
-    `backend_cls` is typically HFBackend, but is passed explicitly so tests
-    can monkeypatch it on the caller module.
-    """
-    backend = backend_cls.from_pretrained(
-        model_name_or_path,
-        revision=revision,
-        cache_dir=cache_dir,
-        dtype=dtype,
-        device_map=device_map,
-        attn_implementation=attn_implementation,
-        tokenizer_path=tokenizer_path,
-    )
-    eos_ids = build_eos_ids_from_tokenizer(
-        backend.tokenizer,
-        extra_tokens=("<|im_end|>", "<|endoftext|>"),
-    )
-    return backend, eos_ids
-
-
-def call_with_retries(
-    func,
-    *,
-    max_retries: int,
-    retry_backoff: float,
-    logger: logging.Logger,
-    sample_idx: int,
-    problem_snippet: str,
-    min_sleep: Optional[float] = None,
-    exception_types: Sequence[type[BaseException]] = (Exception,),
-):
-    """
-    Call `func()` with simple retry-on-exception semantics shared by math gateways.
-    """
-    attempt = 0
-    while True:
-        try:
-            return func()
-        except tuple(exception_types) as exc:
-            attempt += 1
-            if attempt > max_retries:
-                logger.error(
-                    "Failed after %d retries on sample_idx=%d | prob snippet=%.60s | err=%r",
-                    attempt - 1,
-                    sample_idx,
-                    problem_snippet,
-                    exc,
-                )
-                raise
-            sleep_dur = retry_backoff * attempt
-            if min_sleep is not None:
-                sleep_dur = max(min_sleep, sleep_dur)
-            logger.warning(
-                "Retry %d/%d for sample_idx=%d after error: %r (sleep %.1fs)",
-                attempt,
-                max_retries,
-                sample_idx,
-                exc,
-                sleep_dur,
-            )
-            time.sleep(sleep_dur)
-
-
-# ---------------------------------------------------------------------------
-# Prompt templates
-# ---------------------------------------------------------------------------
-OPENR1_PROMPT_TEMPLATE = (
-    "You are a helpful AI assistant. First think in the <think> block, then write "
-    "ONLY the final answer in the <answer> block. Do NOT add anything after "
-    "</answer>.\n\n"
-    "Problem: {problem}\n\n"
-    "<think>\n"
-    "</think>\n\n"
-    "<answer>\n"
-    "</answer>"
-)
-
-
-def build_math_gateway_messages(system_prompt: str, problem: str) -> List[Dict[str, str]]:
-    """
-    Standard two-message chat for math gateway calls: system + user(problem).
-    """
-    return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": problem},
-    ]
-
-
-def iter_math_gateway_samples(
-    dataset,
-    num_samples: int,
-    existing: Dict[str, set[int]],
-) -> Iterable[Tuple[str, Any, int]]:
-    """
-    Yield (problem, gold_answer, sample_idx) triples for samples that still
-    need generation, shared by math gateway scripts.
-    """
-    for example in dataset:
-        problem, gold_answer = extract_problem_and_answer(example)
-        if not problem or gold_answer is None:
-            continue
-        generated_indices = existing.get(problem, set())
-        for sample_idx in range(num_samples):
-            if sample_idx in generated_indices:
-                continue
-            yield problem, gold_answer, sample_idx
-
-
-def parse_openai_chat_response(resp: Any) -> tuple[str, Any, Any]:
-    """
-    Extract (text, finish_reason, usage) from an OpenAI/OpenRouter/Portkey-style
-    chat completion response object.
-    """
-    text = ""
-    finish_reason = None
-    if getattr(resp, "choices", None):
-        choice = resp.choices[0]
-        finish_reason = getattr(choice, "finish_reason", None)
-        message = getattr(choice, "message", None)
-        text = getattr(message, "content", "") if message is not None else ""
-    usage = getattr(resp, "usage", None)
-    return text, finish_reason, usage
-
-
-def add_math_gateway_sampling_args(
-    parser,
-    *,
-    default_temperature: float,
-) -> None:
-    """
-    Attach the shared sampling/budget args used by math gateway runners
-    (OpenRouter/Portkey/Azure) on top of dataset args.
-    """
-    parser.add_argument("--temperature", type=float, default=default_temperature)
-    parser.add_argument("--top_p", type=float, default=0.95)
-    parser.add_argument("--max_output_tokens", type=int, default=900)
-    parser.add_argument("--request_timeout", type=int, default=120)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--step", type=int, default=0)
+    try:
+        return import_module("transformers")
+    except ImportError as exc:  # pragma: no cover - hard dependency
+        raise RuntimeError(
+            f"{caller} requires 'transformers'; install it to use this script.",
+        ) from exc

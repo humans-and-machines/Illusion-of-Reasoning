@@ -21,40 +21,63 @@ from concurrent.futures import Future
 from typing import Any, Optional
 
 try:  # pragma: no cover - optional dependency
-    from transformers import AutoConfig
+    from transformers import AutoConfig as _AutoConfig
 except ImportError:  # pragma: no cover - type-check / lint env
-    AutoConfig = None  # type: ignore[assignment]
+    _AutoConfig = None
+
+AutoConfig = _AutoConfig
 
 try:  # pragma: no cover - optional dependency
     from huggingface_hub import (
-        create_branch,
-        create_repo,
-        get_safetensors_metadata,
-        list_repo_commits,
-        list_repo_files,
-        list_repo_refs,
-        repo_exists,
-        upload_folder,
+        create_branch as _create_branch,
+        create_repo as _create_repo,
+        get_safetensors_metadata as _get_safetensors_metadata,
+        list_repo_commits as _list_repo_commits,
+        list_repo_files as _list_repo_files,
+        list_repo_refs as _list_repo_refs,
+        repo_exists as _repo_exists,
+        upload_folder as _upload_folder,
     )
 except ImportError:  # pragma: no cover - type-check / lint env
     def _hub_unavailable(*_args: Any, **_kwargs: Any) -> Any:
         msg = "huggingface_hub is required for Hub utilities."
         raise ImportError(msg)
 
-    create_branch = _hub_unavailable  # type: ignore[assignment]
-    create_repo = _hub_unavailable  # type: ignore[assignment]
-    get_safetensors_metadata = _hub_unavailable  # type: ignore[assignment]
-    list_repo_commits = _hub_unavailable  # type: ignore[assignment]
-    list_repo_files = _hub_unavailable  # type: ignore[assignment]
-    list_repo_refs = _hub_unavailable  # type: ignore[assignment]
-    repo_exists = _hub_unavailable  # type: ignore[assignment]
-    upload_folder = _hub_unavailable  # type: ignore[assignment]
+    _create_branch = _hub_unavailable
+    _create_repo = _hub_unavailable
+    _get_safetensors_metadata = _hub_unavailable
+    _list_repo_commits = _hub_unavailable
+    _list_repo_files = _hub_unavailable
+    _list_repo_refs = _hub_unavailable
+    _repo_exists = _hub_unavailable
+    _upload_folder = _hub_unavailable
+
+create_branch = _create_branch
+create_repo = _create_repo
+get_safetensors_metadata = _get_safetensors_metadata
+list_repo_commits = _list_repo_commits
+list_repo_files = _list_repo_files
+list_repo_refs = _list_repo_refs
+repo_exists = _repo_exists
+upload_folder = _upload_folder
 
 try:  # pragma: no cover - optional dependency
-    from trl import GRPOConfig, SFTConfig
+    from huggingface_hub.utils import HfHubHTTPError as _HfHubHTTPError
 except ImportError:  # pragma: no cover - type-check / lint env
-    GRPOConfig = object  # type: ignore[assignment]
-    SFTConfig = object  # type: ignore[assignment]
+    # Fall back to the generic Exception type so callers can still catch
+    # ``HfHubHTTPError`` even when huggingface_hub is not installed.
+    _HfHubHTTPError = Exception
+
+HfHubHTTPError = _HfHubHTTPError
+
+try:  # pragma: no cover - optional dependency
+    from trl import GRPOConfig as _GRPOConfig, SFTConfig as _SFTConfig
+except ImportError:  # pragma: no cover - type-check / lint env
+    # Re-use our local configuration dataclasses when ``trl`` is unavailable.
+    from ..configs import GRPOConfig as _GRPOConfig, SFTConfig as _SFTConfig
+
+GRPOConfig = _GRPOConfig
+SFTConfig = _SFTConfig
 
 
 logger = logging.getLogger(__name__)
@@ -130,7 +153,7 @@ def get_param_count_from_repo_id(repo_id: str) -> int:
     try:
         metadata = get_safetensors_metadata(repo_id)
         return list(metadata.parameter_count.values())[0]
-    except Exception:  # pylint: disable=broad-exception-caught
+    except (ImportError, OSError, ValueError, KeyError, AttributeError, HfHubHTTPError):
         # Pattern to match products (like 8x7b) and single values (like 42m)
         pattern = r"((\d+(\.\d+)?)(x(\d+(\.\d+)?))?)([bm])"
         matches = re.findall(pattern, repo_id.lower())
@@ -166,7 +189,18 @@ def get_gpu_count_for_vllm(
     vLLM requires both ``num_attention_heads`` and ``64`` to be divisible by
     ``num_gpus``; this routine decreases ``num_gpus`` until that holds.
     """
-    config = AutoConfig.from_pretrained(model_name, revision=revision, trust_remote_code=True)
+    if AutoConfig is None:
+        msg = (
+            "transformers.AutoConfig is required for get_gpu_count_for_vllm; "
+            "install transformers."
+        )
+        raise RuntimeError(msg)
+
+    config = AutoConfig.from_pretrained(
+        model_name,
+        revision=revision,
+        trust_remote_code=True,
+    )
     # Get number of attention heads
     num_heads = config.num_attention_heads
     # Reduce num_gpus so that num_heads is divisible by num_gpus and 64 is divisible by num_gpus

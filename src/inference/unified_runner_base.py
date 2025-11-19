@@ -18,12 +18,15 @@ from importlib import import_module
 from typing import Iterable, List, Optional, Sequence
 from src.inference import math_core
 from src.inference.common import (
-    add_model_and_output_args,
+    GenerationLimits,
     build_math_inference_config_kwargs,
     build_math_inference_config_kwargs_from_args,
+    require_datasets,
+)
+from src.inference.gateway_utils import (
+    add_model_and_output_args,
     configure_unified_runner_common,
     init_unified_backend_and_eos,
-    require_datasets,
     setup_hf_cache_dir_env,
 )
 
@@ -124,14 +127,8 @@ class _SimpleListDataset:
         return iter(self._records)
 
 
-@dataclass
-class MathTestLimits:
-    """Per-pass limits used by test-only math inference."""
-
-    batch_size: int
-    num_samples: int
-    think_cap: int
-    answer_cap: int
+# Reuse shared limits container from src.inference.common for tests.
+MathTestLimits = GenerationLimits
 
 
 @dataclass

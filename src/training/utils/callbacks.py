@@ -6,17 +6,103 @@ import logging
 import subprocess
 from importlib import import_module
 from types import SimpleNamespace
-from typing import List, Optional
-
-try:  # pragma: no cover - optional dependency for type-check / lint envs
-    from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
-except ImportError:  # pragma: no cover - lightweight stubs for tooling
-    TrainerCallback = object  # type: ignore[assignment]
-    TrainerControl = object  # type: ignore[assignment]
-    TrainerState = object  # type: ignore[assignment]
-    TrainingArguments = object  # type: ignore[assignment]
+from typing import List, Optional, TYPE_CHECKING
 
 from .replay_buffer import ReplayBuffer
+
+if TYPE_CHECKING:  # pragma: no cover - used only for static typing
+    from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+else:  # pragma: no cover - runtime optional dependency
+    try:
+        from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
+    except ImportError:
+        class TrainerCallback:
+            """
+            Minimal runtime stub for :class:`transformers.TrainerCallback`.
+
+            The real callback interface exposes many hook methods; this stub only
+            provides a tiny, no-op subset so that subclasses can be defined and
+            instantiated when ``transformers`` is not installed.
+            """
+
+            def on_train_begin(self, *_, **__):
+                """No-op hook mirroring the real callback API."""
+
+            def on_train_end(self, *_, **__):
+                """No-op hook mirroring the real callback API."""
+
+        class TrainerControl:
+            """
+            Lightweight stand-in for :class:`transformers.TrainerControl`.
+
+            The stub only exposes a minimal surface used by callbacks and always
+            reports that no special trainer actions are required.
+            """
+
+            def should_save(self) -> bool:
+                """Return ``False`` in the stub implementation."""
+                return False
+
+            def should_evaluate(self) -> bool:
+                """Return ``False`` in the stub implementation."""
+                return False
+
+        class TrainerState:
+            """
+            Minimal trainer state stub used when :mod:`transformers` is missing.
+
+            Only the attributes touched in this module are defined; additional
+            state should be provided by the real ``TrainerState`` class.
+            """
+
+            is_world_process_zero: bool = True
+            global_step: int = 0
+
+            def copy(self) -> "TrainerState":
+                """Return ``self``, mimicking the behaviour of a dataclass."""
+                return self
+
+            def to_dict(self) -> dict:
+                """Return a small dictionary representation of the state."""
+                return {
+                    "is_world_process_zero": self.is_world_process_zero,
+                    "global_step": self.global_step,
+                }
+
+        class TrainingArguments:
+            """
+            Minimal stand-in for :class:`transformers.TrainingArguments`.
+
+            Only the fields accessed in this module are modelled so that
+            callbacks can run in environments without the full Transformers
+            dependency installed.
+            """
+
+            hub_model_id: Optional[str] = None
+            hub_model_revision: str = "main"
+            output_dir: str = "."
+            system_prompt: Optional[str] = None
+            benchmarks: Optional[List[str]] = None
+
+            def to_dict(self) -> dict:
+                """Return a minimal dictionary view of the arguments."""
+                return {
+                    "hub_model_id": self.hub_model_id,
+                    "hub_model_revision": self.hub_model_revision,
+                    "output_dir": self.output_dir,
+                    "system_prompt": self.system_prompt,
+                    "benchmarks": self.benchmarks,
+                }
+
+            def clone(self) -> "TrainingArguments":
+                """Create a shallow copy of the stub arguments."""
+                clone_obj = TrainingArguments()
+                clone_obj.hub_model_id = self.hub_model_id
+                clone_obj.hub_model_revision = self.hub_model_revision
+                clone_obj.output_dir = self.output_dir
+                clone_obj.system_prompt = self.system_prompt
+                clone_obj.benchmarks = list(self.benchmarks) if self.benchmarks else None
+                return clone_obj
 
 # ---------------------------------------------------------------------------
 #  SLURM helper --------------------------------------------------------------

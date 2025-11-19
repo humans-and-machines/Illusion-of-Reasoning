@@ -47,7 +47,7 @@ from src.inference.math_core import load_math500
 from src.inference.task_registry import MATH_SYSTEM_PROMPT
 
 
-DatasetType, load_dataset = require_datasets()
+_DatasetType, load_dataset = require_datasets()
 logger = setup_script_logger(__name__)
 
 
@@ -285,11 +285,7 @@ def main() -> None:
         outpath=output_path,
         logger=logger,
         load_math500_fn=load_math500,
-        load_remote_dataset_fn=lambda ds_id, split, cache_dir: load_dataset(
-            ds_id,
-            split=split,
-            cache_dir=cache_dir,
-        ),
+        load_remote_dataset_fn=load_dataset,
         cache_dir=setup_hf_cache_dir_env("./.hf_cache"),
     )
     run_portkey_math_inference(

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import re
 from contextlib import nullcontext
+from dataclasses import dataclass
 from typing import Any, Optional, Tuple, Union
 
-try:  # pragma: no cover - optional dependency
+try:  # pragma: no cover - optional dependencies at runtime
     import torch
     from accelerate.utils import broadcast_object_list, gather_object
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
@@ -17,8 +18,8 @@ try:  # pragma: no cover - optional dependency
     from transformers.tokenization_utils_base import PaddingStrategy
     from transformers.utils import is_flash_attn_2_available
 except ImportError:  # pragma: no cover - type-check / lint environment
-    torch = None  # type: ignore[assignment]
-    FSDP = None  # type: ignore[assignment]
+    torch = None
+    FSDP = None
 
     def broadcast_object_list(*_args: Any, **_kwargs: Any) -> Any:
         """Stub broadcast_object_list that raises when accelerate is missing."""
@@ -35,23 +36,23 @@ except ImportError:  # pragma: no cover - type-check / lint environment
         msg = "torch is required for hierarchical GRPO utilities (pad_sequence)."
         raise ImportError(msg)
 
-    PreTrainedTokenizerBase = object  # type: ignore[assignment]
-    GenerationMixin = object  # type: ignore[assignment]
-    Trainer = object  # type: ignore[assignment]
-    TrainerCallback = object  # type: ignore[assignment]
-    PaddingStrategy = object  # type: ignore[assignment]
+    PreTrainedTokenizerBase = object
+    GenerationMixin = object
+    Trainer = object
+    TrainerCallback = object
+    PaddingStrategy = object
 
     def is_flash_attn_2_available() -> bool:
         """Stub flash-attn-2 check that always returns False."""
         return False
 
-try:  # pragma: no cover - optional dependency
+try:  # pragma: no cover - optional dependencies at runtime
     from trl import GRPOTrainer
     from trl.data_utils import is_conversational, maybe_apply_chat_template
     from trl.extras.profiling import profiling_context
     from trl.trainer.grpo_trainer import pad, unwrap_model_for_generation
 except ImportError:  # pragma: no cover - type-check / lint environment
-    GRPOTrainer = Trainer  # type: ignore[assignment]
+    GRPOTrainer = Trainer
 
     def is_conversational(*_args: Any, **_kwargs: Any) -> bool:
         """Stub conversational check that always returns False."""
@@ -76,6 +77,27 @@ except ImportError:  # pragma: no cover - type-check / lint environment
         """Stub unwrap_model_for_generation that raises when trl is missing."""
         msg = "trl is required for hierarchical GRPO training (unwrap_model_for_generation)."
         raise ImportError(msg)
+
+
+@dataclass
+class GenerationBatch:
+    """Container for generation inputs shared across helper methods."""
+
+    prompts: list[Any]
+    prompts_text: list[str]
+    prompt_ids: Any
+    prompt_mask: Any
+    device: Any
+
+
+@dataclass
+class RewardStatistics:
+    """Grouped reward statistics and advantages."""
+
+    advantages: Any
+    mean_grouped_rewards: Any
+    std_grouped_rewards: Any
+    is_std_zero: Any
 
 
 class HierarchicalGRPOTrainer(GRPOTrainer):
@@ -113,41 +135,36 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
         """Expose textual logs via a public attribute for callbacks."""
         return self._textual_logs
 
+    def reset_textual_logs(self) -> None:
+        """Clear accumulated textual logs."""
+        if hasattr(self, "_textual_logs"):
+            self._textual_logs.clear()
+
     def _generate_and_score_completions(
         self,
         inputs: list[dict[str, Union[torch.Tensor, Any]]],
     ) -> dict[str, Union[torch.Tensor, Any]]:
         device = self.accelerator.device
-        mode = "train" if self.model.training else "eval"
 
         prompts, prompts_text, prompt_ids, prompt_mask = self._prepare_prompts(
             inputs,
             device,
         )
 
-        (
-            prompt_ids,
-            prompt_mask,
-            completion_ids,
-            prompt_completion_ids,
-        ) = self._run_generation_backends(
-            prompts,
-            prompts_text,
-            prompt_ids,
-            prompt_mask,
-            device,
+        batch = GenerationBatch(
+            prompts=prompts,
+            prompts_text=prompts_text,
+            prompt_ids=prompt_ids,
+            prompt_mask=prompt_mask,
+            device=device,
         )
+
+        completion_ids = self._run_generation_backends(batch)
 
         return self._postprocess_and_score(
             inputs,
-            prompts,
-            prompts_text,
-            prompt_ids,
-            prompt_mask,
+            batch,
             completion_ids,
-            prompt_completion_ids,
-            device,
-            mode,
         )
 
     def _prepare_prompts(
@@ -194,39 +211,26 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
 
     def _run_generation_backends(
         self,
-        prompts: list[Any],
-        prompts_text: list[str],
-        prompt_ids: torch.Tensor,
-        prompt_mask: torch.Tensor,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Run the appropriate generation backend and return ids and masks."""
+        batch: GenerationBatch,
+    ) -> torch.Tensor:
+        """Run the appropriate generation backend and return completion ids."""
         if (
             self.rollout_fn is not None
             and not self.use_vllm
             and not self.use_transformers_paged
         ):
-            prompt_completion_ids, completion_ids = self._generate_two_stage(prompt_ids)
+            _, completion_ids = self._generate_two_stage(batch.prompt_ids)
         elif self.use_vllm:
-            prompt_completion_ids, completion_ids = self._generate_with_vllm(
-                prompts,
-                prompts_text,
-                prompt_ids,
-                device,
-            )
+            _, completion_ids = self._generate_with_vllm(batch)
         elif self.use_transformers_paged:
-            prompt_ids, prompt_completion_ids, completion_ids = self._generate_with_paged(
-                prompts_text,
-                prompt_ids,
-                device,
-            )
+            completion_ids = self._generate_with_paged(batch)
         else:
-            prompt_completion_ids, completion_ids = self._generate_with_hf(
-                prompt_ids,
-                prompt_mask,
+            _, completion_ids = self._generate_with_hf(
+                batch.prompt_ids,
+                batch.prompt_mask,
             )
 
-        return prompt_ids, prompt_mask, completion_ids, prompt_completion_ids
+        return completion_ids
 
     def _generate_two_stage(
         self,
@@ -242,15 +246,12 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
 
     def _generate_with_vllm(
         self,
-        prompts: list[Any],
-        prompts_text: list[str],
-        prompt_ids: torch.Tensor,
-        device: torch.device,
+        batch: GenerationBatch,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate completions using a vLLM client."""
         completion_ids: list[Optional[list[int]]]
         all_prompts = broadcast_object_list(
-            gather_object(prompts_text),
+            gather_object(batch.prompts_text),
             from_process=0,
         )
         if self.accelerator.is_main_process:
@@ -268,19 +269,19 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
                     guided_decoding_regex=self.guided_decoding_regex,
                 )
         else:
-            completion_ids = [None] * len(prompts_text)
+            completion_ids = [None] * len(batch.prompts_text)
 
         completion_ids = broadcast_object_list(
             completion_ids,
             from_process=0,
         )
         completion_slice = slice(
-            self.accelerator.process_index * len(prompts),
-            (self.accelerator.process_index + 1) * len(prompts),
+            self.accelerator.process_index * len(batch.prompts),
+            (self.accelerator.process_index + 1) * len(batch.prompts),
         )
         completion_ids = completion_ids[completion_slice]
         completion_tensors = [
-            torch.tensor(ids, device=device) for ids in completion_ids
+            torch.tensor(ids, device=batch.device) for ids in completion_ids
         ]
 
         if completion_tensors:
@@ -289,25 +290,26 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
                 padding_value=self.processing_class.pad_token_id,
             )
         else:
-            batch_size = prompt_ids.size(0)
+            batch_size = batch.prompt_ids.size(0)
             completion_padded = torch.zeros(
                 batch_size,
                 0,
                 dtype=torch.long,
-                device=device,
+                device=batch.device,
             )
 
-        prompt_completion_ids = torch.cat([prompt_ids, completion_padded], dim=1)
+        prompt_completion_ids = torch.cat(
+            [batch.prompt_ids, completion_padded],
+            dim=1,
+        )
         return prompt_completion_ids, completion_padded
 
     def _generate_with_paged(
         self,
-        prompts_text: list[str],
-        prompt_ids: torch.Tensor,
-        device: torch.device,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        batch: GenerationBatch,
+    ) -> torch.Tensor:
         """Generate completions using transformers paged attention."""
-        prompt_inputs = self.processing_class(text=prompts_text)
+        prompt_inputs = self.processing_class(text=batch.prompts_text)
         previous_attn = getattr(
             self.model_wrapped.config,
             "_attn_implementation",
@@ -355,7 +357,7 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
             output.generated_tokens for output in all_outputs.values()
         ]
         completion_tensors = [
-            torch.tensor(ids, device=device) for ids in completion_ids
+            torch.tensor(ids, device=batch.device) for ids in completion_ids
         ]
         completion_padded = pad(
             completion_tensors,
@@ -364,7 +366,7 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
         )
 
         prompt_tensors = [
-            torch.tensor(ids, device=device)
+            torch.tensor(ids, device=batch.device)
             for ids in prompt_inputs.input_ids
         ]
         prompt_padded = pad(
@@ -372,10 +374,9 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
             padding_value=self.processing_class.pad_token_id,
             padding_side="left",
         )
-        prompt_completion_ids = torch.cat(
-            [prompt_padded, completion_padded],
-            dim=1,
-        )
+
+        batch.prompt_ids = prompt_padded
+        batch.prompt_mask = (prompt_padded != self.processing_class.pad_token_id).int()
 
         if previous_attn is not None:
             setattr(
@@ -384,7 +385,7 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
                 previous_attn,
             )
 
-        return prompt_padded, prompt_completion_ids, completion_padded
+        return completion_padded
 
     def _generate_with_hf(
         self,
@@ -408,7 +409,6 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
             )
 
         prompt_len = prompt_ids.size(1)
-        prompt_ids_slice = prompt_completion_ids[:, :prompt_len]
         completion_ids_slice = prompt_completion_ids[:, prompt_len:]
         return prompt_completion_ids, completion_ids_slice
 
@@ -446,19 +446,28 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
 
     def _compute_logps(
         self,
-        prompt_ids: torch.Tensor,
-        completion_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        logits_to_keep: int,
-        batch_size: int,
+        batch: GenerationBatch,
+        state: dict[str, Any],
     ) -> tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
         """Compute old and reference per-token log-probabilities."""
+        completion_ids = state["completion_ids"]
+        completion_mask = state["completion_mask"]
+        attention_mask = torch.cat(
+            [batch.prompt_mask, completion_mask],
+            dim=1,
+        )
+        logits_to_keep = completion_ids.size(1)
+
         with torch.no_grad():
             gen_every = self.args.steps_per_generation * self.num_iterations
             if self.args.gradient_accumulation_steps % gen_every != 0:
+                if self.model.training:
+                    batch_size = self.args.per_device_train_batch_size
+                else:
+                    batch_size = self.args.per_device_eval_batch_size
                 old_per_token_logps = self._get_per_token_logps_and_entropies(
                     self.model,
-                    torch.cat([prompt_ids, completion_ids], 1),
+                    torch.cat([batch.prompt_ids, completion_ids], 1),
                     attention_mask,
                     logits_to_keep,
                     batch_size,
@@ -470,7 +479,7 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
                 if self.ref_model is not None:
                     ref_per_token_logps = self._get_per_token_logps_and_entropies(
                         self.ref_model,
-                        torch.cat([prompt_ids, completion_ids], 1),
+                        torch.cat([batch.prompt_ids, completion_ids], 1),
                         attention_mask,
                         logits_to_keep,
                     )["logps"]
@@ -478,7 +487,7 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
                     with self.accelerator.unwrap_model(self.model).disable_adapter():
                         ref_per_token_logps = self._get_per_token_logps_and_entropies(
                             self.model,
-                            torch.cat([prompt_ids, completion_ids], 1),
+                            torch.cat([batch.prompt_ids, completion_ids], 1),
                             attention_mask,
                             logits_to_keep,
                         )["logps"]
@@ -522,123 +531,149 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
     def _compute_rewards(
         self,
         inputs: list[dict[str, Union[torch.Tensor, Any]]],
-        prompts: list[Any],
+        batch: GenerationBatch,
         completions: list[Union[str, list[dict[str, str]]]],
         comp_ids_list: list[list[int]],
-        device: torch.device,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute per-function rewards and aggregate per-sequence rewards."""
         rewards_per_func = self._calculate_rewards(
             inputs,
-            prompts,
+            batch.prompts,
             completions,
             comp_ids_list,
         )
         rewards = (
-            rewards_per_func * self.reward_weights.to(device).unsqueeze(0)
+            rewards_per_func
+            * self.reward_weights.to(batch.device).unsqueeze(0)
         ).nansum(dim=1)
         return rewards_per_func, rewards
 
     def _normalize_rewards_and_compute_advantages(
         self,
-        rewards: torch.Tensor,
-        prompts: list[Any],
-        attention_mask: torch.Tensor,
-        completion_lengths: torch.Tensor,
-        is_eos: torch.Tensor,
-        device: torch.device,
-        mode: str,
-    ) -> tuple[
-        torch.Tensor,
-        torch.Tensor,
-        torch.Tensor,
-        torch.Tensor,
-        torch.Tensor,
-    ]:
+        state: dict[str, Any],
+        batch: GenerationBatch,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Normalize rewards, compute advantages, and update token metrics."""
-        mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1)
-        std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
+        rewards: torch.Tensor = state["rewards"]
+        stats = self._normalize_rewards(rewards)
+        advantages, all_process_advantages = self._slice_advantages_for_process(
+            stats,
+            batch,
+        )
+        self._update_reward_metrics(
+            batch,
+            stats,
+            state,
+        )
+        return advantages, all_process_advantages
+
+    def _normalize_rewards(self, rewards: torch.Tensor) -> RewardStatistics:
+        """Compute grouped reward statistics and un-sliced advantages."""
+        rewards_view = rewards.view(-1, self.num_generations)
+        mean_grouped_rewards = rewards_view.mean(dim=1)
+        std_grouped_rewards = rewards_view.std(dim=1)
         is_std_zero = torch.isclose(
             std_grouped_rewards,
             torch.zeros_like(std_grouped_rewards),
         )
-
-        mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(
+        repeated_means = mean_grouped_rewards.repeat_interleave(
             self.num_generations,
             dim=0,
         )
-        std_grouped_rewards = std_grouped_rewards.repeat_interleave(
+        repeated_stds = std_grouped_rewards.repeat_interleave(
             self.num_generations,
             dim=0,
         )
-        advantages = rewards - mean_grouped_rewards
+        advantages = rewards - repeated_means
         if self.scale_rewards:
-            advantages = advantages / (std_grouped_rewards + 1e-4)
-
-        process_slice = slice(
-            self.accelerator.process_index * len(prompts),
-            (self.accelerator.process_index + 1) * len(prompts),
+            advantages = advantages / (repeated_stds + 1e-4)
+        return RewardStatistics(
+            advantages=advantages,
+            mean_grouped_rewards=mean_grouped_rewards,
+            std_grouped_rewards=std_grouped_rewards,
+            is_std_zero=is_std_zero,
         )
-        all_process_advantages = advantages.clone()
-        advantages = advantages[process_slice]
 
-        if mode == "train":
-            tokens_seen = self.accelerator.gather(attention_mask.sum()).sum().item()
+    def _slice_advantages_for_process(
+        self,
+        stats: RewardStatistics,
+        batch: GenerationBatch,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Slice advantages for the local process."""
+        all_process_advantages = stats.advantages.clone()
+        batch_per_process = len(batch.prompts)
+        process_index = self.accelerator.process_index
+        start = process_index * batch_per_process
+        end = (process_index + 1) * batch_per_process
+        advantages = stats.advantages[start:end]
+        return advantages, all_process_advantages
+
+    def _update_reward_metrics(
+        self,
+        batch: GenerationBatch,
+        stats: RewardStatistics,
+        state: dict[str, Any],
+    ) -> None:
+        """Update scalar metrics derived from rewards and completion lengths."""
+        completion_lengths: torch.Tensor = state["completion_lengths"]
+        is_eos: torch.Tensor = state["is_eos"]
+        mode_str = "train" if self.model.training else "eval"
+        if self.model.training:
+            tokens_seen = (
+                self.accelerator.gather(
+                    (batch.prompt_mask.sum(dim=1) + completion_lengths).sum()
+                )
+                .sum()
+                .item()
+            )
             self.state.num_input_tokens_seen += tokens_seen
-        self._metrics[mode]["num_tokens"] = [self.state.num_input_tokens_seen]
+        self._metrics[mode_str]["num_tokens"] = [self.state.num_input_tokens_seen]
 
         aggregated_completion_lengths = self.accelerator.gather(completion_lengths)
-        self._metrics[mode]["completions/mean_length"].append(
-            aggregated_completion_lengths.float().mean().item()
+        lengths_float = aggregated_completion_lengths.float()
+        self._metrics[mode_str]["completions/mean_length"].append(
+            lengths_float.mean().item()
         )
-        self._metrics[mode]["completions/min_length"].append(
-            aggregated_completion_lengths.float().min().item()
+        self._metrics[mode_str]["completions/min_length"].append(
+            lengths_float.min().item()
         )
-        self._metrics[mode]["completions/max_length"].append(
-            aggregated_completion_lengths.float().max().item()
+        self._metrics[mode_str]["completions/max_length"].append(
+            lengths_float.max().item()
         )
 
-        aggregated_terminated_with_eos = self.accelerator.gather(is_eos.any(dim=1))
-        terminated_completion_lengths = aggregated_completion_lengths[
-            aggregated_terminated_with_eos
-        ]
+        terminated_mask = self.accelerator.gather(is_eos.any(dim=1))
+        terminated_completion_lengths = aggregated_completion_lengths[terminated_mask]
+        if len(terminated_completion_lengths) == 0:
+            terminated_completion_lengths = torch.zeros(1, device=batch.device)
+        terminated_float = terminated_completion_lengths.float()
+        self._metrics[mode_str]["completions/mean_terminated_length"].append(
+            terminated_float.mean().item()
+        )
+        self._metrics[mode_str]["completions/min_terminated_length"].append(
+            terminated_float.min().item()
+        )
+        self._metrics[mode_str]["completions/max_terminated_length"].append(
+            terminated_float.max().item()
+        )
         clipped_completions_ratio = 1 - (
             len(terminated_completion_lengths) / len(aggregated_completion_lengths)
         )
-        self._metrics[mode]["completions/clipped_ratio"].append(
+        self._metrics[mode_str]["completions/clipped_ratio"].append(
             clipped_completions_ratio
         )
-        if len(terminated_completion_lengths) == 0:
-            terminated_completion_lengths = torch.zeros(1, device=device)
-        self._metrics[mode]["completions/mean_terminated_length"].append(
-            terminated_completion_lengths.float().mean().item()
-        )
-        self._metrics[mode]["completions/min_terminated_length"].append(
-            terminated_completion_lengths.float().min().item()
-        )
-        self._metrics[mode]["completions/max_terminated_length"].append(
-            terminated_completion_lengths.float().max().item()
-        )
 
-        self._metrics[mode]["reward"].append(mean_grouped_rewards.mean().item())
-        self._metrics[mode]["reward_std"].append(
-            std_grouped_rewards.mean().item()
+        self._metrics[mode_str]["reward"].append(
+            stats.mean_grouped_rewards.mean().item()
         )
-        self._metrics[mode]["frac_reward_zero_std"].append(
-            is_std_zero.float().mean().item()
+        self._metrics[mode_str]["reward_std"].append(
+            stats.std_grouped_rewards.mean().item()
         )
-
-        return (
-            advantages,
-            all_process_advantages,
-            mean_grouped_rewards,
-            std_grouped_rewards,
-            is_std_zero,
+        self._metrics[mode_str]["frac_reward_zero_std"].append(
+            stats.is_std_zero.float().mean().item()
         )
 
     def _log_text_and_rewards(
         self,
-        mode: str,
         prompts_text: list[str],
         completions_text: list[str],
         rewards_per_func: torch.Tensor,
@@ -656,85 +691,73 @@ class HierarchicalGRPOTrainer(GRPOTrainer):
     def _postprocess_and_score(
         self,
         inputs: list[dict[str, Union[torch.Tensor, Any]]],
-        prompts: list[Any],
-        prompts_text: list[str],
-        prompt_ids: torch.Tensor,
-        prompt_mask: torch.Tensor,
+        batch: GenerationBatch,
         completion_ids: torch.Tensor,
-        prompt_completion_ids: torch.Tensor,
-        device: torch.device,
-        mode: str,
     ) -> dict[str, Union[torch.Tensor, Any]]:
         """Post-process completions, compute rewards, metrics, and outputs."""
-        comp_mask, comp_ids_list, completion_lengths, is_eos = (
-            self._build_completion_mask(
-                completion_ids,
-                device,
-            )
-        )
+        state: dict[str, Any] = {}
 
-        attention_mask = torch.cat([prompt_mask, comp_mask], dim=1)
-        logits_to_keep = completion_ids.size(1)
-        batch_size = (
-            self.args.per_device_train_batch_size
-            if mode == "train"
-            else self.args.per_device_eval_batch_size
-        )
-
-        old_per_token_logps, ref_per_token_logps = self._compute_logps(
-            prompt_ids,
+        state["completion_ids"] = completion_ids
+        (
+            state["completion_mask"],
+            state["comp_ids_list"],
+            state["completion_lengths"],
+            state["is_eos"],
+        ) = self._build_completion_mask(
             completion_ids,
-            attention_mask,
-            logits_to_keep,
-            batch_size,
-        )
-
-        completions_text, completions = self._decode_completions(
-            inputs,
-            prompts,
-            completion_ids,
-        )
-
-        rewards_per_func, rewards = self._compute_rewards(
-            inputs,
-            prompts,
-            completions,
-            comp_ids_list,
-            device,
+            batch.device,
         )
 
         (
-            advantages,
-            all_process_advantages,
-            mean_grouped_rewards,
-            std_grouped_rewards,
-            is_std_zero,
+            state["old_per_token_logps"],
+            state["ref_per_token_logps"],
+        ) = self._compute_logps(
+            batch,
+            state,
+        )
+
+        (
+            state["completions_text"],
+            state["completions"],
+        ) = self._decode_completions(
+            inputs,
+            batch.prompts,
+            completion_ids,
+        )
+
+        (
+            state["rewards_per_func"],
+            state["rewards"],
+        ) = self._compute_rewards(
+            inputs,
+            batch,
+            state["completions"],
+            state["comp_ids_list"],
+        )
+
+        (
+            state["advantages"],
+            state["all_process_advantages"],
         ) = self._normalize_rewards_and_compute_advantages(
-            rewards,
-            prompts,
-            attention_mask,
-            completion_lengths,
-            is_eos,
-            device,
-            mode,
+            state,
+            batch,
         )
 
         self._log_text_and_rewards(
-            mode,
-            prompts_text,
-            completions_text,
-            rewards_per_func,
-            all_process_advantages,
+            batch.prompts_text,
+            state["completions_text"],
+            state["rewards_per_func"],
+            state["all_process_advantages"],
         )
 
         return {
-            "prompt_ids": prompt_ids,
-            "prompt_mask": prompt_mask,
+            "prompt_ids": batch.prompt_ids,
+            "prompt_mask": batch.prompt_mask,
             "completion_ids": completion_ids,
-            "completion_mask": comp_mask,
-            "advantages": advantages,
-            "old_per_token_logps": old_per_token_logps,
-            "ref_per_token_logps": ref_per_token_logps,
+            "completion_mask": state["completion_mask"],
+            "advantages": state["advantages"],
+            "old_per_token_logps": state["old_per_token_logps"],
+            "ref_per_token_logps": state["ref_per_token_logps"],
         }
 
 

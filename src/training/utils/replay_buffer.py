@@ -29,7 +29,7 @@ def _is_full_example(example: Any) -> bool:
     return isinstance(example, dict) and "prompt" in example and "answer" in example
 
 
-class ReplayBuffer:  # pylint: disable=too-many-instance-attributes
+class ReplayBuffer:
     """
     Bandit / UCB replay buffer with stable UIDs and optional exploit/explore mixing.
 
@@ -78,8 +78,8 @@ class ReplayBuffer:  # pylint: disable=too-many-instance-attributes
         """Return the last error metadata recorded during insertion."""
         return self._last_error
 
-    def _set_err(self, **kw):
-        self._last_error = kw
+    def _set_err(self, **kwargs):
+        self._last_error = kwargs
 
 
     def __len__(self) -> int:

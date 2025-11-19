@@ -19,10 +19,15 @@ ignored-modules=
 
 [FORMAT]
 max-line-length=100
+max-module-lines=2500
+
+[DESIGN]
+# Config dataclasses (training args, configs) legitimately carry many fields.
+# Relax the instance-attribute limit project-wide instead of scattering
+# inline disables on each config class.
+max-attributes=20
 
 [REPORTS]
 score=yes
 
 [MESSAGES CONTROL]
-# Keep errors, warnings, and fatals; skip convention/refactor noise
-disable=C,R

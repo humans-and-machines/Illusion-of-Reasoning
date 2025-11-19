@@ -28,20 +28,22 @@ from importlib import import_module
 from functools import partial
 from typing import Any, Dict
 
-from src.inference.common import (
+from src.inference.gateway_utils import (
     append_jsonl_row,
     build_math_gateway_arg_parser,
     build_math_gateway_messages,
     build_math_gateway_row_base,
     build_usage_dict,
-    call_with_retries,
-    canon_math as _canon_math,
-    extract_blocks as _extract_blocks,
+    call_with_gateway_retries,
     iter_math_gateway_samples,
     parse_openai_chat_response,
     prepare_math_gateway_dataset_from_args,
     require_datasets,
     setup_script_logger,
+)
+from src.inference.math_pass_utils import (
+    canon_math as _canon_math,
+    extract_blocks as _extract_blocks,
     valid_tag_structure as _valid_tag_structure,
 )
 from src.inference.math_core import load_math500
@@ -123,11 +125,7 @@ def _prepare_dataset(
         outpath=outpath,
         logger=logger,
         load_math500_fn=load_math500,
-        load_remote_dataset_fn=lambda ds_id, split, cache_dir: load_dataset(
-            ds_id,
-            split=split,
-            cache_dir=cache_dir,
-        ),
+        load_remote_dataset_fn=load_dataset,
     )
     return dataset, existing, dataset_name_for_log
 
@@ -142,10 +140,9 @@ def _generate_samples(client, args: argparse.Namespace, outpath: str) -> None:
         args.num_samples,
         existing,
     ):
-        text, finish_reason, usage = call_with_retries(
+        text, finish_reason, usage = call_with_gateway_retries(
             partial(_call_model, client, problem, args),
-            max_retries=args.max_retries,
-            retry_backoff=args.retry_backoff,
+            args=args,
             logger=logger,
             sample_idx=sample_idx,
             problem_snippet=problem,

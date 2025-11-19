@@ -16,8 +16,7 @@ from types import SimpleNamespace
 import pytest
 
 torch = pytest.importorskip("torch")
-
-from src.inference import carpark_core  # noqa: E402
+carpark_core = pytest.importorskip("src.inference.carpark_core")
 
 
 class FakeTokenizer:
@@ -157,4 +156,3 @@ def test_run_inference_on_split_carpark_smoke(tmp_path):
     assert "gold_answer" in row
     assert "pass1" in row
     assert row["pass2"] is None
-

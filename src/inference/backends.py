@@ -24,11 +24,14 @@ from .common import (
 )
 
 try:  # pragma: no cover - optional Azure dependency
-    from src.annotate.config import load_azure_config
-    from src.annotate.llm_client import build_preferred_client
+    from src.annotate.config import load_azure_config as _load_azure_config
+    from src.annotate.llm_client import build_preferred_client as _build_preferred_client
 except ImportError:  # pragma: no cover - environments without Azure support
-    load_azure_config = None  # type: ignore[assignment]
-    build_preferred_client = None  # type: ignore[assignment]
+    _load_azure_config = None
+    _build_preferred_client = None
+
+load_azure_config = _load_azure_config
+build_preferred_client = _build_preferred_client
 
 
 def _load_torch_and_transformers() -> Tuple[Any, Any, Any, Any]:
@@ -389,7 +392,11 @@ class AzureBackend:
         """
         Call the Chat Completions API as a fallback.
         """
-        resp = self.client.chat.completions.create(  # type: ignore[attr-defined]
+        chat = getattr(self.client, "chat", None)
+        if chat is None or not hasattr(chat, "completions"):
+            raise RuntimeError("Azure/OpenAI client does not expose chat.completions")
+        completions = getattr(chat, "completions")
+        resp = completions.create(
             model=self.deployment,
             messages=messages,
             max_tokens=max_output_tokens,

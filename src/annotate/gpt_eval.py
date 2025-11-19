@@ -46,10 +46,12 @@ from src.annotate.prompts import (
 )
 
 try:
-    from openai import OpenAIError
+    from openai import OpenAIError as _OpenAIError
 except ImportError:  # pragma: no cover - optional dependency
-    class OpenAIError(Exception):  # type: ignore
+    class _OpenAIError(Exception):
         """Fallback OpenAI error when openai package is absent."""
+
+OpenAIError = _OpenAIError
 
 # Ensure repo root is on sys.path when executed from src/scripts/annotate
 ROOT = Path(__file__).resolve().parents[3]

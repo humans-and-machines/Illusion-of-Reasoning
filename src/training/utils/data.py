@@ -46,11 +46,11 @@ def get_dataset(args: ScriptArguments) -> Any:
         for dataset_config in mixture.datasets:
             logger.info(
                 "Loading dataset for mixture: %s (config: %s)",
-                dataset_config.id,
+                dataset_config.dataset_id,
                 dataset_config.config,
             )
             dataset_obj = datasets_module.load_dataset(
-                dataset_config.id,
+                dataset_config.dataset_id,
                 dataset_config.config,
                 split=dataset_config.split,
             )
@@ -63,7 +63,7 @@ def get_dataset(args: ScriptArguments) -> Any:
                 )
                 logger.info(
                     "Subsampled dataset '%s' (config: %s) with weight=%s to %d examples",
-                    dataset_config.id,
+                    dataset_config.dataset_id,
                     dataset_config.config,
                     dataset_config.weight,
                     len(dataset_obj),

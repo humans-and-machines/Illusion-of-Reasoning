@@ -6,9 +6,7 @@ from __future__ import annotations
 
 import importlib
 from dataclasses import dataclass
-from typing import Any, DefaultDict, Dict, List, Optional
-
-from packaging import version
+from typing import Any
 
 try:
     torch = importlib.import_module("torch")
@@ -59,4 +57,3 @@ class DSModelWrapper:
         """Put the underlying module into eval mode and return self."""
         self.module.eval()
         return self
-

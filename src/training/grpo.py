@@ -22,8 +22,8 @@ def _load_trl_parser():
 
 def main() -> None:
     """Parse CLI arguments and launch GRPO training."""
-    ModelConfig, TrlParser = _load_trl_parser()
-    parser = TrlParser((GRPOScriptArguments, GRPOConfig, ModelConfig))
+    model_config_cls, trl_parser_cls = _load_trl_parser()
+    parser = trl_parser_cls((GRPOScriptArguments, GRPOConfig, model_config_cls))
     script_args, training_args, model_args = parser.parse_args_and_config()
     _main(script_args, training_args, model_args)
 

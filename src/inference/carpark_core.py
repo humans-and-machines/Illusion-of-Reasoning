@@ -29,20 +29,20 @@ from src.inference.carpark_rush_utils import (
     rush_soft_match_reward,
 )
 from src.inference.common import (
+    GenerationLimits,
     PassOutputs,
-    StopOnSubstrings,
     add_token_and_tag_fields,
     build_entropy_pass_base,
-    build_generate_kwargs,
     build_math_inference_config_kwargs,
     build_two_pass_row_base,
-    decode_and_score_batch,
+    empty_pass_outputs,
     extract_blocks as _extract_blocks,
     finite_mean as _finite_mean,
     iter_jsonl_objects,
+    repeat_for_samples as _repeat_for_samples,
+    run_generate_batch,
     require_datasets,
     setup_script_logger,
-    tokenize_prefixes_for_generate,
 )
 from src.inference.task_registry import CARPARK_SYSTEM_PROMPT
 from src.inference.unified_runner_base import run_carpark_main
@@ -159,16 +159,6 @@ class GenerationSamplingConfig:
 
 
 @dataclass
-class GenerationLimitsConfig:
-    """Generation limits and batch sizing."""
-
-    batch_size: int
-    num_samples: int
-    think_cap: int
-    answer_cap: int
-
-
-@dataclass
 class SecondPassConfig:
     """Settings controlling optional second-pass reconsideration."""
 
@@ -183,7 +173,7 @@ class CarparkInferenceConfig:
 
     io_config: IOConfig
     columns: ColumnConfig
-    limits: GenerationLimitsConfig
+    limits: GenerationLimits
     sampling: GenerationSamplingConfig
     second_pass: SecondPassConfig
 
@@ -203,7 +193,7 @@ class CarparkInferenceConfig:
                 prompt_col=str(flat_kwargs["prompt_col"]),
                 solution_col=str(flat_kwargs["solution_col"]),
             ),
-            limits=GenerationLimitsConfig(
+            limits=GenerationLimits(
                 batch_size=int(flat_kwargs["batch_size"]),
                 num_samples=int(flat_kwargs["num_samples"]),
                 think_cap=int(flat_kwargs["think_cap"]),
@@ -303,24 +293,6 @@ class CarparkInferenceConfig:
         """Return the max new tokens for the answer phase."""
         return self.limits.answer_cap
 
-
-def _make_gen_kwargs(
-    cap: int,
-    tokenizer,
-    config: CarparkInferenceConfig,
-) -> Dict[str, Any]:
-    """Build generation kwargs with a temperature=0 → greedy safeguard."""
-    pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
-    return build_generate_kwargs(
-        cap=cap,
-        pad_token_id=pad_token_id,
-        eos_ids=config.eos_ids,
-        entropy_mode=config.entropy_mode,
-        temperature=config.temperature,
-        top_p=config.top_p,
-    )
-
-
 @dataclass
 class InferenceContext:
     """Bundle model, tokenizer, and config for generation helpers."""
@@ -360,41 +332,17 @@ def _gen_batch(
     context: InferenceContext,
 ) -> Tuple[List[str], List[List[float]], torch.Tensor, torch.Tensor, List[str]]:
     """Generate a batch of continuations and token-entropy series."""
-    tokenizer = context.tokenizer
-    model = context.model
-    config = context.config
-
-    inputs, input_lengths = tokenize_prefixes_for_generate(
-        tokenizer,
-        prefixes,
-        max_length=4096,
-    )
-    stop = (
-        StoppingCriteriaList([StopOnSubstrings(tokenizer, stop_strs)])
-        if stop_strs
-        else None
-    )
-    gen_kwargs = _make_gen_kwargs(cap, tokenizer, config)
-    with torch.inference_mode():
-        out = model.generate(**inputs, **gen_kwargs, stopping_criteria=stop)
-
-    decoded_texts, entropy_series, stop_reasons = decode_and_score_batch(
-        tokenizer=tokenizer,
-        sequences=out.sequences,
-        scores=out.scores,
-        input_lengths=input_lengths,
-        stop_strings=stop_strs,
+    return run_generate_batch(
+        prefixes=prefixes,
         cap=cap,
-        eos_ids=config.eos_ids,
-        entropy_mode=config.entropy_mode,
-        model=model,
+        stop_strings=stop_strs,
+        tokenizer=context.tokenizer,
+        model=context.model,
+        config_like=context.config,
+        max_length=4096,
+        torch_module=torch,
+        stopping_criteria_list_cls=StoppingCriteriaList,
     )
-
-    return decoded_texts, entropy_series, input_lengths, out.sequences, stop_reasons
-
-
-def _repeat_for_samples(prefixes: List[str], num_samples: int) -> List[str]:
-    return [prefix for prefix in prefixes for _ in range(num_samples)]
 
 
 def _norm_fields(
@@ -460,10 +408,10 @@ def _pack_pass_result(
     pred_canon = _canon_rush_generic(pred_answer_text)
 
     base = build_entropy_pass_base(
-        prev_output=meta.get("prev_output"),
         full_text=full_text,
         pred_answer_text=pred_answer_text,
         pred_canon=pred_canon,
+        prev_output=meta.get("prev_output"),
         entropy_overall=_finite_mean(token_entropies_all) if token_entropies_all else None,
         entropy_think=_finite_mean(ent_think) if ent_think else None,
         entropy_answer=_finite_mean(ent_answer) if ent_answer else None,
@@ -821,13 +769,7 @@ def _run_inference_on_split_core(
             pass2_outputs = _run_pass2_for_batch(second_pass_ctx)
         else:
             total_rows = len(batch_items) * num_samples
-            pass2_outputs = PassOutputs(
-                full_texts=[""] * total_rows,
-                ent_think=[[] for _ in range(total_rows)],
-                ent_answer=[[] for _ in range(total_rows)],
-                stop_reason_think=[""] * total_rows,
-                stop_reason_answer=[""] * total_rows,
-            )
+            pass2_outputs = empty_pass_outputs(total_rows)
 
         results_ctx = ResultsContext(
             outpath=outpath,

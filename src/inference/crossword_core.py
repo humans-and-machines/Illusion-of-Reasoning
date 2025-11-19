@@ -13,35 +13,27 @@ from typing import Any, Dict, List, Optional, Tuple
 from packaging import version
 from src.inference.backends import HFBackend
 from src.inference.common import (
+    SamplingConfigBase,
+    finite_mean as _finite_mean,
+    load_local_json_dataset,
+    repeat_for_samples as _repeat_for_samples,
+    run_generate_batch,
+    require_torch,
+    require_transformers,
+    setup_script_logger,
+)
+from src.inference.math_pass_utils import (
     RECONSIDER_PATTERNS as _RECONSIDER_PATTERNS,
-    StopOnSubstrings,
     add_token_and_tag_fields,
     build_entropy_pass_base,
     contains_canon as _contains_canon,
-    decode_and_score_batch,
     extract_blocks as _extract_blocks,
-    find_markers_and_context as _find_markers_and_context,
-    finite_mean as _finite_mean,
-    load_local_json_dataset,
-    setup_script_logger,
-    tokenize_prefixes_for_generate,
 )
+from src.inference.text_utils import find_markers_and_context as _find_markers_and_context
 from src.inference.unified_runner_base import run_crossword_main
 
-try:
-    torch = importlib.import_module("torch")
-except ImportError as exc:  # pragma: no cover - hard dependency
-    raise RuntimeError(
-        "crossword_core requires PyTorch; install the 'torch' package."
-    ) from exc
-
-try:
-    transformers_mod = importlib.import_module("transformers")
-except ImportError as exc:  # pragma: no cover - hard dependency
-    raise RuntimeError(
-        "crossword_core requires 'transformers'; install it to use this script."
-    ) from exc
-
+torch = require_torch("crossword_core")
+transformers_mod = require_transformers("crossword_core")
 StoppingCriteriaList = transformers_mod.StoppingCriteriaList
 
 # ───────────────────────── System prompt (CROSSWORD) ─────────────────────────
@@ -119,12 +111,8 @@ class CrosswordCapsConfig:
 
 
 @dataclass
-class CrosswordSamplingConfig:
+class CrosswordSamplingConfig(SamplingConfigBase):
     """Sampling configuration for crossword generation."""
-
-    temperature: float = 0.0
-    top_p: float = 0.95
-    entropy_mode: str = "reconsider"
 
 
 @dataclass
@@ -270,33 +258,6 @@ def chat_base_for_pass2(
         tokenize=False,
         add_generation_prompt=True,
     )
-
-def _make_gen_kwargs(cap: int, tokenizer, config: CrosswordInferenceConfig) -> Dict[str, Any]:
-    """Build generate() kwargs for a given token cap and configuration.
-
-    If temperature <= 0 → greedy (do_sample=False) and omit temperature/top_p.
-    Else → sampling with provided temperature/top_p.
-    """
-    do_sample = (
-        config.sampling.temperature is not None
-        and float(config.sampling.temperature) > 0.0
-    )
-    kwargs: Dict[str, Any] = {
-        "max_new_tokens": cap,
-        "pad_token_id": tokenizer.pad_token_id or tokenizer.eos_token_id,
-        "eos_token_id": config.eos_ids,
-        "do_sample": do_sample,
-        "return_dict_in_generate": True,
-        "output_scores": config.sampling.entropy_mode != "none",
-        "num_return_sequences": 1,
-    }
-    if do_sample:
-        kwargs["temperature"] = float(config.sampling.temperature)
-        if config.sampling.top_p is not None:
-            kwargs["top_p"] = float(config.sampling.top_p)
-    return kwargs
-
-
 def _gen_batch(
     prefixes: List[str],
     cap: int,
@@ -304,46 +265,23 @@ def _gen_batch(
     generation: BatchGenerationContext,
 ) -> Tuple[List[str], List[List[float]], Any, Any, List[str]]:
     """Generate a batch of continuations and token-entropy series."""
-    inputs, input_lengths = tokenize_prefixes_for_generate(
-        generation.tokenizer,
-        prefixes,
-        max_length=5500,
-    )
-
-    stop = (
-        StoppingCriteriaList(
-            [StopOnSubstrings(generation.tokenizer, stop_strs)],
-        )
-        if stop_strs
-        else None
-    )
-    gen_kwargs = _make_gen_kwargs(cap, generation.tokenizer, generation.config)
-
-    with torch.inference_mode():
-        out = generation.model.generate(
-            **inputs,
-            **gen_kwargs,
-            stopping_criteria=stop,
-        )
-
-    decoded_texts, entropy_series, stop_reasons = decode_and_score_batch(
-        tokenizer=generation.tokenizer,
-        sequences=out.sequences,
-        scores=out.scores,
-        input_lengths=input_lengths,
-        stop_strings=stop_strs,
-        cap=cap,
-        eos_ids=generation.config.eos_ids,
+    sampling_config = CrosswordSamplingConfig(
+        temperature=generation.config.sampling.temperature,
+        top_p=generation.config.sampling.top_p,
         entropy_mode=generation.config.sampling.entropy_mode,
-        model=generation.model,
+        eos_ids=generation.config.eos_ids,
     )
-
-    return decoded_texts, entropy_series, input_lengths, out.sequences, stop_reasons
-
-
-def _repeat_for_samples(values: List[str], num_samples: int) -> List[str]:
-    """Repeat each prefix num_samples times (row-major expansion)."""
-    return [value for value in values for _ in range(num_samples)]
+    return run_generate_batch(
+        prefixes,
+        cap,
+        stop_strs,
+        tokenizer=generation.tokenizer,
+        model=generation.model,
+        config_like=sampling_config,
+        max_length=5500,
+        torch_module=torch,
+        stopping_criteria_list_cls=StoppingCriteriaList,
+    )
 
 
 def _norm_fields(example: dict):

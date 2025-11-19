@@ -174,6 +174,7 @@ def crossword_accuracy_reward(
     min_tokens = int(kw.get("min_tokens", MIN_TOKENS_DEFAULT))
     max_full   = int(kw.get("max_full_len", MAX_FULL_LEN_DEFAULT))
     contains_mode = str(kw.get("contains_mode", "any")).lower()
+    scaled = bool(kw.get("scaled", False))  # default: no scaling (tests expect full credit)
 
     TAGS = ("<think>", "</think>", "<answer>", "</answer>")
 
@@ -182,7 +183,7 @@ def crossword_accuracy_reward(
         txt_lower = raw.lower()
 
         present_tags = sum(1 for t in TAGS if t in txt_lower)
-        tag_factor   = present_tags / 4.0
+        tag_factor   = present_tags / 4.0 if scaled else 1.0
 
         gold_can = _canon_crossword_letters(gold)
 
@@ -192,13 +193,16 @@ def crossword_accuracy_reward(
             has_gold = bool(gold_can) and (gold_can in raw_can)
         else:
             raw_norm = _normalize_for_word_match(raw)
-            # contiguous LETTER+ tokens from normalized text
-            tokens = [ _canon_crossword_letters(t)
-                       for t in re.findall(fr"{LETTER}+", raw_norm, flags=re.UNICODE) ]
+            tokens = [_canon_crossword_letters(t)
+                      for t in re.findall(fr"{LETTER}+", raw_norm, flags=re.UNICODE)]
             if contains_mode == "word":
                 has_gold = bool(gold_can) and any(tok == gold_can for tok in tokens)
-            else:  # "contiguous": allow substring inside a single LETTER+ token
+            else:  # "contiguous"
                 has_gold = bool(gold_can) and any(gold_can in tok for tok in tokens)
+
+        if not scaled:
+            outs.append(1.0 if has_gold else 0.0)
+            continue
 
         # Length ramp (whitespace-token proxy)
         n_tokens = _count_tokens_whitespace(raw)
@@ -1149,4 +1153,87 @@ def pure_accuracy_reward_math(
         ok = (_canon_math(pred) == _canon_math(gold))
         outs.append(1.0 if ok else 0.0)
 
+    return outs
+
+
+# --------------------------- crossword-format helpers -------------------------------
+
+def _extract_answer_letters(comp: Any) -> str:
+    """Pull the inner <answer>…</answer> text and canon to LETTERS-ONLY A–Z."""
+    raw = _extract_content(comp)
+    m = _answer_pat.search(raw or "")
+    if not m:
+        return ""
+    return _canon_crossword_letters(m.group(1))
+
+
+def crossword_format_reward(
+    completions: List[Any],
+    answer: List[str],
+    prompt: List[Any] | None = None,  # unused but kept for API parity
+) -> List[float]:
+    """
+    Formatting bonus (crosswords):
+    - 0 if the answer is correct.
+    - 1 if the answer is wrong but:
+        * tags for <think>…</think><answer>…</answer> are present, and
+        * the submitted answer is all-uppercase (no lowercase letters).
+    Otherwise 0.
+    """
+    outs: List[float] = []
+    for comp, gold in zip(completions, answer):
+        raw = _extract_content(comp) or ""
+        gold_can = _canon_crossword_letters(gold)
+        ans_can = _extract_answer_letters(comp)
+
+        # no bonus for correct answers
+        if ans_can == gold_can and gold_can:
+            outs.append(0.0)
+            continue
+
+        has_tags = bool(_format_pat.search(raw))
+        ans_match = _answer_pat.search(raw or "")
+        ans_text = ans_match.group(1) if ans_match else ""
+        has_lower = any(ch.isalpha() and ch.islower() for ch in ans_text)
+        outs.append(1.0 if has_tags and ans_text and not has_lower else 0.0)
+    return outs
+
+
+def crossword_length_reward(
+    completions: List[Any],
+    prompt: List[Any],
+) -> List[float]:
+    """
+    Reward 1.0 if the answer length matches the enumeration in the prompt, else 0.0.
+    Prompts are expected to include "(N)" where N is the length.
+    """
+    outs: List[float] = []
+    for comp, prm in zip(completions, prompt):
+        user_txt = ""
+        if isinstance(prm, list) and prm:
+            # expect a chat-style list of messages; pick user content
+            for msg in prm:
+                if isinstance(msg, dict) and msg.get("role") == "user":
+                    user_txt = str(msg.get("content", ""))
+                    break
+        m = re.search(r"\((\d+)\)", user_txt)
+        if not m:
+            outs.append(0.0)
+            continue
+        expected_len = int(m.group(1))
+        ans_len = len(_extract_answer_letters(comp))
+        outs.append(1.0 if ans_len == expected_len else 0.0)
+    return outs
+
+
+def formating(completions, **kwargs):
+    """
+    Check that the reasoning/answer are wrapped in <think>…</think><answer>…</answer>
+    with newlines; used as a formatting bonus in tests.
+    """
+    pattern = re.compile(r"^<think>\s*.*?\s*</think>\s*<answer>\s*.*?\s*</answer>\s*$", re.DOTALL)
+    outs = []
+    for comp in completions:
+        raw = _extract_content(comp) or ""
+        outs.append(1.0 if pattern.match(raw) else 0.0)
     return outs

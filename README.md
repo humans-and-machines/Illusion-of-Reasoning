@@ -35,7 +35,7 @@ Illusion-of-Reasoning/
 ├── configs/         # env templates (conda, accelerate), linting, dotenv examples
 ├── recipes/         # task/model YAMLs for GRPO (MaxEnt-GRPO variants)
 ├── data/            # task data (car_park, crossword) + human assessment prompts
-├── src/open_r1/     # training/generation entrypoints (grpo.py, generate.py, rlif.py, rewards*; sft.py present but not used for paper)
+├── src/training/    # training/generation entrypoints (grpo.py, generate.py, rlif.py, rewards*; sft.py present but not used for paper)
 ├── scripts -> src/scripts/  # launchers for inference/training, annotation, analysis, viz, utils, slurm
 ├── results/, artifacts/, models/  # experiment outputs and checkpoints
 ├── tools/           # local cache helpers and conda hook installers
@@ -115,7 +115,7 @@ gradient_checkpointing_kwargs:
 
 Detailed training configurations live in `recipes/` (per-model + per-task). Helpful pointers:
 
-- Core entrypoints: `src/open_r1/grpo.py`, `src/open_r1/sft.py`, `src/open_r1/generate.py`, `src/open_r1/rlif.py`.
+- Core entrypoints: `src/training/grpo.py`, `src/training/sft.py`, `src/training/generate.py`, `src/training/rlif.py`.
 - Ready-to-run launchers and SLURM specs: `scripts/inference/` and `scripts/slurm/` (see `scripts/README.md` for layout).
 - Evaluation helpers and plotting live under `scripts/analysis/` and `scripts/viz/`.
 

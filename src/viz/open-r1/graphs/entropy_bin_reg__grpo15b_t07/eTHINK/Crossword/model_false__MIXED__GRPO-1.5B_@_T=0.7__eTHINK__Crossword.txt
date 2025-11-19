@@ -1,0 +1,106 @@
+# cov_type: cluster
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:           correct_at_2   No. Observations:                15457
+Model:                            GLM   Df Residuals:                    15367
+Model Family:                Binomial   Df Model:                           89
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -4945.2
+Date:                Mon, 06 Oct 2025   Deviance:                       9890.4
+Time:                        19:06:40   Pearson chi2:                 1.54e+04
+No. Iterations:                     8   Pseudo R-squ. (CS):             0.1350
+Covariance Type:              cluster                                         
+=======================================================================================================================================================
+                                                                                          coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+Intercept                                                                              -1.6867      0.052    -32.452      0.000      -1.789      -1.585
+C(entropy_bin_label)[T.Q1 [0.0672987,1.70626)]                                          0.0592      0.093      0.634      0.526      -0.124       0.242
+C(entropy_bin_label)[T.Q2 [1.70639,2.35985)]                                            0.0794      0.072      1.108      0.268      -0.061       0.220
+C(entropy_bin_label)[T.Q3 [2.36007,2.62555)]                                            0.0916      0.078      1.170      0.242      -0.062       0.245
+C(problem)[T.problem:Animal, by the sound of 'dear' (4)]                                0.8764      0.013     69.804      0.000       0.852       0.901
+C(problem)[T.problem:Away — sailor on highway (6)]                                     -3.5454      0.007   -479.042      0.000      -3.560      -3.531
+C(problem)[T.problem:Bay entrance, at home allow (5)]                                  -3.5315      0.011   -331.487      0.000      -3.552      -3.511
+C(problem)[T.problem:Big cat found in stalLION (4)]                                     1.6517      0.025     65.024      0.000       1.602       1.702
+C(problem)[T.problem:Bird found in motHER ONly (5)]                                     0.3802      0.019     19.684      0.000       0.342       0.418
+C(problem)[T.problem:Boat from CRAFT missing head (4)]                                  0.4519      0.024     18.486      0.000       0.404       0.500
+C(problem)[T.problem:Calm when energy enters pace (5)]                                 -1.9341      0.007   -280.828      0.000      -1.948      -1.921
+C(problem)[T.problem:Celebrity from stare losing tail (4)]                              1.0175      0.032     32.074      0.000       0.955       1.080
+C(problem)[T.problem:Chair with east inserted (4)]                                     -1.5970      0.008   -206.080      0.000      -1.612      -1.582
+C(problem)[T.problem:Change, when ALERT is upset (5)]                                  -0.6391      0.007    -86.861      0.000      -0.654      -0.625
+C(problem)[T.problem:Charm from PRUNE missing head (4)]                                -0.2453      0.025     -9.929      0.000      -0.294      -0.197
+C(problem)[T.problem:Circle from BRING missing head (4)]                                0.8266      0.020     40.724      0.000       0.787       0.866
+C(problem)[T.problem:Clock when 'remit' comes back (5)]                                -1.5631      0.008   -203.264      0.000      -1.578      -1.548
+C(problem)[T.problem:Close, as seen in plaNET EARly (4)]                                0.3800      0.060      6.351      0.000       0.263       0.497
+C(problem)[T.problem:Close; marine mammal (4)]                                         -0.9580      0.001   -681.421      0.000      -0.961      -0.955
+C(problem)[T.problem:Colour found in jAM BERlin (5)]                                    0.4134      0.032     12.861      0.000       0.350       0.476
+C(problem)[T.problem:Colour found in sPA IN Town (5)]                                   0.3080      0.032      9.496      0.000       0.244       0.372
+C(problem)[T.problem:Computer part: Central Processing Unit initially (3)]              0.6982      0.024     28.778      0.000       0.651       0.746
+C(problem)[T.problem:Contest from sBRACE missing head (4)]                              0.5808      0.029     20.033      0.000       0.524       0.638
+C(problem)[T.problem:Couple, by the sound of 'to' (3)]                                 -0.4167      0.007    -59.710      0.000      -0.430      -0.403
+C(problem)[T.problem:Drinks when EAST is mixed (4)]                                    -1.0299      0.008   -133.761      0.000      -1.045      -1.015
+C(problem)[T.problem:Educate; rail vehicles (5)]                                        0.4887      0.006     83.247      0.000       0.477       0.500
+C(problem)[T.problem:Error when learner enters sip (4)]                                -2.8633      0.008   -344.832      0.000      -2.880      -2.847
+C(problem)[T.problem:Evening sky — star plus group (6)]                                -2.8583      0.008   -367.841      0.000      -2.874      -2.843
+C(problem)[T.problem:Evil when broadcast comes back (4)]                                1.1804      0.033     36.052      0.000       1.116       1.245
+C(problem)[T.problem:Examine — in spec, time ultimately (7)]                           -0.3265      0.010    -33.369      0.000      -0.346      -0.307
+C(problem)[T.problem:Excellent; penalty (4)]                                           -2.4533      0.012   -207.180      0.000      -2.476      -2.430
+C(problem)[T.problem:Eye layer — 'retain' rearranged (6)]                              -1.7252      0.009   -188.270      0.000      -1.743      -1.707
+C(problem)[T.problem:Filler — marine mammal plus insect (7)]                           -2.8607      0.008   -358.507      0.000      -2.876      -2.845
+C(problem)[T.problem:Fish, by the sound of 'soul' (4)]                                 -0.5623      0.018    -30.948      0.000      -0.598      -0.527
+C(problem)[T.problem:Frighten when energy enters scar (5)]                              0.3153      0.020     15.833      0.000       0.276       0.354
+C(problem)[T.problem:Front of ship; bend (3)]                                          -1.0826      0.009   -124.265      0.000      -1.100      -1.065
+C(problem)[T.problem:Fruit found in auTO MATOn (6)]                                     0.7408      0.029     25.833      0.000       0.685       0.797
+C(problem)[T.problem:Fruit from spare rearranged (5)]                                  -2.1734      0.008   -270.258      0.000      -2.189      -2.158
+C(problem)[T.problem:Gem from fruit with learner (5)]                                  -2.1238      0.013   -165.724      0.000      -2.149      -2.099
+C(problem)[T.problem:Give off — seen back in TIME (4)]                                 -0.4078      0.007    -60.259      0.000      -0.421      -0.395
+C(problem)[T.problem:Holder from scone missing top (4)]                                 0.2259      0.029      7.842      0.000       0.169       0.282
+C(problem)[T.problem:Indoors — at home with team (6)]                                  -0.2954      0.007    -41.496      0.000      -0.309      -0.281
+C(problem)[T.problem:Insect — listener with hairpiece (6)]                             -2.4489      0.010   -242.436      0.000      -2.469      -2.429
+C(problem)[T.problem:Join soldier losing one (6)]                                      -2.4111      0.011   -216.640      0.000      -2.433      -2.389
+C(problem)[T.problem:Kind found in sILK (3)]                                            0.8856      0.022     41.149      0.000       0.843       0.928
+C(problem)[T.problem:Laptop; writer’s pad (8)]                                         -0.7698      0.014    -54.780      0.000      -0.797      -0.742
+C(problem)[T.problem:Learner at tea’s ends make drink (5)]                             -1.7577      0.008   -232.974      0.000      -1.773      -1.743
+C(problem)[T.problem:Letter or money (4)]                                              -2.8818      0.012   -234.737      0.000      -2.906      -2.858
+C(problem)[T.problem:Metal found in iRON AGE (4)]                                       1.3128      0.038     34.187      0.000       1.238       1.388
+C(problem)[T.problem:Mix TEA for a hot drink (3)]                                       1.0820      0.055     19.821      0.000       0.975       1.189
+C(problem)[T.problem:Money; loaf (5)]                                                  -0.2682      0.010    -28.192      0.000      -0.287      -0.250
+C(problem)[T.problem:Month; walk smartly (5)]                                          -1.3151      0.011   -118.908      0.000      -1.337      -1.293
+C(problem)[T.problem:Motto found in seCRED Oath (5)]                                   -0.4669      0.014    -33.430      0.000      -0.494      -0.440
+C(problem)[T.problem:Nappy (US) when REPAID comes back (6)]                            -0.7292      0.004   -179.929      0.000      -0.737      -0.721
+C(problem)[T.problem:Navigator, initially: Global Positioning System (3)]               0.2933      0.027     10.821      0.000       0.240       0.346
+C(problem)[T.problem:Object to light; ignite (5)]                                      -0.8479      0.011    -75.365      0.000      -0.870      -0.826
+C(problem)[T.problem:Observed, by the sound of 'scene' (4)]                            -0.9665      0.007   -141.234      0.000      -0.980      -0.953
+C(problem)[T.problem:Ocean floor — southeast in bed (6)]                               -1.9288      0.007   -274.540      0.000      -1.943      -1.915
+C(problem)[T.problem:Pale colour — bygone elevated (6)]                                -1.4139      0.012   -113.806      0.000      -1.438      -1.390
+C(problem)[T.problem:Pet found in deliCATe (3)]                                         1.0382      0.024     42.657      0.000       0.991       1.086
+C(problem)[T.problem:Pet, when back, is a god (3)]                                      0.9888      0.040     24.744      0.000       0.910       1.067
+C(problem)[T.problem:Plant; make new coins (4)]                                        -1.5889      0.011   -142.476      0.000      -1.611      -1.567
+C(problem)[T.problem:Point on compass: Each Agent Starts Travelling (4)]               -0.7710      0.012    -62.313      0.000      -0.795      -0.747
+C(problem)[T.problem:Predict ahead, say (8)]                                           -3.5770      0.010   -374.101      0.000      -3.596      -3.558
+C(problem)[T.problem:Presenter; mooring device (6)]                                    -0.4209      0.005    -85.658      0.000      -0.431      -0.411
+C(problem)[T.problem:Prize seen when drawer’s back (6)]                                -2.8426      0.009   -305.063      0.000      -2.861      -2.824
+C(problem)[T.problem:Put into cipher — printer’s measure with law (6)]                 -1.9400      0.010   -201.864      0.000      -1.959      -1.921
+C(problem)[T.problem:Quiet, after LISTEN is mixed (6)]                                 -0.9161      0.012    -76.434      0.000      -0.940      -0.893
+C(problem)[T.problem:Raptor’s nest, by the sound of “eerie” (5)]                       -3.5035      0.009   -376.208      0.000      -3.522      -3.485
+C(problem)[T.problem:Recess seen in dial cover (6)]                                    -0.2707      0.025    -10.920      0.000      -0.319      -0.222
+C(problem)[T.problem:Reptile found in stoNEWTank (4)]                                  -0.6472      0.018    -36.975      0.000      -0.682      -0.613
+C(problem)[T.problem:Resentment from RANGE mixed (5)]                                  -0.9642      0.008   -115.982      0.000      -0.980      -0.948
+C(problem)[T.problem:Rowing tool, by the sound of 'ore' (3)]                           -0.2063      0.008    -24.379      0.000      -0.223      -0.190
+C(problem)[T.problem:Run fast; fastener (4)]                                           -3.5639      0.010   -355.870      0.000      -3.584      -3.544
+C(problem)[T.problem:Section — second plus hill (6)]                                   -2.8710      0.006   -503.636      0.000      -2.882      -2.860
+C(problem)[T.problem:Shock when nuts come back (4)]                                    -2.1614      0.010   -216.508      0.000      -2.181      -2.142
+C(problem)[T.problem:Shoe liner at home on fish (6)]                                    1.0703      0.050     21.334      0.000       0.972       1.169
+C(problem)[T.problem:Snack from vegetable + crazy (6)]                                 -3.5507      0.011   -333.318      0.000      -3.572      -3.530
+C(problem)[T.problem:Snare when PART comes back (4)]                                   -0.8538      0.006   -147.143      0.000      -0.865      -0.842
+C(problem)[T.problem:Style — learner in fair (5)]                                      -3.5573      0.008   -454.351      0.000      -3.573      -3.542
+C(problem)[T.problem:Tell — about tardy (6)]                                           -1.2075      0.010   -119.960      0.000      -1.227      -1.188
+C(problem)[T.problem:Trim from PLACE lacking top (4)]                                   0.8009      0.036     22.450      0.000       0.731       0.871
+C(problem)[T.problem:Turning point — VIP back with scripture (5)]                      -0.4477      0.006    -72.201      0.000      -0.460      -0.436
+C(problem)[T.problem:Warrior, by the sound of 'night' (6)]                             -1.7113      0.015   -113.969      0.000      -1.741      -1.682
+C(problem)[T.problem:Weapon when energy enters spar (5)]                               -0.7228      0.004   -185.087      0.000      -0.730      -0.715
+C(problem)[T.problem:Weight measure / rock (5)]                                        -0.3728      0.009    -42.011      0.000      -0.390      -0.355
+C(problem)[T.problem:What scientists love: Download All The Archives initially (4)]    -0.5927      0.011    -52.534      0.000      -0.615      -0.571
+C(problem)[T.problem:Witnesses, by the sound of 'seas' (4)]                            -2.4379      0.006   -376.065      0.000      -2.451      -2.425
+C(problem)[T.problem:Writer — small bed with English (6)]                              -2.4290      0.011   -222.823      0.000      -2.450      -2.408
+correct_at_1                                                                            0.2143      0.070      3.071      0.002       0.078       0.351
+=======================================================================================================================================================

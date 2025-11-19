@@ -138,7 +138,7 @@ if (( NUM_TRAINING > 0 )); then
     --num_machines 1 \
     --mixed_precision bf16 \
     --main_process_port 29518 \
-    src/open_r1/grpo.py \
+    src/training/grpo.py \
       --config "'"$CONFIG"'" \
       --use_vllm \
       --run_name "'"${RUN_NAME}-${TIMESTAMP}"'" \

@@ -332,7 +332,7 @@ echo '🚀 Launching training on GPU(s):' \$CUDA_VISIBLE_DEVICES
 accelerate launch \
   --main_process_port $MASTER_PORT \
   --config_file $ACC_CFG \
-  src/open_r1/grpo.py \
+  src/training/grpo.py \
   --config recipes/Qwen2.5-1.5B-Instruct/grpo/config_crosswords.yaml \
   --run_name ${RUN_NAME}-${TS} \
   --ignore_data_skip \

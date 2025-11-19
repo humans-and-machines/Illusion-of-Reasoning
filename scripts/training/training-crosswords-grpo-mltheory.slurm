@@ -103,7 +103,7 @@ CUDA_VISIBLE_DEVICES="${TRAIN_GPUS}" accelerate launch \
   --num_machines 1 \
   --mixed_precision bf16 \
   --main_process_port 29510 \
-  src/open_r1/grpo.py \
+  src/training/grpo.py \
     --config "$CONFIG" \
     --use_vllm \
     --run_name "${RUN_NAME}-${TIMESTAMP}" \

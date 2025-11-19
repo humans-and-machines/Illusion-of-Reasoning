@@ -1,7 +1,7 @@
 # src/tests/test_rewards.py
 
 import pytest
-from open_r1.rewards_core import (
+from training.rewards_core import (
     crossword_accuracy_reward,
     crossword_format_reward,
     crossword_length_reward,

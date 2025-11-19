@@ -246,7 +246,7 @@ echo "🚀 Launching training on GPUs $CUDA_VISIBLE_DEVICES"
 accelerate launch \
   --main_process_port 29504 \
   --config_file "'"$CONFIG_FILE"'" \
-  src/open_r1/grpo.py \
+  src/training/grpo.py \
   --config "'"$CONFIG"'" \
   --use_vllm \
   --run_name "'"${RUN_NAME}-${TIMESTAMP}"'" \

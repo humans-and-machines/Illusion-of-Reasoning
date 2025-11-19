@@ -1,0 +1,28 @@
+# cov_type: cluster
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:           correct_at_2   No. Observations:                 1134
+Model:                            GLM   Df Residuals:                     1122
+Model Family:                Binomial   Df Model:                           11
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -51.026
+Date:                Mon, 06 Oct 2025   Deviance:                       102.05
+Time:                        19:05:54   Pearson chi2:                 1.13e+03
+No. Iterations:                    19   Pseudo R-squ. (CS):           0.002579
+Covariance Type:              cluster                                         
+==================================================================================================================
+                                                     coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------------------------------
+Intercept                                         -4.3830      0.347    -12.628      0.000      -5.063      -3.703
+C(entropy_bin_label)[T.Q3 [2.47962,2.80196)]      -0.6209      0.904     -0.687      0.492      -2.392       1.150
+C(entropy_bin_label)[T.Q1 [0.0384315,1.96264)]    -1.4281      1.183     -1.208      0.227      -3.746       0.890
+C(entropy_bin_label)[T.Q4 [2.80199,4.02134)]      -0.8713      0.747     -1.166      0.244      -2.336       0.594
+C(problem)[T.example_id:idx_138]                  -0.0336      0.096     -0.351      0.725      -0.221       0.154
+C(problem)[T.example_id:idx_15]                    0.0901      0.081      1.115      0.265      -0.068       0.248
+C(problem)[T.example_id:idx_184]                   0.0961      0.130      0.737      0.461      -0.160       0.352
+C(problem)[T.example_id:idx_256]                   0.1133      0.071      1.599      0.110      -0.026       0.252
+C(problem)[T.example_id:idx_307]                   0.7515      0.075     10.023      0.000       0.605       0.898
+C(problem)[T.example_id:idx_373]                   0.1220      0.034      3.565      0.000       0.055       0.189
+C(problem)[T.example_id:idx_79]                   -0.0086      0.120     -0.072      0.943      -0.243       0.226
+correct_at_1                                     -15.5537      1.638     -9.494      0.000     -18.764     -12.343
+==================================================================================================================

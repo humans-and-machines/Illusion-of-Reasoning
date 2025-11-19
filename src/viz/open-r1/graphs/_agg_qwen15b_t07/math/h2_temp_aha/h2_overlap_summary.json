@@ -1,0 +1,23 @@
+{
+  "keys_used": [
+    "problem",
+    "step",
+    "sample_idx"
+  ],
+  "n_overlap_units": 9644,
+  "n_combined_rows": 19312,
+  "root_high": "results/GRPO-1.5B",
+  "root_low": "results/GRPO-1.5B-low-temp",
+  "aha_mode": "gpt",
+  "gate_gpt_by_words": true,
+  "glm_headline": {
+    "formula": "correct ~ C(problem) + step_std + temp_low + aha + temp_low:aha",
+    "N": 19312,
+    "coef_temp_low": 0.22570852740095373,
+    "p_temp_low": 0.021668089537857135,
+    "coef_aha": -1.6445276339064,
+    "p_aha": 0.01992604414542191,
+    "coef_interaction": -0.33190966046875753,
+    "p_interaction": 0.6556835505869361
+  }
+}

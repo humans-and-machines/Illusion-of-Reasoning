@@ -117,7 +117,14 @@ def load_dataframe(files: List[str],
     for path in files:
         for rec in iter_records_from_file(path):
             p1 = rec.get("pass1") or {}
-            p2 = rec.get("pass2") or {}
+            # Prefer canonical pass2; fall back to multi-cue variants if needed.
+            p2 = (
+                rec.get("pass2")
+                or rec.get("pass2c")
+                or rec.get("pass2b")
+                or rec.get("pass2a")
+                or {}
+            )
 
             step = step_from_rec_or_path(rec, path)
             if min_step is not None and step < min_step: continue

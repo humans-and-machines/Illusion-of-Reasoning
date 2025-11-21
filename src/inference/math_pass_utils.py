@@ -27,7 +27,13 @@ RE_ANSWER = re.compile(r"(?si)<answer>(.*?)</answer>")
 
 
 def extract_blocks(txt: str) -> Tuple[Optional[str], Optional[str]]:
-    """Return (<think>..., <answer>...) contents (whitespace stripped)."""
+    """
+    Extract ``<think>`` and ``<answer>`` contents from a model output.
+
+    :param txt: Full text containing ``<think>…</think>`` and ``<answer>…</answer>`` blocks.
+    :returns: Tuple ``(think_text, answer_text)`` with surrounding whitespace stripped,
+        or ``(None, None)`` if blocks are not found.
+    """
     think = ans = None
     think_match = RE_THINK.search(txt)
     if think_match:
@@ -39,7 +45,12 @@ def extract_blocks(txt: str) -> Tuple[Optional[str], Optional[str]]:
 
 
 def valid_tag_structure(full_text: str) -> bool:
-    """Require exactly one <think>…</think> before <answer>…</answer>."""
+    """
+    Check that exactly one ``<think>…</think>`` appears before ``<answer>…</answer>``.
+
+    :param full_text: Full text produced by the model.
+    :returns: ``True`` if the tag structure is valid, otherwise ``False``.
+    """
     opens_think = len(re.findall(r"(?i)<think>", full_text))
     closes_think = len(re.findall(r"(?i)</think>", full_text))
     opens_ans = len(re.findall(r"(?i)<answer>", full_text))
@@ -80,6 +91,9 @@ def canon_math(value: Optional[str]) -> Optional[str]:
     """
     Permissive canonicalizer for math answers. Lowercases, removes spacing/punctuation,
     simplifies common LaTeX forms, and normalizes pi.
+
+    :param value: Raw answer text to canonicalize.
+    :returns: Canonicalized string, or ``None`` if ``value`` is ``None``.
     """
     if value is None:
         return None
@@ -107,7 +121,13 @@ def canon_math(value: Optional[str]) -> Optional[str]:
 
 
 def contains_canon(hay: Optional[str], needle: Optional[str]) -> bool:
-    """Substring check after both sides are canonicalized."""
+    """
+    Substring check after both sides are canonicalized.
+
+    :param hay: Canonicalized haystack string.
+    :param needle: Canonicalized needle string.
+    :returns: ``True`` if ``needle`` is a substring of ``hay``.
+    """
     return bool(hay and needle and (needle in hay))
 
 
@@ -115,7 +135,12 @@ def contains_canon(hay: Optional[str], needle: Optional[str]) -> bool:
 # Torch-agnostic utilities
 # ---------------------------------------------------------------------------
 def finite_mean(values: Iterable[float]) -> Optional[float]:
-    """Return the mean of finite values, ignoring NaNs."""
+    """
+    Compute the mean of finite values, ignoring NaNs and infinities.
+
+    :param values: Iterable of numeric values.
+    :returns: Mean of finite values, or ``None`` if no finite values are present.
+    """
     finite_values = [
         float(value)
         for value in values
@@ -136,6 +161,15 @@ def build_entropy_pass_base(
 ) -> Dict[str, Any]:
     """
     Common core for per-pass result dicts with entropy stats and prediction fields.
+
+    :param prev_output: Previous pass output text, if any.
+    :param full_text: Full model output including tags.
+    :param pred_answer_text: Extracted answer text for this pass.
+    :param pred_canon: Canonicalized predicted answer.
+    :param entropy_overall: Overall token-level entropy value.
+    :param entropy_think: Entropy restricted to ``<think>`` tokens.
+    :param entropy_answer: Entropy restricted to ``<answer>`` tokens.
+    :returns: Dictionary containing core prediction and entropy fields.
     """
     return {
         "prev_output": prev_output,
@@ -158,6 +192,13 @@ def add_token_and_tag_fields(
 ) -> Dict[str, Any]:
     """
     Add shared token-count and tag-structure fields to a per-pass result dict.
+
+    :param base: Base result dictionary to update.
+    :param tokens_total: Total number of tokens across think and answer.
+    :param tokens_think: Number of tokens in the think segment.
+    :param tokens_answer: Number of tokens in the answer segment.
+    :param full_text: Full model output including tags for structure checks.
+    :returns: The updated result dictionary.
     """
     base.update(
         {
@@ -172,8 +213,42 @@ def add_token_and_tag_fields(
 
 
 # ---------------------------------------------------------------------------
-# Reconsideration patterns
+# Reconsideration patterns / default cues
 # ---------------------------------------------------------------------------
+DEFAULT_SECOND_PASS_PHRASE = " ||| ".join(
+    [
+        (
+            "Hold on, this reasoning might be wrong. "
+            "Let's go back and check each step carefully."
+        ),
+        (
+            "Actually, this approach doesn't look correct. "
+            "Let's restart and work through the solution more systematically."
+        ),
+        "Wait, we need to reconsider. Let's think this through step by step.",
+    ],
+)
+
+
+def build_second_pass_cue_strings(phrase: Optional[str]) -> List[str]:
+    """
+    Parse a configurable second-pass phrase into a list of cue strings.
+
+    Accepts a raw phrase where multiple cues are separated by ``\"|||\"``.
+    Returns each cue with a trailing space, matching the behaviour used by the
+    inference loops.
+
+    :param phrase: Raw configuration string for second-pass cues.
+    :returns: List of cue strings with trailing spaces.
+    """
+    raw_phrase = phrase or ""
+    if "|||" in raw_phrase:
+        cue_phrases = [part.strip() for part in raw_phrase.split("|||") if part.strip()]
+    else:
+        cue_phrases = [raw_phrase.strip()] if raw_phrase.strip() else []
+    return [cue + " " for cue in cue_phrases]
+
+
 RECONSIDER_PATTERNS: Sequence[Tuple[str, re.Pattern]] = [
     ("wait_line", re.compile(r"(?im)^\s*wait[,\.\-–—… ]", re.I)),
     ("wait_reconsider", re.compile(r"\bwait\b.*\breconsider\b", re.I | re.S)),
@@ -184,6 +259,17 @@ RECONSIDER_PATTERNS: Sequence[Tuple[str, re.Pattern]] = [
     ),
     ("step_by_step_alt", re.compile(r"\bstep[-\s]?by[-\s]?step\b", re.I)),
     ("recheck", re.compile(r"\bre[-\s]?check(ing)?\b", re.I)),
+    (
+        "hold_on_reasoning_wrong",
+        re.compile(r"\bhold on\b.*\breasoning\b.*\bwrong\b", re.I | re.S),
+    ),
+    (
+        "approach_not_correct",
+        re.compile(
+            r"\bactually\b.*\bapproach\b.*(doesn['’]?t|does not)\s+look\s+correct",
+            re.I | re.S,
+        ),
+    ),
 ]
 
 
@@ -192,7 +278,17 @@ RECONSIDER_PATTERNS: Sequence[Tuple[str, re.Pattern]] = [
 # ---------------------------------------------------------------------------
 @dataclass
 class MathPassMeta:
-    """Metadata required to pack a single math pass result."""
+    """
+    Metadata required to pack a single math pass result.
+
+    :param problem: Normalized problem text.
+    :param canon_gold: Canonicalized gold answer, if available.
+    :param injected_cue: Whether a reconsideration cue was injected.
+    :param prev_output: Previous pass output shown to the model.
+    :param cue_prefix_str: Cue prefix string added before reconsideration text.
+    :param stop_reason_think: Stop reason for the think phase.
+    :param stop_reason_answer: Stop reason for the answer phase.
+    """
 
     problem: str
     canon_gold: Optional[str]
@@ -205,7 +301,13 @@ class MathPassMeta:
 
 @dataclass
 class MathTokenStats:
-    """Token-count summary for a single math pass."""
+    """
+    Token-count summary for a single math pass.
+
+    :param tokens_think: Number of tokens in the think segment.
+    :param tokens_answer: Number of tokens in the answer segment.
+    :param tokens_total: Total number of tokens across think and answer.
+    """
 
     tokens_think: int
     tokens_answer: int
@@ -214,7 +316,16 @@ class MathTokenStats:
 
 @dataclass
 class MathEntropySummary:
-    """Entropy statistics for a single math pass."""
+    """
+    Entropy statistics for a single math pass.
+
+    :param overall: Overall token-level entropy.
+    :param think: Entropy restricted to the think segment.
+    :param answer: Entropy restricted to the answer segment.
+    :param pre_cue: Entropy before any reconsideration cue, if applicable.
+    :param reconsider_think: Entropy over reconsideration tokens in think.
+    :param reconsider_full: Entropy over reconsideration tokens in think+answer.
+    """
 
     overall: Optional[float]
     think: Optional[float]
@@ -226,7 +337,15 @@ class MathEntropySummary:
 
 @dataclass
 class MathReconsiderationInfo:
-    """Reconsideration markers and positions for a math pass."""
+    """
+    Reconsideration markers and positions for a math pass.
+
+    :param markers: List of reconsideration marker labels.
+    :param pos_in_think: Character offset of the first reconsideration marker.
+    :param context: Surrounding context string for the marker.
+    :param excerpt: Short excerpt around the marker.
+    :param t_cue: Token index at which reconsideration begins, if known.
+    """
 
     markers: List[str]
     pos_in_think: Optional[int]
@@ -239,7 +358,14 @@ def _compute_math_token_stats(
     ent_think: List[float],
     ent_answer: List[float],
 ) -> Tuple[List[float], MathTokenStats]:
-    """Return combined entropy series and basic token counts."""
+    """
+    Compute combined entropy series and basic token counts.
+
+    :param ent_think: Entropy values for tokens in the think segment.
+    :param ent_answer: Entropy values for tokens in the answer segment.
+    :returns: Tuple ``(tok_ents_all, stats)`` with concatenated entropies and
+        a :class:`MathTokenStats` summary.
+    """
     tok_ents_all = (ent_think or []) + (ent_answer or [])
     tokens_think = len(ent_think or [])
     tokens_answer = len(ent_answer or [])
@@ -256,7 +382,14 @@ def _compute_math_reconsideration_info(
     meta: MathPassMeta,
     tokens_think: int,
 ) -> MathReconsiderationInfo:
-    """Derive reconsideration markers, context, and cue index from metadata."""
+    """
+    Derive reconsideration markers, context, and cue index from metadata.
+
+    :param think_text: Text inside the ``<think>`` block.
+    :param meta: Pass metadata describing cues and problem text.
+    :param tokens_think: Number of think tokens used for cue indexing.
+    :returns: :class:`MathReconsiderationInfo` with markers and positions.
+    """
     skip_chars = len(meta.cue_prefix_str) if meta.injected_cue else 0
     markers, pos_in_think, reconsider_context, reconsider_excerpt = find_markers_and_context(
         think_text,
@@ -287,7 +420,16 @@ def _summarize_math_entropies(
     stats: MathTokenStats,
     t_cue: Optional[int],
 ) -> MathEntropySummary:
-    """Compute overall and segment-wise entropy summaries for a math pass."""
+    """
+    Compute overall and segment-wise entropy summaries for a math pass.
+
+    :param tok_ents_all: Entropy values for all tokens.
+    :param ent_think: Entropy values for tokens in the think segment.
+    :param ent_answer: Entropy values for tokens in the answer segment.
+    :param stats: Token-count summary for the pass.
+    :param t_cue: Token index from which reconsideration begins, if any.
+    :returns: :class:`MathEntropySummary` with aggregated statistics.
+    """
     tokens_think = stats.tokens_think
     tokens_total = stats.tokens_total
     entropy_overall = finite_mean(tok_ents_all) if tok_ents_all else None
@@ -323,7 +465,18 @@ def build_math_pass_meta(
     stop_reason_think: Optional[str],
     stop_reason_answer: Optional[str],
 ) -> MathPassMeta:
-    """Helper to construct MathPassMeta consistently across math inference cores."""
+    """
+    Helper to construct :class:`MathPassMeta` consistently across math inference cores.
+
+    :param problem: Normalized problem text.
+    :param canon_gold: Canonicalized gold answer, if available.
+    :param injected_cue: Whether a reconsideration cue was injected.
+    :param prev_output: Previous pass output shown to the model.
+    :param cue_prefix_str: Cue prefix string added before reconsideration text.
+    :param stop_reason_think: Stop reason for the think phase.
+    :param stop_reason_answer: Stop reason for the answer phase.
+    :returns: Constructed :class:`MathPassMeta` instance.
+    """
     return MathPassMeta(
         problem=problem,
         canon_gold=canon_gold,
@@ -344,6 +497,12 @@ def pack_math_pass_result(
     """
     Assemble per-pass math result dict with entropy, reconsideration markers,
     and token/tag statistics.
+
+    :param full_text: Full model output including tags.
+    :param ent_think: Entropy values for tokens in the think segment.
+    :param ent_answer: Entropy values for tokens in the answer segment.
+    :param meta: Pass metadata describing the problem and cue configuration.
+    :returns: Dictionary representing a single math pass result.
     """
     tok_ents_all, token_stats = _compute_math_token_stats(ent_think, ent_answer)
     think, answer = extract_blocks(full_text)
@@ -402,6 +561,8 @@ def pack_math_pass_result(
 
 
 __all__ = [
+    "DEFAULT_SECOND_PASS_PHRASE",
+    "build_second_pass_cue_strings",
     "RE_THINK",
     "RE_ANSWER",
     "RECONSIDER_PATTERNS",

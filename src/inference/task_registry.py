@@ -18,7 +18,13 @@ from src.inference.common import OPENR1_PROMPT_TEMPLATE
 
 
 def _resolve_callable(path: Optional[str]) -> Optional[Callable]:
-    """Import dotted-path 'module:attr' lazily and return the referenced callable."""
+    """
+    Import dotted-path ``\"module:attr\"`` lazily and return the referenced callable.
+
+    :param path: Dotted callable path such as ``\"package.module:func\"``.
+    :returns: Resolved callable object, or ``None`` if ``path`` is falsy.
+    :raises ValueError: If ``path`` is not of the form ``\"module:attr\"``.
+    """
     if not path:
         return None
     if ":" not in path:
@@ -30,7 +36,15 @@ def _resolve_callable(path: Optional[str]) -> Optional[Callable]:
 
 @dataclass
 class DatasetSpec:
-    """Dataset loader specification for a task."""
+    """
+    Dataset loader specification for a task.
+
+    :param loader: Dotted path to a loader function (``\"module:attr\"``).
+    :param default_id: Optional default dataset identifier (for example, HF repo ID).
+    :param prompt_column: Optional name of the prompt column.
+    :param answer_column: Optional name of the answer column.
+    :param split: Default dataset split to load (for example, ``\"test\"``).
+    """
 
     loader: str  # dotted path to a loader function
     default_id: Optional[str] = None
@@ -39,7 +53,12 @@ class DatasetSpec:
     split: str = "test"
 
     def loader_fn(self) -> Callable:
-        """Resolve and return the loader function described by this spec."""
+        """
+        Resolve and return the loader function described by this spec.
+
+        :returns: Callable that loads the dataset when invoked.
+        :raises ValueError: If the loader path cannot be resolved.
+        """
         loader_func = _resolve_callable(self.loader)
         if loader_func is None:
             raise ValueError(f"Could not resolve dataset loader: {self.loader}")
@@ -48,7 +67,14 @@ class DatasetSpec:
 
 @dataclass
 class TaskSpec:
-    """Configuration for a logical inference task (prompt, caps, dataset, etc.)."""
+    """
+    Configuration for a logical inference task (prompt, caps, dataset, etc.).
+
+    :param name: Human-readable task name.
+    :param config: Mapping of task-specific configuration options.
+    :param dataset: Optional :class:`DatasetSpec` describing dataset loading.
+    :param notes: Free-form notes documenting the task.
+    """
 
     name: str
     config: Dict[str, Any]
@@ -57,45 +83,81 @@ class TaskSpec:
 
     @property
     def system_prompt(self) -> Optional[str]:
-        """System prompt string for the task, if configured."""
+        """
+        System prompt string for the task, if configured.
+
+        :returns: System prompt string or ``None``.
+        """
         return self.config.get("system_prompt")
 
     @property
     def stop_think(self) -> List[str]:
-        """Stop strings for the think phase."""
+        """
+        Stop strings for the think phase.
+
+        :returns: List of stop substrings applied to think generations.
+        """
         return self.config.get("stop_think", [])
 
     @property
     def stop_answer(self) -> List[str]:
-        """Stop strings for the answer phase."""
+        """
+        Stop strings for the answer phase.
+
+        :returns: List of stop substrings applied to answer generations.
+        """
         return self.config.get("stop_answer", [])
 
     @property
     def two_pass(self) -> bool:
-        """Whether the task uses a two-pass protocol."""
+        """
+        Whether the task uses a two-pass protocol.
+
+        :returns: ``True`` if second-pass inference is enabled.
+        """
         return bool(self.config.get("two_pass", False))
 
     @property
     def think_cap(self) -> Optional[int]:
-        """Maximum think tokens, if applicable."""
+        """
+        Maximum think tokens, if applicable.
+
+        :returns: Token cap for ``<think>`` content, or ``None``.
+        """
         return self.config.get("think_cap")
 
     @property
     def answer_cap(self) -> Optional[int]:
-        """Maximum answer tokens, if applicable."""
+        """
+        Maximum answer tokens, if applicable.
+
+        :returns: Token cap for ``<answer>`` content, or ``None``.
+        """
         return self.config.get("answer_cap")
 
     @property
     def max_output_tokens(self) -> Optional[int]:
-        """Maximum total output tokens for single-pass APIs."""
+        """
+        Maximum total output tokens for single-pass APIs.
+
+        :returns: Cap on total tokens for single-pass completions, or ``None``.
+        """
         return self.config.get("max_output_tokens")
 
     def canon_pred_fn(self) -> Optional[Callable]:
-        """Return the canonicalization function for predictions, if configured."""
+        """
+        Return the canonicalization function for predictions, if configured.
+
+        :returns: Callable used to canonicalize predictions, or ``None``.
+        """
         return _resolve_callable(self.config.get("canonicalize_pred"))
 
     def canon_gold_fn(self) -> Optional[Callable]:
-        """Return the canonicalization function for gold answers, if configured."""
+        """
+        Return the canonicalization function for gold answers, if configured.
+
+        :returns: Callable used to canonicalize gold answers, or ``None``.
+        """
         return _resolve_callable(self.config.get("canonicalize_gold"))
 
 

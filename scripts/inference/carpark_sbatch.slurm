@@ -10,15 +10,18 @@
 
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
+
 # (optional) load modules / activate env
-# module load python/3.10  # or your site’s module
-# source /path/to/conda.sh && conda activate openr1
+source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
+CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
+conda activate "$CONDA_ENV"
 
 # Hugging Face auth (required for --push_to_hub)
 # export HF_TOKEN="paste_your_token_here"
 
 # Keep Triton cache off NFS if possible
-source activate ./openr1
 export TRITON_CACHE_DIR="${TMPDIR:-/tmp}/${USER}/triton"
 mkdir -p "$TRITON_CACHE_DIR"
 

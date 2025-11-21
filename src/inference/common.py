@@ -14,13 +14,15 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from importlib import import_module
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 from src.inference import gateway_utils as _gateway_utils
 from src.inference import math_pass_utils as _math_pass_utils
 
 # Explicitly bind selected gateway_utils helpers so that static analyzers see
 # them on this module without treating them as unused imports.
+DEFAULT_SECOND_PASS_PHRASE = _math_pass_utils.DEFAULT_SECOND_PASS_PHRASE
+build_second_pass_cue_strings = _math_pass_utils.build_second_pass_cue_strings
 OPENR1_PROMPT_TEMPLATE = _gateway_utils.OPENR1_PROMPT_TEMPLATE
 PassOutputs = _gateway_utils.PassOutputs
 append_jsonl_row = _gateway_utils.append_jsonl_row
@@ -73,7 +75,9 @@ _CORE_EXPORTS = [
     "tokenize_prefixes_for_generate",
     "build_generate_kwargs",
     "make_generate_kwargs_for_cap",
+    "build_second_pass_cue_strings",
     "build_second_pass_think_prefixes",
+    "build_extra_pass_results_for_cues",
     "empty_pass_outputs",
     "decode_generated_row",
     "decode_and_score_batch",
@@ -96,6 +100,7 @@ _CORE_EXPORTS = [
     "require_transformers",
     # Explicitly re-export selected helpers so static analyzers
     # can see them on this module without relying on dynamic globals().
+    "DEFAULT_SECOND_PASS_PHRASE",
     "OPENR1_PROMPT_TEMPLATE",
     "extract_problem_and_answer",
     "load_local_json_dataset",
@@ -165,9 +170,14 @@ def move_inputs_to_device(
     inputs: dict,
     device: Optional[torch.device] = None,
 ) -> tuple[dict, torch.Tensor]:
-    """Move a HuggingFace-style inputs dict to CUDA (or provided device).
+    """
+    Move a HuggingFace-style inputs dict to CUDA (or a provided device).
 
-    Returns the computed attention-mask lengths alongside the moved inputs.
+    :param inputs: Mapping of tensor fields (for example, ``input_ids``, ``attention_mask``).
+    :param device: Optional explicit device to move tensors to; if ``None``,
+        CUDA is used when available.
+    :returns: Tuple ``(inputs_on_device, input_lengths)`` where ``input_lengths``
+        is a 1D tensor of attention-mask lengths.
     """
     input_lengths = inputs["attention_mask"].sum(dim=1)
     target_device = device
@@ -192,6 +202,12 @@ def tokenize_prefixes_for_generate(
 
     This centralizes the common pattern used across math/carpark/crossword
     inference loops.
+
+    :param tokenizer: Tokenizer used to encode the prefix strings.
+    :param prefixes: Sequence of prefix strings to tokenize.
+    :param max_length: Maximum sequence length used for truncation.
+    :param device: Optional explicit device to move tensors to.
+    :returns: Tuple ``(inputs_on_device, input_lengths)`` as in :func:`move_inputs_to_device`.
     """
     inputs = tokenizer(
         prefixes,
@@ -218,6 +234,15 @@ def build_generate_kwargs(
 
     If temperature <= 0 → greedy (do_sample=False) and omit temperature/top_p.
     Else → sampling with provided temperature/top_p.
+
+    :param cap: Maximum number of new tokens to generate.
+    :param pad_token_id: Token ID used for padding.
+    :param eos_ids: EOS token ID or IDs used to terminate generation.
+    :param entropy_mode: Entropy computation mode (for example, ``\"reconsider\"`` or ``\"none\"``).
+    :param temperature: Sampling temperature; when ``None`` or non-positive, greedy decoding is used.
+    :param top_p: Optional nucleus-sampling parameter.
+    :param synced_gpus: Whether to request synchronized generation across GPUs when available.
+    :returns: Dictionary of keyword arguments suitable for ``model.generate``.
     """
     do_sample = temperature is not None and float(temperature) > 0.0
     kwargs: Dict[str, Any] = {
@@ -255,7 +280,16 @@ def make_generate_kwargs_for_cap(
 ) -> Dict[str, Any]:
     """
     Convenience wrapper that derives ``pad_token_id`` from a tokenizer and
-    forwards to ``build_generate_kwargs``.
+    forwards to :func:`build_generate_kwargs`.
+
+    :param cap: Maximum number of new tokens to generate.
+    :param tokenizer: Tokenizer providing ``pad_token_id`` and ``eos_token_id``.
+    :param eos_ids: EOS token ID or IDs used to terminate generation.
+    :param entropy_mode: Entropy computation mode (for example, ``\"reconsider\"`` or ``\"none\"``).
+    :param temperature: Sampling temperature; when ``None`` or non-positive, greedy decoding is used.
+    :param top_p: Optional nucleus-sampling parameter.
+    :param synced_gpus: Whether to request synchronized generation across GPUs when available.
+    :returns: Dictionary of keyword arguments suitable for ``model.generate``.
     """
     pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
     return build_generate_kwargs(
@@ -281,6 +315,12 @@ def build_second_pass_think_prefixes(
 
     This helper is shared by math_core and math_llama_core to avoid duplicating
     the row→example mapping logic.
+
+    :param base2_per_ex: Base second-pass prompts, one per example.
+    :param pre1_think: First-pass think-prefix prompts, one per row.
+    :param row_to_ex_idx: For each row, index of the corresponding example.
+    :param cue_str: Cue string to inject into second-pass reasoning.
+    :returns: List of second-pass think-prefix prompts, one per row.
     """
     pre2_think: List[str] = []
     for row_index, _ in enumerate(pre1_think):
@@ -290,10 +330,40 @@ def build_second_pass_think_prefixes(
     return pre2_think
 
 
+def build_extra_pass_results_for_cues(
+    *,
+    two_pass: bool,
+    extra_passes: Optional[Sequence[Tuple[str, "PassOutputs"]]],
+    pack_result_for_extra: "Callable[[str, PassOutputs], Dict[str, Any]]",
+    names: Sequence[str] = ("pass2a", "pass2b", "pass2c"),
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Build result dicts for optional multi-cue reconsideration passes
+    (pass2a / pass2b / pass2c) given per-cue PassOutputs.
+
+    :param two_pass: Whether second-pass generation is enabled.
+    :param extra_passes: Optional sequence of ``(cue_str, PassOutputs)`` pairs.
+    :param pack_result_for_extra: Callback that converts a cue and outputs into a result dict.
+    :param names: Keys to use for extra passes (for example, ``(\"pass2a\", \"pass2b\")``).
+    :returns: Mapping from pass names to packed result dictionaries.
+    """
+    extra_pass_results: Dict[str, Dict[str, Any]] = {}
+    if two_pass and extra_passes:
+        for idx, (cue_str_extra, outputs_extra) in enumerate(extra_passes):
+            if idx >= len(names):
+                break
+            name = names[idx]
+            extra_pass_results[name] = pack_result_for_extra(cue_str_extra, outputs_extra)
+    return extra_pass_results
+
+
 def empty_pass_outputs(total_rows: int) -> "PassOutputs":
     """
     Construct an empty ``PassOutputs`` instance for cases where a pass is
     skipped (e.g., disabled second pass).
+
+    :param total_rows: Number of rows to represent in the empty outputs.
+    :returns: A :class:`PassOutputs` instance with empty fields.
     """
     return PassOutputs(
         full_texts=[""] * total_rows,
@@ -307,8 +377,18 @@ def empty_pass_outputs(total_rows: int) -> "PassOutputs":
 def decode_generated_row(tokenizer, seqs: torch.Tensor, input_lengths: torch.Tensor, row_i: int,
                          *, skip_special_tokens: bool = True) -> Tuple[torch.Tensor, str, int]:
     """
-    Given batched generation outputs, return (gen_ids, decoded_text, start_tok_idx)
-    for a single row. This de-duplicates the common indexing/decoding pattern.
+    Given batched generation outputs, return ``(gen_ids, decoded_text, start_tok_idx)``
+    for a single row.
+
+    This de-duplicates the common indexing/decoding pattern used when
+    post-processing HF generate outputs.
+
+    :param tokenizer: Tokenizer used to decode token IDs into text.
+    :param seqs: Tensor of generated token IDs for all rows.
+    :param input_lengths: Tensor of input lengths for each row.
+    :param row_i: Index of the row to decode.
+    :param skip_special_tokens: Whether to skip tokenizer special tokens when decoding.
+    :returns: Tuple of generated IDs for the row, decoded text, and the start index.
     """
     start_tok_idx = int(input_lengths[row_i].item())
     gen_ids = seqs[row_i, start_tok_idx:]
@@ -325,6 +405,13 @@ def _trim_and_classify(
 ) -> Tuple[str, str]:
     """
     Helper to trim on stop strings and classify stop reason for a single row.
+
+    :param gen_ids: Generated token IDs for the row.
+    :param raw_text: Raw decoded text for the row.
+    :param stop_strings: Collection of stop substrings to look for.
+    :param cap: Maximum number of new tokens allowed.
+    :param eos_ids: Optional sequence of EOS token IDs.
+    :returns: Tuple ``(trimmed_text, stop_reason)``.
     """
     active_stop_strings = list(stop_strings) or []
     found_stop = any(stop_str in raw_text for stop_str in active_stop_strings)
@@ -347,7 +434,14 @@ def _trim_and_classify(
 
 @dataclass
 class _EntropyRowContext:
-    """Container for row-wise entropy computation inputs."""
+    """
+    Container for row-wise entropy computation inputs.
+
+    :param scores: Sequence of score tensors returned by ``generate``.
+    :param sequences: Tensor of generated token IDs.
+    :param eos_ids: EOS token IDs used to cap entropy computation, if any.
+    :param model: Model instance used to compute entropy fallbacks.
+    """
 
     scores: Any
     sequences: Any
@@ -357,7 +451,14 @@ class _EntropyRowContext:
 
 @dataclass
 class GenerationLimits:
-    """Shared cap + sampling-count configuration used by multiple runners."""
+    """
+    Shared cap and sampling-count configuration used by multiple runners.
+
+    :param batch_size: Number of examples per batch.
+    :param num_samples: Number of samples to generate per problem.
+    :param think_cap: Token cap for ``<think>`` generations.
+    :param answer_cap: Token cap for ``<answer>`` generations.
+    """
 
     batch_size: int
     num_samples: int
@@ -366,7 +467,13 @@ class GenerationLimits:
 
 
 def repeat_for_samples(values: Sequence[str], num_samples: int) -> List[str]:
-    """Repeat each value num_samples times (row-major expansion)."""
+    """
+    Repeat each value ``num_samples`` times using row-major expansion.
+
+    :param values: Sequence of base values to repeat.
+    :param num_samples: Number of repetitions per value.
+    :returns: Expanded list of values repeated for each sample.
+    """
     return [value for value in values for _ in range(num_samples)]
 
 
@@ -438,8 +545,10 @@ def decode_and_score_batch(
     ctx: DecodeBatchContext,
 ) -> Tuple[List[str], List[List[float]], List[str]]:
     """
-    Shared row-wise decode + entropy loop used by math/carpark/crossword _gen_batch
-    helpers. Returns (decoded_texts, entropy_series, stop_reasons).
+    Shared row-wise decode and entropy loop used by math/carpark/crossword helpers.
+
+    :param ctx: Decode context bundling tokenizer, scores, sequences, and config.
+    :returns: Tuple ``(decoded_texts, entropy_series, stop_reasons)`` per row.
     """
     total_rows = ctx.sequences.shape[0]
     decoded_texts: List[str] = []
@@ -482,7 +591,15 @@ def decode_and_score_batch(
 
 @dataclass
 class GenerateBatchParams:
-    """Static parameters for a single generate+decode call."""
+    """
+    Static parameters for a single generate-and-decode call.
+
+    :param prefixes: String prefixes to feed into the model.
+    :param cap: Maximum number of new tokens to generate per prefix.
+    :param stop_strings: Stop substrings that terminate generation.
+    :param config_like: Object exposing ``eos_ids``, ``entropy_mode``, ``temperature``, and ``top_p``.
+    :param max_length: Maximum tokenized length for inputs.
+    """
 
     prefixes: Sequence[str]
     cap: int
@@ -493,7 +610,14 @@ class GenerateBatchParams:
 
 @dataclass
 class GenerateBatchRuntime:
-    """Runtime dependencies required to run generation."""
+    """
+    Runtime dependencies required to run generation.
+
+    :param tokenizer: Tokenizer used for encoding and decoding.
+    :param model: Model instance exposing a ``generate`` method.
+    :param torch_module: Imported :mod:`torch` module.
+    :param stopping_criteria_list_cls: Class used to construct stopping criteria lists.
+    """
 
     tokenizer: Any
     model: Any
@@ -514,8 +638,19 @@ def run_generate_batch(
     stopping_criteria_list_cls: Any,
 ) -> Tuple[List[str], List[List[float]], Any, Any, List[str]]:
     """
-    Convenience wrapper that constructs GenerateBatchParams and GenerateBatchRuntime
-    and delegates to generate_and_score_batch.
+    Convenience wrapper that constructs :class:`GenerateBatchParams` and
+    :class:`GenerateBatchRuntime` and delegates to :func:`generate_and_score_batch`.
+
+    :param prefixes: String prefixes to feed into the model.
+    :param cap: Maximum number of new tokens to generate per prefix.
+    :param stop_strings: Stop substrings that terminate generation.
+    :param tokenizer: Tokenizer used for encoding and decoding.
+    :param model: Model instance exposing a ``generate`` method.
+    :param config_like: Object exposing ``eos_ids``, ``entropy_mode``, ``temperature``, and ``top_p``.
+    :param max_length: Maximum tokenized length for inputs.
+    :param torch_module: Imported :mod:`torch` module.
+    :param stopping_criteria_list_cls: Class used to construct stopping criteria lists.
+    :returns: Tuple ``(decoded_texts, entropy_series, input_lengths, sequences, stop_reasons)``.
     """
     params = GenerateBatchParams(
         prefixes=prefixes,
@@ -542,6 +677,10 @@ def generate_and_score_batch(
 
     ``params.config_like`` must expose ``eos_ids``, ``entropy_mode``,
     and ``top_p`` attributes.
+
+    :param params: Static parameters describing prefixes, caps, and config-like object.
+    :param runtime: Runtime dependencies including tokenizer, model, and torch module.
+    :returns: Tuple ``(decoded_texts, entropy_series, input_lengths, sequences, stop_reasons)``.
     """
     inputs, input_lengths = tokenize_prefixes_for_generate(
         runtime.tokenizer,
@@ -596,7 +735,12 @@ def generate_and_score_batch(
 
 def classify_stop_reason(found_stop: bool, has_eos: bool, hit_max: bool) -> str:
     """
-    Map boolean stop conditions into a standardized stop_reason string.
+    Map boolean stop conditions into a standardized ``stop_reason`` string.
+
+    :param found_stop: Whether a configured stop substring was observed.
+    :param has_eos: Whether an EOS token was observed in the generated IDs.
+    :param hit_max: Whether generation hit the maximum new-token cap.
+    :returns: One of ``\"stop_token\"``, ``\"eos\"``, ``\"max_new_tokens\"``, or ``\"other\"``.
     """
     if found_stop:
         return "stop_token"
@@ -635,12 +779,22 @@ class StopOnSubstrings(StoppingCriteria):
         return False
 
     def has_stops(self) -> bool:
-        """Return True if any stop sequences are configured."""
+        """
+        Indicate whether any stop sequences are configured.
+
+        :returns: ``True`` if at least one stop sequence is present, otherwise ``False``.
+        """
         return bool(self.stop_ids)
 
 
 def first_eos_any(token_ids: torch.Tensor, eos_id_list: Optional[Sequence[int]]) -> int:
-    """Return the first EOS position in a sequence, or full length if absent."""
+    """
+    Return the first EOS position in a sequence, or full length if absent.
+
+    :param token_ids: 1D tensor of token IDs for a single sequence.
+    :param eos_id_list: Optional sequence of EOS token IDs to search for.
+    :returns: Index of the first EOS token, or ``len(token_ids)`` if none is found.
+    """
     if not eos_id_list:
         return token_ids.numel()
     hit_positions: List[int] = []
@@ -655,6 +809,11 @@ def entropy_from_start_index(model, seq_ids: torch.Tensor, start_idx: int) -> Li
     """
     Compute token-wise entropy starting at position start_idx (inclusive).
     Safe for NaNs thanks to re-centering.
+
+    :param model: Autoregressive language model exposing ``forward`` with ``use_cache``.
+    :param seq_ids: 2D tensor of token IDs for at least one sequence.
+    :param start_idx: Index of the first token at which to begin entropy computation.
+    :returns: List of entropy values, one per token from ``start_idx`` onward.
     """
     device = next(model.parameters()).device
     seq_ids = seq_ids.to(device)
@@ -714,6 +873,19 @@ def build_math_inference_config_kwargs(
 ) -> Dict[str, Any]:
     """
     Build the common kwargs dict for math-style inference configs / loops.
+
+    :param batch_size: Number of examples to process per batch.
+    :param num_samples: Number of samples to generate per problem.
+    :param temperature: Sampling temperature for generation.
+    :param top_p: Nucleus-sampling parameter for generation.
+    :param entropy_mode: Entropy computation mode (for example, ``\"reconsider\"``).
+    :param eos_ids: EOS token ID or IDs used to terminate generation.
+    :param two_pass: Whether to enable the reconsideration second pass.
+    :param second_pass_phrase: Cue phrase injected into second-pass prompts.
+    :param second_pass_use_sample_idx: Preferred sample index to show in pass 2.
+    :param think_cap: Token cap for ``<think>`` generations.
+    :param answer_cap: Token cap for ``<answer>`` generations.
+    :returns: Keyword-argument dictionary suitable for :class:`MathInferenceConfig`.
     """
     return {
         "batch_size": batch_size,
@@ -732,7 +904,11 @@ def build_math_inference_config_kwargs(
 
 def build_math_inference_config_kwargs_from_args(args, eos_ids):
     """
-    Map common CLI args into kwargs for math-style inference loops / configs.
+    Map common CLI args into kwargs for math-style inference loops and configs.
+
+    :param args: Argument namespace exposing common math-inference options.
+    :param eos_ids: EOS token ID or IDs derived from the tokenizer.
+    :returns: Keyword-argument dictionary suitable for :class:`MathInferenceConfig`.
     """
     return build_math_inference_config_kwargs(
         batch_size=args.batch_size,
@@ -751,7 +927,13 @@ def build_math_inference_config_kwargs_from_args(args, eos_ids):
 
 def require_torch(caller: str):
     """
-    Import and return the ``torch`` module, raising a user-friendly RuntimeError if unavailable.
+    Import and return the ``torch`` module.
+
+    A user-friendly :class:`RuntimeError` is raised if the dependency is missing.
+
+    :param caller: Human-readable name of the caller used in error messages.
+    :returns: Imported :mod:`torch` module.
+    :raises RuntimeError: If the ``torch`` package is not available.
     """
     try:
         return import_module("torch")
@@ -765,7 +947,11 @@ def require_transformers(caller: str):
     """
     Import and return the ``transformers`` module.
 
-    Raise a user-friendly RuntimeError if unavailable.
+    A user-friendly :class:`RuntimeError` is raised if the dependency is missing.
+
+    :param caller: Human-readable name of the caller used in error messages.
+    :returns: Imported :mod:`transformers` module.
+    :raises RuntimeError: If the ``transformers`` package is not available.
     """
     try:
         return import_module("transformers")

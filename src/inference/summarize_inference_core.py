@@ -17,7 +17,12 @@ from typing import Any, Dict, List, Optional
 
 
 def mean_safe(values: List[Optional[float]]) -> Optional[float]:
-    """Return the mean of non-None numeric values, or None if empty."""
+    """
+    Return the mean of non-``None`` numeric values, or ``None`` if empty.
+
+    :param values: List of optional numeric values.
+    :returns: Mean of the non-``None`` entries, or ``None`` if none are present.
+    """
     numeric_values: List[float] = []
     for value in values:
         if value is None:
@@ -32,19 +37,35 @@ def mean_safe(values: List[Optional[float]]) -> Optional[float]:
 
 
 def pct(numerator: int, denominator: int) -> str:
-    """Format a numerator/denominator pair as a percentage string."""
+    """
+    Format a numerator/denominator pair as a percentage string.
+
+    :param numerator: Number of successful cases.
+    :param denominator: Total number of cases.
+    :returns: Percentage formatted as a string, or ``\"-\"`` if ``denominator`` is zero.
+    """
     if denominator == 0:
         return "-"
     return f"{100.0 * numerator / denominator:5.1f}%"
 
 
 def fmt_float(value: Optional[float]) -> str:
-    """Format an optional float with fixed width, or '-' for missing."""
+    """
+    Format an optional float with fixed width, or ``\"-\"`` for missing.
+
+    :param value: Float value to format.
+    :returns: Fixed-width string representation or ``\"-\"`` if ``value`` is ``None``.
+    """
     return "-" if value is None else f"{value:6.3f}"
 
 
 def nat_step_from_path(path: str) -> Optional[int]:
-    """Extract the integer step#### from a results file path, if present."""
+    """
+    Extract the integer ``step####`` from a results file path, if present.
+
+    :param path: Path to a JSONL results file.
+    :returns: Parsed step number, or ``None`` if no ``step`` pattern is found.
+    """
     match = re.search(r"step(\d+)", path)
     if not match:
         return None
@@ -52,7 +73,13 @@ def nat_step_from_path(path: str) -> Optional[int]:
 
 
 def scan_files(root: str, split: Optional[str]) -> List[str]:
-    """Return sorted JSONL result paths under a root, optionally filtered by split substring."""
+    """
+    Return sorted JSONL result paths under a root, optionally filtered by split.
+
+    :param root: Root directory under which to search for JSONL files.
+    :param split: Optional substring that must appear in the filename (for example, ``\"test\"``).
+    :returns: Sorted list of JSONL file paths ordered by step then name.
+    """
     matches: List[str] = []
     for dirpath, _, filenames in os.walk(root):
         for filename in filenames:
@@ -77,7 +104,13 @@ DEFAULT_PROMPT_KEYS = [
 
 
 def _get_nested(mapping: Dict[str, Any], dotpath: str) -> Optional[Any]:
-    """Return nested value from a dict via a dotted path like 'a.b.c', or None if missing."""
+    """
+    Return a nested value from a dict via a dotted path like ``\"a.b.c\"``.
+
+    :param mapping: Mapping to traverse.
+    :param dotpath: Dotted key path specifying nested keys.
+    :returns: Nested value if present, otherwise ``None``.
+    """
     cur: Any = mapping
     for part in dotpath.split("."):
         if isinstance(cur, dict) and part in cur:
@@ -88,7 +121,14 @@ def _get_nested(mapping: Dict[str, Any], dotpath: str) -> Optional[Any]:
 
 
 def extract_prompt(rec: Dict[str, Any], preferred_key: str, strict: bool) -> Optional[str]:
-    """Extract a prompt string from a record using a preferred key and fallbacks."""
+    """
+    Extract a prompt string from a record using a preferred key and fallbacks.
+
+    :param rec: Record dictionary from a JSONL row.
+    :param preferred_key: Dotted key path to prefer when looking for the prompt.
+    :param strict: If ``True``, only ``preferred_key`` is considered.
+    :returns: Extracted prompt string, or ``None`` if not found.
+    """
     value = _get_nested(rec, preferred_key) if preferred_key else None
     if value is not None or strict:
         return str(value) if value is not None else None
@@ -103,6 +143,10 @@ def extract_group(rec: Dict[str, Any], key: str) -> str:
     """
     Grouping key for per-group capping.
     For crosswords, the default 'problem' is the clue text (good grouping).
+
+    :param rec: Record dictionary from a JSONL row.
+    :param key: Grouping key such as ``\"problem\"`` or a dotted path.
+    :returns: Group name string used for aggregation.
     """
     if key == "problem":
         return str(rec.get("problem", ""))
@@ -117,7 +161,14 @@ def should_drop_group(
     drop_groups: set[str],
     filter_scope: str,
 ) -> bool:
-    """Return True if a record belongs to a group that should be dropped."""
+    """
+    Return ``True`` if a record belongs to a group that should be dropped.
+
+    :param record: Record dictionary from a JSONL row.
+    :param drop_groups: Set of group names to exclude.
+    :param filter_scope: Scope string such as ``\"per_problem\"`` or ``\"global\"``.
+    :returns: ``True`` if the record's group is in ``drop_groups``.
+    """
     if not drop_groups:
         return False
     if filter_scope == "per_problem":
@@ -128,14 +179,26 @@ def should_drop_group(
 
 
 def _substr(hay: Optional[str], needle: Optional[str]) -> bool:
-    """Return True if needle is a substring of hay, handling Nones."""
+    """
+    Return ``True`` if ``needle`` is a substring of ``hay``, handling ``None`` values.
+
+    :param hay: Haystack string.
+    :param needle: Needle string.
+    :returns: ``True`` if ``needle`` appears in ``hay``.
+    """
     if not hay or not needle:
         return False
     return needle in hay
 
 
 def _exact(left: Optional[str], right: Optional[str]) -> bool:
-    """Return True iff both strings are non-None and exactly equal."""
+    """
+    Return ``True`` iff both strings are non-``None`` and exactly equal.
+
+    :param left: First string.
+    :param right: Second string.
+    :returns: ``True`` if both are non-``None`` and identical.
+    """
     if left is None or right is None:
         return False
     return left == right
@@ -154,9 +217,11 @@ def maybe_recompute_correctness(
       - ``\"substring\"`` → treat correct if gold is a substring of pred
       - ``\"exact\"`` → treat correct only if strings match exactly
 
-    Returns:
-      - ``True`` or ``False`` if an override should be used
-      - ``None`` to keep the original correctness flag.
+    :param pass_data: Per-pass result dictionary containing canonical fields.
+    :param gold_canon: Canonicalized gold answer string.
+    :param mode: Recompute mode such as ``\"none\"``, ``\"substring\"``, or ``\"exact\"``.
+    :returns: ``True`` or ``False`` if an override should be used, or ``None`` to
+        keep the original correctness flag.
     """
     # Backwards compatibility: both "none" and "original" mean "no override".
     if mode in ("none", "original"):
@@ -357,7 +422,15 @@ class StepAgg:
         if pass1:
             self._add_pass1(pass1, problem, gold_canon, recompute_mode)
 
-        pass2 = record.get("pass2") or {}
+        # Handle multi-cue second-pass variants by preferring the canonical
+        # ``pass2`` field and falling back to pass2c/pass2b/pass2a when needed.
+        pass2 = (
+            record.get("pass2")
+            or record.get("pass2c")
+            or record.get("pass2b")
+            or record.get("pass2a")
+            or {}
+        )
         if pass2:
             self._add_pass2(pass2, problem, gold_canon, recompute_mode)
 
@@ -647,7 +720,13 @@ def group_name_for_record(
     record: Dict[str, Any],
     filter_scope: str,
 ) -> str:
-    """Return the group key (problem or global) for a record."""
+    """
+    Return the group key (problem or global) for a record.
+
+    :param record: Record dictionary from a JSONL row.
+    :param filter_scope: Scope string such as ``\"per_problem\"`` or ``\"global\"``.
+    :returns: Group name string used for aggregation.
+    """
     if filter_scope == "per_problem":
         return str(record.get("problem", ""))
     return "__GLOBAL__"
@@ -659,7 +738,15 @@ def accumulate_prompt_variants(
     variants_by_group: Dict[str, set],
     counts: Dict[str, int],
 ) -> None:
-    """Update prompt-variant tracking structures from a single JSON record."""
+    """
+    Update prompt-variant tracking structures from a single JSON record.
+
+    :param record: Record dictionary from a JSONL row.
+    :param args: Parsed CLI arguments controlling prompt extraction and grouping.
+    :param variants_by_group: Mapping from group name to set of prompt variants.
+    :param counts: Mutable counter dictionary tracking record counts.
+    :returns: ``None``. The mappings are updated in place.
+    """
     counts["seen"] += 1
     prompt = extract_prompt(record, args.prompt_key, args.strict_prompt_key)
     if prompt is None:
@@ -674,7 +761,12 @@ def accumulate_prompt_variants(
 
 
 def build_step_csv_row(aggregator: StepAgg) -> List[Any]:
-    """Build a single CSV row of numeric metrics for one step."""
+    """
+    Build a single CSV row of numeric metrics for one step.
+
+    :param aggregator: :class:`StepAgg` instance containing aggregated metrics.
+    :returns: List of CSV column values representing a single step.
+    """
     num_examples = len(aggregator.examples) if aggregator.examples else 0
 
     acc1_sample = (

@@ -24,7 +24,8 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # ── Conda env ───────────────────────────────────────────────────────────────
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
+conda activate "$CONDA_ENV"
 echo "✅ Conda env: $(which python)"
 python --version
 
@@ -120,6 +121,7 @@ echo "→ Output: $OUTDIR"
 
 # ── Inference (mirror your Qwen run) ────────────────────────────────────────
 DTYPE="${DTYPE:-float16}"
+RECONSIDER_CUE="Hold on, this reasoning might be wrong. Let's go back and check each step carefully. Actually, this approach doesn't look correct. Let's restart and work through the solution more systematically. Wait, we need to reconsider. Let's think this through step by step."
 
 python -u "$SCRIPT_PATH" \
   --model_name_or_path "$MODEL_NAME_OR_PATH" \
@@ -135,7 +137,7 @@ python -u "$SCRIPT_PATH" \
   --dataset_id MATH-500 \
   --split test \
   --two_pass \
-  --second_pass_phrase "Wait, we need to reconsider. Let's think this through step by step." \
+  --second_pass_phrase "$RECONSIDER_CUE" \
   --think_cap 750 \
   --answer_cap 50 \
   $STEP_FLAG

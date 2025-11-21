@@ -44,6 +44,7 @@ from src.annotate.prompts import (
     SHIFT_JUDGE_SYSTEM_PROMPT as PROMPT_SYSTEM,
     SHIFT_JUDGE_USER_TEMPLATE as PROMPT_USER_TEMPLATE,
 )
+from src.annotate.clean_failed_shift_labels import clean_root as _clean_failed_root
 
 try:
     from openai import OpenAIError as _OpenAIError
@@ -52,6 +53,18 @@ except ImportError:  # pragma: no cover - optional dependency
         """Fallback OpenAI error when openai package is absent."""
 
 OpenAIError = _OpenAIError
+
+try:
+    import httpx
+    HTTPError = httpx.HTTPError
+except ImportError:  # pragma: no cover - optional dependency
+    class HTTPError(Exception):  # type: ignore[too-many-ancestors]
+        """Fallback HTTP error when httpx is unavailable."""
+
+try:
+    from portkey_ai import Portkey  # type: ignore[attr-defined]
+except ImportError:  # pragma: no cover - optional dependency
+    Portkey = None  # type: ignore[assignment]
 
 # Ensure repo root is on sys.path when executed from src/scripts/annotate
 ROOT = Path(__file__).resolve().parents[3]
@@ -89,31 +102,72 @@ def _dump_filtered(prompt: str):
         file_handle.write(prompt)
     logging.warning("LLM filtered/failed; saved prompt to %s", filename)
 
+
+def _sanitize_jsonish(text: str) -> str:
+    """
+    Best-effort cleanup for JSON-like text that may contain invalid escape
+    sequences produced by LLMs (e.g., LaTeX-style \\( ... \\)).
+
+    This is intentionally conservative: we strip a small set of known-bad
+    escapes that commonly appear in math explanations but are illegal in
+    strict JSON (\\(, \\), \\[, \\]).
+    """
+    if not text:
+        return text
+    return (
+        text.replace("\\(", "(")
+        .replace("\\)", ")")
+        .replace("\\[", "[")
+        .replace("\\]", "]")
+    )
+
+
 def _json_from_text(text: str) -> Optional[Dict[str, Any]]:
     """Extract the first top-level JSON object from arbitrary text."""
     text = (text or "").strip()
     if text.startswith("{") and text.endswith("}"):
         try:
-            return json.loads(text)
+            return json.loads(_sanitize_jsonish(text))
         except JSONDecodeError:
             return None
     i = text.find("{")
     j = text.rfind("}")
     if i != -1 and j != -1 and j > i:
         try:
-            return json.loads(text[i:j+1])
+            return json.loads(_sanitize_jsonish(text[i:j+1]))
         except JSONDecodeError:
             return None
     return None
 
-# ───────────────────── Client factory (v1 preferred) ─────────────────────
+# ───────────────────── Client factory (Azure / Portkey) ─────────────────────
 _CLIENT_STATE = {"client": None, "uses_v1": False}
 
 def _client_lazy(client_cfg: Dict[str, Any]) -> None:
-    """Create and cache an Azure OpenAI client (Responses preferred)."""
+    """Create and cache an LLM client (Azure or Portkey)."""
     if _CLIENT_STATE["client"] is not None:
         return
 
+    backend = client_cfg.get("backend", "azure")
+
+    if backend == "portkey":
+        # Portkey AI Gateway / Princeton AI Sandbox path.
+        if Portkey is None:
+            raise RuntimeError(
+                "backend='portkey' requires the portkey-ai package: pip install portkey-ai"
+            )
+        api_key = os.getenv("AI_SANDBOX_KEY") or os.getenv("PORTKEY_API_KEY", "")
+        if not api_key:
+            raise RuntimeError(
+                "backend='portkey' expects AI_SANDBOX_KEY (or PORTKEY_API_KEY) in the environment."
+            )
+
+        client = Portkey(api_key=api_key)
+        _CLIENT_STATE["client"] = client
+        # Portkey client exposes only chat.completions in this flow.
+        _CLIENT_STATE["uses_v1"] = False
+        return
+
+    # Default: Azure OpenAI via openai>=1.x helpers.
     endpoint = client_cfg["endpoint"].rstrip("/")
     api_key = os.getenv("AZURE_OPENAI_API_KEY", "")
     if not api_key:
@@ -155,21 +209,21 @@ def llm_judge_shift(
                 instructions=PROMPT_SYSTEM,
                 input=[{"role": "user", "content": user_content}],
                 temperature=0.0,
-                max_output_tokens=500,
+                max_output_tokens=1000,
             )
             content = getattr(resp, "output_text", None) or ""
         else:
             resp = _CLIENT_STATE["client"].chat.completions.create(
                 model=deployment,
                 temperature=0.0,
-                max_tokens=500,
+                max_tokens=1000,
                 messages=[
                     {"role": "system", "content": PROMPT_SYSTEM},
                     {"role": "user", "content": user_content},
                 ],
             )
             content = resp.choices[0].message.content if resp and resp.choices else ""
-    except OpenAIError as error:
+    except (OpenAIError, HTTPError) as error:
         _dump_filtered(user_content + "\n\n[ERROR] " + repr(error))
         return {
             "shift_in_reasoning": False,
@@ -243,44 +297,50 @@ def _load_records(path: str) -> List[Dict[str, Any]]:
     return records
 
 
-def _prefilter_records(records: List[Dict[str, Any]]) -> List[int]:
-    """Apply prefilter to find candidates and stamp obvious FALSE cases."""
+def _prefilter_records_for_pass(
+    records: List[Dict[str, Any]],
+    pass_key: str,
+    force_relabel: bool = False,
+) -> List[int]:
+    """Apply prefilter for a specific pass section and stamp obvious FALSE cases."""
     todo: List[int] = []
     for i, rec in enumerate(records):
         if "__raw__" in rec:
             continue
-        pass1_section = rec.get("pass1") or {}
-        if "shift_in_reasoning_v1" in pass1_section:
+        section = rec.get(pass_key) or {}
+        if not isinstance(section, dict):
+            continue
+        if "shift_in_reasoning_v1" in section and not force_relabel:
             continue
 
-        out = pass1_section.get("output")
-        if not out:
+        out = section.get("output") or ""
+        if not out.strip():
+            # No text to inspect; conservatively mark FALSE and skip.
+            section["shift_in_reasoning_v1"] = False
+            rec[pass_key] = section
             continue
 
-        think = _extract_think(out)
-        if not think:
-            pass1_section["shift_in_reasoning_v1"] = False
-            rec["pass1"] = pass1_section
-            continue
-
+        # If there is no explicit <think> block (e.g., some OpenRouter runs),
+        # fall back to using the full output as the "think" text for cue search.
+        think = _extract_think(out) or out
         cues, pos = _find_shift_cues(think)
-        pass1_section["_shift_prefilter_markers"] = cues
-        pass1_section["_shift_prefilter_pos"] = pos
-        rec["pass1"] = pass1_section
+        section["_shift_prefilter_markers"] = cues
+        section["_shift_prefilter_pos"] = pos
+        rec[pass_key] = section
         todo.append(i)
     return todo
 
 
-def _mark_no_cue(pass1_section: Dict[str, Any], deployment: str) -> None:
+def _mark_no_cue(pass_section: Dict[str, Any], deployment: str) -> None:
     """Set conservative FALSE annotation when no cue is present."""
-    pass1_section["shift_in_reasoning_v1"] = False
-    pass1_section["shift_markers_v1"] = []
-    pass1_section["shift_first_marker_char"] = -1
-    pass1_section["shift_before_excerpt"] = ""
-    pass1_section["shift_after_excerpt"] = ""
-    pass1_section["shift_rationale_gpt"] = "No explicit cue; conservative FALSE."
-    pass1_section["shift_rationale_gpt_model"] = deployment
-    pass1_section["shift_rationale_gpt_time"] = time.strftime(
+    pass_section["shift_in_reasoning_v1"] = False
+    pass_section["shift_markers_v1"] = []
+    pass_section["shift_first_marker_char"] = -1
+    pass_section["shift_before_excerpt"] = ""
+    pass_section["shift_after_excerpt"] = ""
+    pass_section["shift_rationale_gpt"] = "No explicit cue; conservative FALSE."
+    pass_section["shift_rationale_gpt_model"] = deployment
+    pass_section["shift_rationale_gpt_time"] = time.strftime(
         "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
     )
 
@@ -292,26 +352,42 @@ class AnnotateOpts:
     max_calls: Optional[int]
     dry_run: bool
     jitter: float
-    deployment: str
+    force_relabel: bool
     client_cfg: Dict[str, Any]
+    passes: List[str]
 
 
-def _annotate_record(rec: Dict[str, Any], opts: AnnotateOpts, rng: random.Random) -> bool:
-    """Annotate a single record; returns True if an LLM call was made."""
-    pass1_section = rec.get("pass1") or {}
-    out = pass1_section.get("output") or ""
-    think = _extract_think(out) or ""
+def _annotate_record_for_pass(
+    rec: Dict[str, Any],
+    pass_key: str,
+    opts: AnnotateOpts,
+    deployment: str,
+    rng: random.Random,
+) -> bool:
+    """Annotate a single pass section within a record; returns True if an LLM call was made."""
+    pass_section = rec.get(pass_key) or {}
+    if not isinstance(pass_section, dict):
+        return False
+
+    out = pass_section.get("output") or ""
+    # Fall back to the full output when <think> tags are absent.
+    think = _extract_think(out) or out or ""
     problem = rec.get("problem") or rec.get("clue") or ""
-    cues = pass1_section.get("_shift_prefilter_markers") or []
-    pos = pass1_section.get("_shift_prefilter_pos")
+    cues = pass_section.get("_shift_prefilter_markers") or []
+    pos = pass_section.get("_shift_prefilter_pos")
 
-    if not cues:
-        _mark_no_cue(pass1_section, opts.deployment)
-        rec["pass1"] = pass1_section
+    # If there is literally no text, mark FALSE without calling the LLM.
+    if not think.strip():
+        _mark_no_cue(pass_section, deployment)
+        rec[pass_key] = pass_section
         return False
 
     if opts.dry_run:
-        logging.info("DRY-RUN would annotate id=%s", record_id_for_logs(rec))
+        logging.info(
+            "DRY-RUN would annotate %s for id=%s",
+            pass_key,
+            record_id_for_logs(rec),
+        )
         return False
 
     with timed(f"llm_call id={record_id_for_logs(rec)}"):
@@ -326,19 +402,19 @@ def _annotate_record(rec: Dict[str, Any], opts: AnnotateOpts, rng: random.Random
             },
         )
 
-    pass1_section["shift_in_reasoning_v1"] = bool(result.get("shift_in_reasoning", False))
-    pass1_section["shift_markers_v1"] = list(result.get("markers_found", []) or cues)
-    pass1_section["shift_first_marker_char"] = int(
+    pass_section["shift_in_reasoning_v1"] = bool(result.get("shift_in_reasoning", False))
+    pass_section["shift_markers_v1"] = list(result.get("markers_found", []) or cues)
+    pass_section["shift_first_marker_char"] = int(
         result.get("first_marker_index", -1 if pos is None else pos)
     )
-    pass1_section["shift_before_excerpt"] = _clamp(result.get("before_excerpt", ""), 240)
-    pass1_section["shift_after_excerpt"] = _clamp(result.get("after_excerpt", ""), 280)
-    pass1_section["shift_rationale_gpt"] = _clamp(result.get("explanation_short", ""), 300)
-    pass1_section["shift_rationale_gpt_model"] = opts.deployment
-    pass1_section["shift_rationale_gpt_time"] = time.strftime(
+    pass_section["shift_before_excerpt"] = _clamp(result.get("before_excerpt", ""), 240)
+    pass_section["shift_after_excerpt"] = _clamp(result.get("after_excerpt", ""), 280)
+    pass_section["shift_rationale_gpt"] = _clamp(result.get("explanation_short", ""), 300)
+    pass_section["shift_rationale_gpt_model"] = deployment
+    pass_section["shift_rationale_gpt_time"] = time.strftime(
         "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
     )
-    rec["pass1"] = pass1_section
+    rec[pass_key] = pass_section
     if opts.jitter > 0:
         time.sleep(rng.uniform(0.0, opts.jitter))
     return True
@@ -349,16 +425,33 @@ def annotate_file(path: str, opts: AnnotateOpts):
     logging.info("Annotating: %s", path)
     records = _load_records(path)
 
-    todo_idxs = _prefilter_records(records)
-    rng = random.Random(opts.seed)
-    rng.shuffle(todo_idxs)
-    if opts.max_calls is not None:
-        todo_idxs = todo_idxs[:opts.max_calls]
-
     calls = 0
-    for idx in todo_idxs:
-        if _annotate_record(records[idx], opts, rng):
-            calls += 1
+    passes = opts.passes or ["pass1"]
+    for pass_key in passes:
+        logging.info("Prefiltering pass section %s", pass_key)
+        todo_idxs = _prefilter_records_for_pass(
+            records,
+            pass_key,
+            force_relabel=opts.force_relabel,
+        )
+        rng = random.Random(opts.seed)
+        rng.shuffle(todo_idxs)
+        if opts.max_calls is not None:
+            remaining = max(opts.max_calls - calls, 0)
+            todo_idxs = todo_idxs[:remaining]
+        for idx in todo_idxs:
+            if opts.max_calls is not None and calls >= opts.max_calls:
+                break
+            if _annotate_record_for_pass(
+                records[idx],
+                pass_key,
+                opts,
+                opts.client_cfg.get("deployment", ""),
+                rng,
+            ):
+                calls += 1
+        if opts.max_calls is not None and calls >= opts.max_calls:
+            break
 
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as tmp_file:
@@ -401,6 +494,38 @@ def build_argparser():
     )
     arg_parser.add_argument("--loglevel", default="INFO")
 
+    arg_parser.add_argument(
+        "--force_relabel",
+        action="store_true",
+        help="Re-annotate records even if shift_in_reasoning_v1 already exists.",
+    )
+
+    arg_parser.add_argument(
+        "--clean_failed_first",
+        action="store_true",
+        help=(
+            "Run clean_failed_shift_labels on results_root before annotation "
+            "(strips fallback FALSE shift labels from prior failed judge calls)."
+        ),
+    )
+
+    arg_parser.add_argument(
+        "--passes",
+        default="pass1",
+        help=(
+            "Comma-separated pass keys to annotate "
+            "(e.g., 'pass1', 'pass1,pass2,pass2a,pass2b,pass2c'). "
+            "Defaults to 'pass1' for backwards compatibility."
+        ),
+    )
+
+    arg_parser.add_argument(
+        "--backend",
+        choices=["azure", "portkey"],
+        default="azure",
+        help="LLM backend: 'azure' (default) or 'portkey' (AI Sandbox via portkey-ai).",
+    )
+
     # Azure OpenAI specifics
     arg_parser.add_argument(
         "--endpoint",
@@ -436,6 +561,13 @@ def main():
         datefmt="%H:%M:%S",
     )
 
+    if args.clean_failed_first:
+        logging.info(
+            "Cleaning prior fallback shift labels under %s before annotation.",
+            os.path.abspath(args.results_root),
+        )
+        _clean_failed_root(args.results_root)
+
     files = scan_jsonl(args.results_root, args.split)
     if not files:
         print("No JSONL files found; check path/split.", file=sys.stderr)
@@ -446,12 +578,18 @@ def main():
         max_calls=args.max_calls,
         dry_run=args.dry_run,
         jitter=args.jitter,
-        deployment=args.deployment,
+        force_relabel=args.force_relabel,
         client_cfg={
+            "backend": args.backend,
             "endpoint": args.endpoint,
             "api_version": args.api_version,
             "use_v1": args.use_v1,
         },
+        passes=[
+            p.strip()
+            for p in (args.passes or "").split(",")
+            if p.strip()
+        ],
     )
 
     for path in files:

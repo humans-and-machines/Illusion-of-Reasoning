@@ -1,6 +1,8 @@
-"""Inference package initialization."""
+"""Inference package initialization.
 
-# Re-export commonly used submodules for static analysis convenience.
-from . import carpark_core
+This module intentionally avoids importing heavy submodules (like carpark_core)
+at import time so that lightweight callers (e.g., math-only runners) do not
+require optional dependencies such as torch/transformers.
+"""
 
-__all__ = ["carpark_core"]
+__all__: list[str] = []

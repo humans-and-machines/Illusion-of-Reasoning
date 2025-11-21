@@ -36,7 +36,12 @@ from src.inference.gateway_utils import (
 # ---------------------------------------------------------------------------
 
 def parse_math_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
-    """Construct and parse CLI arguments for the unified math runner."""
+    """
+    Construct and parse CLI arguments for the unified math runner.
+
+    :param argv: Optional sequence of argument strings; defaults to :data:`sys.argv`.
+    :returns: Parsed :class:`argparse.Namespace` containing math runner options.
+    """
     parser = argparse.ArgumentParser()
     add_model_and_output_args(parser)
     parser.add_argument(
@@ -54,13 +59,26 @@ def parse_math_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
 
 def _load_generic_dataset(dataset_id: str, split: str, cache_dir: str):
-    """Load a generic HF dataset lazily via datasets.load_dataset."""
+    """
+    Load a generic HF dataset lazily via ``datasets.load_dataset``.
+
+    :param dataset_id: Hugging Face dataset identifier.
+    :param split: Dataset split name (for example, ``\"test\"``).
+    :param cache_dir: Directory to use as a datasets cache.
+    :returns: Dataset object returned by :func:`datasets.load_dataset`.
+    """
     datasets_mod = import_module("datasets")
     return datasets_mod.load_dataset(dataset_id, split=split, cache_dir=cache_dir)
 
 
 def run_math_main(backend_cls, argv: Optional[Sequence[str]] = None) -> None:
-    """Entry point logic for unified math inference using math_core."""
+    """
+    Entry point logic for unified math inference using :mod:`math_core`.
+
+    :param backend_cls: Backend class (typically :class:`HFBackend`) to construct.
+    :param argv: Optional sequence of argument strings; defaults to :data:`sys.argv`.
+    :returns: ``None``. The function parses arguments and runs inference.
+    """
     args = parse_math_args(argv)
     hf_cache_dir = setup_hf_cache_dir_env("./.hf_cache")
 
@@ -110,7 +128,11 @@ def run_math_main(backend_cls, argv: Optional[Sequence[str]] = None) -> None:
 # ---------------------------------------------------------------------------
 
 class _SimpleListDataset:
-    """Minimal Dataset-like wrapper over a list of dicts for testing."""
+    """
+    Minimal Dataset-like wrapper over a list of dicts for testing.
+
+    :param records: Iterable of mapping-like records.
+    """
 
     def __init__(self, records: Iterable[dict]):
         self._records: List[dict] = list(records)
@@ -119,7 +141,12 @@ class _SimpleListDataset:
         return len(self._records)
 
     def select(self, indices: Iterable[int]) -> "_SimpleListDataset":
-        """Return a new _SimpleListDataset containing the selected indices."""
+        """
+        Return a new :class:`_SimpleListDataset` containing the selected indices.
+
+        :param indices: Iterable of integer indices to keep.
+        :returns: New dataset instance with only the selected records.
+        """
         idx_list = list(indices)
         return _SimpleListDataset([self._records[i] for i in idx_list])
 
@@ -133,7 +160,15 @@ MathTestLimits = GenerationLimits
 
 @dataclass
 class MathTestSampling:
-    """Sampling and two-pass configuration for test-only math inference."""
+    """
+    Sampling and two-pass configuration for test-only math inference.
+
+    :param temperature: Sampling temperature for generation.
+    :param top_p: Nucleus-sampling parameter for generation.
+    :param two_pass: Whether to enable the reconsideration second pass.
+    :param second_pass_phrase: Cue phrase injected into second-pass prompts.
+    :param second_pass_use_sample_idx: Preferred sample index to feed pass 2.
+    """
 
     temperature: float
     top_p: float
@@ -149,6 +184,13 @@ class MathTestConfig:
 
     Mirrors the key fields of MathInferenceConfig without requiring datasets
     while grouping related settings to keep instance attributes small.
+
+    :param dataset: Iterable of dicts representing math examples.
+    :param output_dir: Directory where JSONL results will be written.
+    :param step: Training or checkpoint step identifier.
+    :param limits: Generation limits such as batch size and token caps.
+    :param sampling: Sampling configuration including temperature and two-pass flags.
+    :param eos_ids: EOS token ID or IDs used to terminate generation.
     """
 
     dataset: Iterable[dict]
@@ -167,8 +209,12 @@ def run_math_inference(
     """
     Lightweight math inference helper used by tests.
 
-    This wraps math_core.run_inference_on_split with a minimal Dataset-like
-    adapter so tests don't depend on datasets.Dataset.
+    This wraps :func:`math_core.run_inference_on_split` with a minimal
+    Dataset-like adapter so tests don't depend on :class:`datasets.Dataset`.
+
+    :param backend: Backend instance exposing ``tokenizer`` and ``model`` attributes.
+    :param config: Test configuration describing dataset and sampling parameters.
+    :returns: ``None``. Results are written to ``config.output_dir``.
     """
     examples = _SimpleListDataset(config.dataset)
     cfg = math_core.MathInferenceConfig(
@@ -202,7 +248,12 @@ def run_math_inference(
 # ---------------------------------------------------------------------------
 
 def parse_carpark_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
-    """Construct and parse CLI arguments for the unified carpark runner."""
+    """
+    Construct and parse CLI arguments for the unified carpark runner.
+
+    :param argv: Optional sequence of argument strings; defaults to :data:`sys.argv`.
+    :returns: Parsed :class:`argparse.Namespace` containing carpark options.
+    """
     parser = argparse.ArgumentParser()
     add_model_and_output_args(parser)
 
@@ -218,7 +269,14 @@ def run_carpark_main(
     backend_cls,
     argv: Optional[Sequence[str]] = None,
 ) -> None:
-    """Entry point logic for unified carpark (Rush Hour) inference."""
+    """
+    Entry point logic for unified carpark (Rush Hour) inference.
+
+    :param load_module: Callable returning the carpark module to use.
+    :param backend_cls: Backend class (typically :class:`HFBackend`) to construct.
+    :param argv: Optional sequence of argument strings; defaults to :data:`sys.argv`.
+    :returns: ``None``. The function parses arguments and runs inference.
+    """
     args = parse_carpark_args(argv)
     hf_cache_dir = os.path.abspath("./.hf_cache")
 
@@ -264,7 +322,12 @@ def run_carpark_main(
 # ---------------------------------------------------------------------------
 
 def parse_crossword_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
-    """Construct and parse CLI arguments for the unified crossword runner."""
+    """
+    Construct and parse CLI arguments for the unified crossword runner.
+
+    :param argv: Optional sequence of argument strings; defaults to :data:`sys.argv`.
+    :returns: Parsed :class:`argparse.Namespace` containing crossword options.
+    """
     parser = argparse.ArgumentParser()
     add_model_and_output_args(parser)
     parser.add_argument(
@@ -287,7 +350,14 @@ def run_crossword_main(
     backend_cls,
     argv: Optional[Sequence[str]] = None,
 ) -> None:
-    """Run cryptic crossword inference with a unified HF backend."""
+    """
+    Run cryptic crossword inference with a unified HF backend.
+
+    :param load_module: Callable returning the crossword module to use.
+    :param backend_cls: Backend class (typically :class:`HFBackend`) to construct.
+    :param argv: Optional sequence of argument strings; defaults to :data:`sys.argv`.
+    :returns: ``None``. The function parses arguments and runs inference.
+    """
     args = parse_crossword_args(argv)
     hf_cache_dir = os.path.abspath("./.hf_cache")
 

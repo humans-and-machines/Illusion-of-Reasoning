@@ -6,18 +6,27 @@ Thin wrapper over src.inference.unified_runner_base.
 """
 from __future__ import annotations
 
-from src.inference import carpark_core
+import importlib
+
 from src.inference.backends import HFBackend
 from src.inference.unified_runner_base import run_carpark_main
 
 
 def _load_carpark_module():
-    """Indirection for tests to monkeypatch the carpark_core module."""
-    return carpark_core
+    """
+    Indirection for tests to monkeypatch the ``carpark_core`` module.
+
+    :returns: Imported :mod:`src.inference.carpark_core` module.
+    """
+    return importlib.import_module("src.inference.carpark_core")
 
 
 def main() -> None:
-    """Entry point for unified carpark (Rush Hour) inference."""
+    """
+    Entry point for unified carpark (Rush Hour) inference.
+
+    :returns: ``None``. The function delegates to :func:`run_carpark_main`.
+    """
     run_carpark_main(load_module=_load_carpark_module, backend_cls=HFBackend)
 
 

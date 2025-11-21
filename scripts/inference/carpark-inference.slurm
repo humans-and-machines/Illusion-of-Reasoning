@@ -18,7 +18,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
 
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
+conda activate "$CONDA_ENV"
 module load cudatoolkit/12.6
 
 # ── Env hygiene ──────────────────────────────────────────────────────────────
@@ -81,6 +82,8 @@ export TRITON_CACHE_DIR="$OUTDIR/.triton"
 export TORCHINDUCTOR_CACHE_DIR="$OUTDIR/.torchinductor"
 export TMPDIR="$OUTDIR/.tmp"
 
+RECONSIDER_CUE="Hold on, this reasoning might be wrong. Let's go back and check each step carefully. Actually, this approach doesn't look correct. Let's restart and work through the solution more systematically. Wait, we need to reconsider. Let's think this through step by step."
+
 echo "→ carpark | step=$STEP temp=$TEMP"
 echo "   ckpt: $CKPT"
 echo "   out : $OUTDIR"
@@ -106,7 +109,7 @@ python -u "$SCRIPT_PATH" \
   --dataset_solution_column "$DATASET_SOLUTION_COL" \
   --split test \
   --two_pass \
-  --second_pass_phrase "Wait, we need to reconsider. Let's think this through step by step." \
+  --second_pass_phrase "$RECONSIDER_CUE" \
   --think_cap 750 \
   --answer_cap 50 \
   --step "$STEP"

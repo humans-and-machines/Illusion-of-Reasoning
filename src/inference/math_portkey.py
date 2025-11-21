@@ -58,7 +58,14 @@ SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
 # ----------------------- Portkey client + call -----------------------
 @dataclass
 class PortkeyCallParams:
-    """Lightweight container for Portkey generation parameters."""
+    """
+    Lightweight container for Portkey generation parameters.
+
+    :param temperature: Sampling temperature for the model.
+    :param top_p: Nucleus-sampling parameter for the model.
+    :param max_output_tokens: Maximum number of tokens to generate.
+    :param request_timeout: Per-request timeout in seconds.
+    """
 
     temperature: float
     top_p: float
@@ -68,7 +75,17 @@ class PortkeyCallParams:
 
 @dataclass
 class PortkeyRunConfig:
-    """Configuration for a Portkey MATH-500 pass."""
+    """
+    Configuration for a Portkey MATH-500 pass.
+
+    :param output_path: Path to the JSONL file where results are written.
+    :param split_name: Dataset split name (for example, ``\"test\"``).
+    :param model_name: Model identifier used via Portkey.
+    :param num_samples: Number of samples to generate per problem.
+    :param params: Generation parameters such as temperature and limits.
+    :param seed: Random seed for sampling and dataset shuffling.
+    :param step: Training or checkpoint step identifier for filenames.
+    """
 
     output_path: str
     split_name: str
@@ -81,7 +98,14 @@ class PortkeyRunConfig:
 
 @dataclass
 class ExampleContext:
-    """Per-example metadata for a MATH-500 row."""
+    """
+    Per-example metadata for a MATH-500 row.
+
+    :param problem: Normalized problem text.
+    :param gold_answer: Ground-truth answer associated with the problem.
+    :param canon_gold: Canonicalized gold answer.
+    :param sample_idx: Sample index for this generation.
+    """
 
     problem: str
     gold_answer: Any
@@ -91,7 +115,14 @@ class ExampleContext:
 
 @dataclass
 class PortkeyCallResult:
-    """Result of a single Portkey generation call."""
+    """
+    Result of a single Portkey generation call.
+
+    :param text: Raw model output text.
+    :param answer: Extracted answer text from the output.
+    :param finish_reason: Finish reason reported by the API.
+    :param usage: Optional usage object returned by the SDK.
+    """
 
     text: str
     answer: str
@@ -100,7 +131,13 @@ class PortkeyCallResult:
 
 
 def _make_client():
-    """Construct a Portkey client using AI_SANDBOX_KEY from the environment."""
+    """
+    Construct a Portkey client using ``AI_SANDBOX_KEY`` from the environment.
+
+    :returns: Configured ``portkey_ai.Portkey`` client instance.
+    :raises RuntimeError: If ``AI_SANDBOX_KEY`` is not set.
+    :raises ImportError: If the ``portkey-ai`` package is not installed.
+    """
     try:
         portkey_mod = import_module("portkey_ai")
     except ImportError as import_exc:  # pragma: no cover - optional dependency
@@ -123,6 +160,15 @@ def _call_model(
     problem: str,
     params: PortkeyCallParams,
 ):
+    """
+    Call the Portkey model for a single math problem.
+
+    :param client: Portkey client created by :func:`_make_client`.
+    :param model: Model identifier to use via Portkey.
+    :param problem: Raw problem text to send to the model.
+    :param params: Generation parameters such as temperature and limits.
+    :returns: Parsed response tuple as returned by :func:`parse_openai_chat_response`.
+    """
     messages = build_math_gateway_messages(SYSTEM_PROMPT, problem)
     resp = client.chat.completions.create(
         model=model,
@@ -136,7 +182,13 @@ def _call_model(
 
 
 def _iter_examples(dataset, num_examples: int | None):
-    """Yield at most num_examples examples from a dataset (or all if None)."""
+    """
+    Yield at most ``num_examples`` examples from a dataset (or all if ``None``).
+
+    :param dataset: Dataset object supporting ``select`` and iteration.
+    :param num_examples: Maximum number of examples to yield, or ``None`` for all.
+    :returns: Iterator over dataset examples.
+    """
     if num_examples is not None and num_examples > 0:
         dataset = dataset.select(range(min(num_examples, len(dataset))))
     yield from dataset
@@ -148,8 +200,12 @@ def _build_portkey_row(
     config: PortkeyRunConfig,
 ) -> Dict[str, Any]:
     """
-    Build a single JSONL row for Portkey MATH-500 inference and compute
-    correctness.
+    Build a single JSONL row for Portkey MATH-500 inference and compute correctness.
+
+    :param example: Per-example metadata describing problem and gold answer.
+    :param result: Result from the Portkey model call.
+    :param config: Run configuration including split, model, and step.
+    :returns: Dictionary representing one JSONL row.
     """
     pred_canon = _canon_math(result.answer)
     is_correct = bool(
@@ -196,7 +252,15 @@ def run_portkey_math_inference(
     existing: Dict[str, set],
     config: PortkeyRunConfig,
 ) -> None:
-    """Run single-pass math inference via Portkey and write JSONL results."""
+    """
+    Run single-pass math inference via Portkey and write JSONL results.
+
+    :param client: Portkey client created by :func:`_make_client`.
+    :param dataset: Dataset object containing math problems and answers.
+    :param existing: Mapping from problem to already-filled sample indices.
+    :param config: Run configuration including output path and sampling options.
+    :returns: ``None``. Results are appended to the JSONL file.
+    """
     random.seed(config.seed)
     total_new = 0
     for example in _iter_examples(dataset, None):
@@ -245,9 +309,13 @@ def run_portkey_math_inference(
 
 
 def main() -> None:
-    """Parse arguments, load dataset, and run Portkey-based MATH-500 inference."""
+    """
+    Parse arguments, load dataset, and run Portkey-based MATH-500 inference.
+
+    :returns: ``None``. The function parses CLI args and runs the main loop.
+    """
     parser = build_math_gateway_arg_parser(
-        default_temperature=0.7,
+        default_temperature=0.05,
         description="Portkey MATH-500 runner.",
     )
     parser.add_argument(

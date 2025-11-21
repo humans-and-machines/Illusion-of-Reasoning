@@ -246,9 +246,19 @@ def rush_soft_match_reward(
     length_penalty_base: float = 0.92,
 ) -> Tuple[float, Dict[str, Any]]:
     """
-    Soft match reward in [0, 1] using only gold sequence(s).
+    Compute a soft match reward in ``[0, 1]`` using only gold sequence(s).
 
-    Assumes _canon_rush_generic and _canon_rush_gold exist in scope.
+    The reward combines several overlap and alignment components between the
+    predicted Rush Hour move sequence and one or more canonicalized gold
+    sequences.
+
+    :param pred_answer_text: Raw predicted answer text describing moves.
+    :param gold_answer_any: Gold answer representation (string or list of sequences).
+    :param weights: Optional mapping of component names to scalar weights.
+    :param length_penalty_base: Base used for the exponential length penalty term.
+    :returns: Tuple ``(score, detail)`` where ``score`` is a float in ``[0, 1]``
+        and ``detail`` contains canonical forms, chosen gold sequence, and
+        per-component scores.
     """
     if weights is None:
         weights = {

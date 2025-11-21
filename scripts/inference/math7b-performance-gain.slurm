@@ -25,7 +25,8 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # ── Conda env ───────────────────────────────────────────────
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
+conda activate "$CONDA_ENV"
 echo "✅ Conda env: $(which python)"
 python --version
 

@@ -13,7 +13,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
 
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
+conda activate "$CONDA_ENV"
 export PYTHONNOUSERSITE=1
 
 # Optional sanity
@@ -62,7 +63,8 @@ echo "🟢 Setup done — cfg=$CONFIG  logs: $SERVER_LOG | $TRAINING_LOG"
 srun --cpus-per-task=64 bash -c '
 set -euo pipefail
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-'"$PROJECT_ROOT"'/openr1}"
+conda activate "$CONDA_ENV"
 export PYTHONNOUSERSITE=1
 
 # Split exactly the GPUs Slurm assigned to this step (e.g., "0,5,7,8,3,2,6,1")

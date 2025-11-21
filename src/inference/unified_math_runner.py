@@ -37,7 +37,23 @@ def run_math_inference(
     Test helper for running math inference with a simple backend + dataset.
 
     This thin wrapper builds a MathTestConfig and delegates to the shared
-    run_math_inference implementation in unified_runner_base.
+    ``run_math_inference`` implementation in :mod:`unified_runner_base`.
+
+    :param backend: Backend instance (typically :class:`HFBackend`) exposing ``generate``.
+    :param dataset: Dataset object containing math problems and answers.
+    :param output_dir: Directory where JSONL results will be written.
+    :param step: Training or checkpoint step identifier.
+    :param batch_size: Number of examples to process per batch.
+    :param num_samples: Number of samples to generate per problem.
+    :param temperature: Sampling temperature for generation.
+    :param top_p: Nucleus-sampling parameter for generation.
+    :param think_cap: Token cap for ``<think>`` generations.
+    :param answer_cap: Token cap for ``<answer>`` generations.
+    :param two_pass: Whether to enable the reconsideration second pass.
+    :param second_pass_phrase: Cue phrase injected into second-pass prompts.
+    :param second_pass_use_sample_idx: Preferred sample index to feed pass 2.
+    :param eos_ids: EOS token ID or IDs used to terminate generation.
+    :returns: ``None``. Results are written to ``output_dir``.
     """
     config = MathTestConfig(
         dataset=dataset,
@@ -62,7 +78,11 @@ def run_math_inference(
 
 
 def main() -> None:
-    """Entry point for unified math inference using math_core."""
+    """
+    Entry point for unified math inference using :mod:`math_core`.
+
+    :returns: ``None``. The function parses CLI arguments and runs inference.
+    """
     run_math_main(backend_cls=HFBackend)
 
 

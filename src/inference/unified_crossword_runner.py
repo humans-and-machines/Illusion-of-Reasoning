@@ -12,12 +12,20 @@ from src.inference.unified_runner_base import run_crossword_main
 
 
 def _load_crossword_module():
-    """Indirection for tests to monkeypatch the crossword_core module."""
+    """
+    Indirection for tests to monkeypatch the ``crossword_core`` module.
+
+    :returns: Imported :mod:`src.inference.crossword_core` module.
+    """
     return crossword_core
 
 
 def main() -> None:
-    """Run cryptic crossword inference with a unified HF backend."""
+    """
+    Run cryptic crossword inference with a unified HF backend.
+
+    :returns: ``None``. The function delegates to :func:`run_crossword_main`.
+    """
     run_crossword_main(load_module=_load_crossword_module, backend_cls=HFBackend)
 
 

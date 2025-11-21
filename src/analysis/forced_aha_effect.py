@@ -182,7 +182,19 @@ def savefig(fig: plt.Figure, outbase: str):
 # ===================== loaders =====================
 
 PASS1_KEYS = ["pass1", "p1", "first_pass"]
-PASS2_KEYS = ["pass2_forced", "pass2", "p2", "forced", "forced_aha", "aha_forced"]
+# For second-pass style results, prefer explicitly named forced/second-pass fields,
+# but also fall back to multi-cue variants when present.
+PASS2_KEYS = [
+    "pass2_forced",
+    "pass2",
+    "pass2c",
+    "pass2b",
+    "pass2a",
+    "p2",
+    "forced",
+    "forced_aha",
+    "aha_forced",
+]
 
 def _maybe_int(x, default=-1) -> int:
     try: return int(x)
@@ -196,10 +208,13 @@ def _common_fields(rec: Dict[str, Any], step_from_name: Optional[int]) -> Dict[s
     split   = rec.get("split")
     return {"dataset": dataset, "model": model, "problem": str(problem), "step": _maybe_int(step, -1), "split": split}
 
-def load_samples_from_root(root: str,
-                           split_value: Optional[str],
-                           variant: str,
-                           entropy_field: str) -> pd.DataFrame:
+def load_samples_from_root(
+    root: str,
+    split_value: Optional[str],
+    variant: str,
+    entropy_field: str,
+    pass2_key: Optional[str] = None,
+) -> pd.DataFrame:
     files = scan_files(root)
     rows: List[Dict[str, Any]] = []
     for path in files:
@@ -213,7 +228,13 @@ def load_samples_from_root(root: str,
                     continue
                 if split_value is not None and str(rec.get("split", "")).lower() != str(split_value).lower():
                     continue
-                pass_obj = first_nonempty(rec, PASS1_KEYS if variant=="pass1" else PASS2_KEYS)
+                if variant == "pass1":
+                    pass_obj = first_nonempty(rec, PASS1_KEYS)
+                else:
+                    if pass2_key:
+                        pass_obj = rec.get(pass2_key) or {}
+                    else:
+                        pass_obj = first_nonempty(rec, PASS2_KEYS)
                 if not pass_obj: continue
                 corr = extract_correct_flag(pass_obj)
                 if corr is None: continue
@@ -225,9 +246,12 @@ def load_samples_from_root(root: str,
                 rows.append(row)
     return pd.DataFrame(rows)
 
-def load_samples_from_single_root_with_both(root: str,
-                                            split_value: Optional[str],
-                                            entropy_field: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def load_samples_from_single_root_with_both(
+    root: str,
+    split_value: Optional[str],
+    entropy_field: str,
+    pass2_key: Optional[str] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     files = scan_files(root)
     rows1: List[Dict[str, Any]] = []
     rows2: List[Dict[str, Any]] = []
@@ -249,7 +273,10 @@ def load_samples_from_single_root_with_both(root: str,
                     if c1 is not None:
                         rows1.append({**meta, "sample_idx": extract_sample_idx(rec, p1),
                                       "correct": int(c1), "entropy_p1": extract_entropy(p1, preferred=entropy_field)})
-                p2 = first_nonempty(rec, PASS2_KEYS)
+                if pass2_key:
+                    p2 = rec.get(pass2_key) or {}
+                else:
+                    p2 = first_nonempty(rec, PASS2_KEYS)
                 if p2:
                     c2 = extract_correct_flag(p2)
                     if c2 is not None:
@@ -781,6 +808,15 @@ def main():
     ap.add_argument("root2", nargs="?", default=None)
     ap.add_argument("--split", default=None)
     ap.add_argument("--out_dir", default=None)
+    ap.add_argument(
+        "--pass2_key",
+        default=None,
+        help=(
+            "Optional specific second-pass key to analyze "
+            "(e.g., 'pass2', 'pass2a', 'pass2b', 'pass2c'). "
+            "Defaults to the first available in PASS2_KEYS."
+        ),
+    )
 
     ap.add_argument("--make_plots", action="store_true")
     ap.add_argument("--n_boot", type=int, default=800)
@@ -796,14 +832,34 @@ def main():
 
     args = ap.parse_args()
 
-    out_dir = args.out_dir or os.path.join(args.root1, "forced_aha_effect")
+    # Default out_dir depends on chosen pass2 key so that multi-cue runs can coexist.
+    suffix = ""
+    if args.pass2_key and args.pass2_key != "pass2":
+        suffix = f"_{args.pass2_key}"
+    out_dir = args.out_dir or os.path.join(args.root1, f"forced_aha_effect{suffix}")
     os.makedirs(out_dir, exist_ok=True)
 
     if args.root2:
-        df1 = load_samples_from_root(args.root1, args.split, variant="pass1", entropy_field=args.entropy_field)
-        df2 = load_samples_from_root(args.root2, args.split, variant="pass2", entropy_field=args.entropy_field)
+        df1 = load_samples_from_root(
+            args.root1,
+            args.split,
+            variant="pass1",
+            entropy_field=args.entropy_field,
+        )
+        df2 = load_samples_from_root(
+            args.root2,
+            args.split,
+            variant="pass2",
+            entropy_field=args.entropy_field,
+            pass2_key=args.pass2_key,
+        )
     else:
-        df1, df2 = load_samples_from_single_root_with_both(args.root1, args.split, entropy_field=args.entropy_field)
+        df1, df2 = load_samples_from_single_root_with_both(
+            args.root1,
+            args.split,
+            entropy_field=args.entropy_field,
+            pass2_key=args.pass2_key,
+        )
     if df1.empty: raise SystemExit("No sample-level pass-1 rows found (after filtering).")
     if df2.empty: raise SystemExit("No sample-level pass-2 rows found (after filtering).")
 

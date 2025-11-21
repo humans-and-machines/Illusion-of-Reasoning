@@ -30,6 +30,7 @@ from src.inference.common import (
     require_transformers,
     setup_script_logger,
 )
+from src.inference.math_pass_utils import DEFAULT_SECOND_PASS_PHRASE
 from src.inference.gateway_utils import (
     configure_unified_runner_common as _configure_unified_runner_common,
 )
@@ -82,9 +83,16 @@ def run_inference_on_split(*args: Any, **kwargs: Any) -> None:
     """
     Run two-pass math inference for a dataset split.
 
-    This is a thin adapter around math_core.run_inference_on_split that accepts
-    the legacy keyword-only signature used by tests and the CLI while
-    delegating the core loop to MathInferenceConfig.
+    This is a thin adapter around :func:`src.inference.math_core.run_inference_on_split`
+    that accepts the legacy keyword-only signature used by tests and the CLI
+    while delegating the core loop to :class:`MathInferenceConfig`.
+
+    :param args: Positional arguments are rejected to preserve keyword-only usage.
+    :param kwargs: Keyword arguments including ``split_name``, ``examples``,
+        ``tokenizer``, ``model``, ``step``, ``outdir``, and optional config
+        overrides such as ``batch_size`` or ``num_samples``.
+    :returns: ``None``. Results are written to JSONL under ``outdir``.
+    :raises TypeError: If positional arguments are provided or required keys are missing.
     """
     if args:
         raise TypeError(
@@ -112,9 +120,7 @@ def run_inference_on_split(*args: Any, **kwargs: Any) -> None:
         "entropy_mode": "reconsider",
         "eos_ids": None,
         "two_pass": False,
-        "second_pass_phrase": (
-            "Wait, we need to reconsider. Let's think this through step by step."
-        ),
+        "second_pass_phrase": DEFAULT_SECOND_PASS_PHRASE,
         "second_pass_use_sample_idx": 0,
         "think_cap": 750,
         "answer_cap": 50,
@@ -142,15 +148,28 @@ def load_math500(
     dataset_path: Optional[str] = None,
 ):
     """
-    Thin wrapper delegating to math_core.load_math500 to keep a single shared
-    implementation of the MATH-500 loading logic.
+    Load the MATH-500 benchmark via :mod:`datasets` using the shared core logic.
+
+    This is a thin wrapper around :func:`src.inference.math_core.load_math500`
+    so that the Llama runner reuses a single implementation of the loading
+    and normalization logic.
+
+    :param cache_dir: Directory to use as a datasets cache.
+    :param split: Dataset split name (for example, ``\"test\"``).
+    :param seed: Random seed used when sub-sampling competition-math fallback data.
+    :param dataset_path: Optional local JSON file to load instead of remote datasets.
+    :returns: A datasets-like object exposing ``map`` and ``select``.
     """
     return _load_math500_core(cache_dir, split, seed, dataset_path)
 
 
 # ─────────────────────────── CLI helpers ───────────────────────────
 def _build_arg_parser() -> argparse.ArgumentParser:
-    """Create an argument parser for the DeepSpeed-backed Llama MATH runner."""
+    """
+    Create an argument parser for the DeepSpeed-backed Llama MATH runner.
+
+    :returns: Configured :class:`argparse.ArgumentParser` for the CLI.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model_name_or_path",
@@ -188,7 +207,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 def _init_tokenizer_and_eos_ids(
     args: argparse.Namespace,
 ) -> Tuple[AutoTokenizer, Optional[List[int]], str]:
-    """Initialise the tokenizer and derived EOS id set."""
+    """
+    Initialise the tokenizer and derived EOS ID set.
+
+    :param args: Parsed CLI arguments containing model and tokenizer options.
+    :returns: A tuple ``(tokenizer, eos_ids, hf_cache_dir)`` where ``eos_ids``
+        is a sorted list of EOS token IDs (or ``None``) and ``hf_cache_dir`` is
+        the Hugging Face cache directory path.
+    """
     hf_cache_dir = os.path.abspath("./.hf_cache")
     tok_src = args.tokenizer_path or args.model_name_or_path
     tokenizer = AutoTokenizer.from_pretrained(
@@ -216,7 +242,15 @@ def _init_model(
     args: argparse.Namespace,
     hf_cache_dir: str,
 ) -> Tuple[Any, str]:
-    """Initialise the HF model, wrap it in DeepSpeed, and load checkpoints."""
+    """
+    Initialise the HF model, wrap it in DeepSpeed, and load checkpoints.
+
+    :param args: Parsed CLI arguments containing model and DeepSpeed settings.
+    :param hf_cache_dir: Hugging Face cache directory path.
+    :returns: A tuple ``(model, ds_tag)`` where ``model`` is a
+        :class:`DSModelWrapper` around the DeepSpeed engine and ``ds_tag`` is
+        the resolved checkpoint tag.
+    """
     cfg = AutoConfig.from_pretrained(
         args.model_name_or_path,
         revision=args.revision,
@@ -262,7 +296,14 @@ def _load_dataset_for_args(
     args: argparse.Namespace,
     hf_cache_dir: str,
 ) -> Tuple[Any, str]:
-    """Load the requested dataset (MATH-500 or arbitrary HF dataset)."""
+    """
+    Load the requested dataset (MATH-500 or an arbitrary HF dataset).
+
+    :param args: Parsed CLI arguments specifying ``dataset_id``, ``split``,
+        and optional ``num_examples``.
+    :param hf_cache_dir: Hugging Face cache directory path.
+    :returns: Tuple ``(dataset, dataset_name_for_log)`` describing the loaded data.
+    """
     if args.dataset_id.upper() == "MATH-500":
         dataset = load_math500(hf_cache_dir, args.split, args.seed)
         dataset_name_for_log = "MATH-500"
@@ -278,7 +319,11 @@ def _load_dataset_for_args(
 
 # ─────────────────────────── Main ───────────────────────────
 def main() -> None:
-    """CLI entrypoint for the DeepSpeed-backed Llama MATH runner."""
+    """
+    CLI entrypoint for the DeepSpeed-backed Llama MATH runner.
+
+    :returns: ``None``. The function parses arguments, runs inference, and logs progress.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

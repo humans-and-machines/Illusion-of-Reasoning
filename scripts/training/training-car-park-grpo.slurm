@@ -95,7 +95,8 @@ export RESUME_CKPT="${RESUME_CKPT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.
 srun --gres=gpu:8 --cpus-per-task=64 bash -c '
 set -euo pipefail
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-'"$PROJECT_ROOT"'/openr1}"
+conda activate "$CONDA_ENV"
 export PYTHONNOUSERSITE=1
 
 export VLLM_USE_V1=0

@@ -33,7 +33,9 @@ from src.inference.common import (
     PassOutputs,
     add_token_and_tag_fields,
     build_entropy_pass_base,
+    build_extra_pass_results_for_cues,
     build_math_inference_config_kwargs,
+    build_second_pass_cue_strings,
     build_two_pass_row_base,
     empty_pass_outputs,
     extract_blocks as _extract_blocks,
@@ -44,6 +46,7 @@ from src.inference.common import (
     require_datasets,
     setup_script_logger,
 )
+from src.inference.math_pass_utils import DEFAULT_SECOND_PASS_PHRASE
 from src.inference.task_registry import CARPARK_SYSTEM_PROMPT
 from src.inference.unified_runner_base import run_carpark_main
 
@@ -102,7 +105,13 @@ def _ensure_messages(obj: Union[str, List[Dict[str, str]]]) -> List[Dict[str, st
 
 
 def chat_base_for_pass1_from_messages(tokenizer, messages: List[Dict[str, str]]) -> str:
-    """Build a chat prompt for pass-1 from serialized messages."""
+    """
+    Build a chat prompt for pass 1 from serialized messages.
+
+    :param tokenizer: Chat tokenizer providing ``apply_chat_template``.
+    :param messages: List of message dictionaries (orchestrated as role/content pairs).
+    :returns: A formatted prompt string suitable for first-pass generation.
+    """
     msgs = list(messages)
     has_sys = any(message.get("role") == "system" for message in msgs)
     if not has_sys:
@@ -116,7 +125,15 @@ def chat_base_for_pass2_from_messages(
     prev_output: str,
     cue: str,
 ) -> str:
-    """Build a chat prompt for pass-2 that includes the pass-1 output and cue."""
+    """
+    Build a chat prompt for pass 2 that includes the pass-1 output and cue.
+
+    :param tokenizer: Chat tokenizer providing ``apply_chat_template``.
+    :param messages: Original conversation messages for the example.
+    :param prev_output: First-pass reasoning and answer to show as assistant output.
+    :param cue: Cue text encouraging reconsideration in the second pass.
+    :returns: A formatted prompt string suitable for second-pass generation.
+    """
     msgs = list(messages)
     has_sys = any(message.get("role") == "system" for message in msgs)
     if not has_sys:
@@ -215,82 +232,146 @@ class CarparkInferenceConfig:
     # Convenience properties mirroring the previous dataclass fields.
     @property
     def split_name(self) -> str:
-        """Return the dataset split name."""
+        """
+        Dataset split name.
+
+        :returns: Name of the dataset split (for example, ``\"train\"`` or ``\"test\"``).
+        """
         return self.io_config.split_name
 
     @property
     def output_dir(self) -> str:
-        """Return the output directory for results."""
+        """
+        Output directory for results.
+
+        :returns: Directory path where JSONL results are written.
+        """
         return self.io_config.output_dir
 
     @property
     def step(self) -> int:
-        """Return the step index used in output filenames."""
+        """
+        Step index used in output filenames.
+
+        :returns: Integer training or checkpoint step identifier.
+        """
         return self.io_config.step
 
     @property
     def prompt_col(self) -> str:
-        """Return the name of the prompt column."""
+        """
+        Name of the prompt column in the dataset.
+
+        :returns: Column name containing chat messages or prompts.
+        """
         return self.columns.prompt_col
 
     @property
     def solution_col(self) -> str:
-        """Return the name of the solution/answer column."""
+        """
+        Name of the solution/answer column in the dataset.
+
+        :returns: Column name containing gold solutions.
+        """
         return self.columns.solution_col
 
     @property
     def batch_size(self) -> int:
-        """Return the generation batch size."""
+        """
+        Generation batch size.
+
+        :returns: Number of examples processed per generation batch.
+        """
         return self.limits.batch_size
 
     @property
     def num_samples(self) -> int:
-        """Return the number of samples per example."""
+        """
+        Number of samples per example.
+
+        :returns: Number of generations drawn for each example.
+        """
         return self.limits.num_samples
 
     @property
     def temperature(self) -> float:
-        """Return the sampling temperature."""
+        """
+        Sampling temperature.
+
+        :returns: Temperature used when sampling tokens.
+        """
         return self.sampling.temperature
 
     @property
     def top_p(self) -> float:
-        """Return the nucleus sampling top_p value."""
+        """
+        Nucleus-sampling ``top_p`` value.
+
+        :returns: Cumulative probability threshold for nucleus sampling.
+        """
         return self.sampling.top_p
 
     @property
     def entropy_mode(self) -> str:
-        """Return the entropy scoring mode."""
+        """
+        Entropy scoring mode.
+
+        :returns: Name of the entropy computation mode.
+        """
         return self.sampling.entropy_mode
 
     @property
     def eos_ids(self) -> Optional[List[int]]:
-        """Return the list of EOS token IDs used during generation."""
+        """
+        EOS token IDs used during generation.
+
+        :returns: List of EOS token IDs, or ``None`` if not configured.
+        """
         return self.sampling.eos_ids
 
     @property
     def two_pass(self) -> bool:
-        """Return whether second-pass generation is enabled."""
+        """
+        Whether second-pass generation is enabled.
+
+        :returns: ``True`` if a reconsideration second pass is enabled.
+        """
         return self.second_pass.two_pass
 
     @property
     def second_pass_phrase(self) -> str:
-        """Return the cue phrase used to start the second pass."""
+        """
+        Cue phrase used to start the second pass.
+
+        :returns: Phrase injected into second-pass prompts.
+        """
         return self.second_pass.phrase
 
     @property
     def second_pass_use_sample_idx(self) -> int:
-        """Return which pass-1 sample index feeds pass-2."""
+        """
+        Pass-1 sample index that feeds pass 2.
+
+        :returns: Zero-based index of the pass-1 sample highlighted in pass 2.
+        """
         return self.second_pass.use_sample_idx
 
     @property
     def think_cap(self) -> int:
-        """Return the max new tokens for the think phase."""
+        """
+        Maximum number of new tokens for the think phase.
+
+        :returns: Token cap used when generating ``<think>`` content.
+        """
         return self.limits.think_cap
 
     @property
     def answer_cap(self) -> int:
-        """Return the max new tokens for the answer phase."""
+        """
+        Maximum number of new tokens for the answer phase.
+
+        :returns: Token cap used when generating ``<answer>`` content.
+        """
         return self.limits.answer_cap
 
 @dataclass
@@ -379,16 +460,24 @@ def _load_existing_example_index(outpath: str) -> Dict[str, set[int]]:
 
 
 @dataclass
+class SampleRowPasses:
+    """Per-row pass outputs used when building result rows."""
+
+    pass1: PassOutputs
+    pass2: Optional[PassOutputs]
+    extra_passes: Optional[List[Tuple[str, PassOutputs]]]
+
+
+@dataclass
 class SampleRowContext:
     """Context required to build a single output row."""
 
     example: Dict[str, Any]
-    pass1: PassOutputs
-    pass2: Optional[PassOutputs]
     results_ctx: ResultsContext
     batch_index: int
     sample_idx: int
     gold_set: set[str]
+    passes: SampleRowPasses
 
 
 def _pack_pass_result(
@@ -520,12 +609,13 @@ def _build_first_pass_choice(
 
 def _build_second_pass_prompts(ctx: SecondPassContext) -> List[str]:
     """Build chat prompts for pass-2 for each batch item."""
+    cue_phrase = ctx.cue_str.strip()
     return [
         chat_base_for_pass2_from_messages(
             ctx.inference.tokenizer,
             example["messages"],
             ctx.firstpass_choice[index],
-            ctx.inference.config.second_pass_phrase.strip(),
+            cue_phrase,
         )
         for index, example in enumerate(ctx.batch_items)
     ]
@@ -584,10 +674,14 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
     row_index = ctx.batch_index * ctx.results_ctx.num_samples + ctx.sample_idx
     gold_set = ctx.gold_set
 
+    pass1_outputs = ctx.passes.pass1
+    pass2_outputs = ctx.passes.pass2
+    extra_passes = ctx.passes.extra_passes
+
     pass1_result = _pack_pass_result(
-        full_text=ctx.pass1.full_texts[row_index],
-        ent_think=ctx.pass1.ent_think[row_index],
-        ent_answer=ctx.pass1.ent_answer[row_index],
+        full_text=pass1_outputs.full_texts[row_index],
+        ent_think=pass1_outputs.ent_think[row_index],
+        ent_answer=pass1_outputs.ent_answer[row_index],
         meta={
             "injected_cue": False,
             "prev_output": None,
@@ -609,11 +703,11 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
     )
 
     pass2_result: Optional[Dict[str, Any]] = None
-    if config.two_pass and ctx.pass2 is not None:
+    if config.two_pass and pass2_outputs is not None:
         pass2_result = _pack_pass_result(
-            full_text=ctx.pass2.full_texts[row_index],
-            ent_think=ctx.pass2.ent_think[row_index],
-            ent_answer=ctx.pass2.ent_answer[row_index],
+            full_text=pass2_outputs.full_texts[row_index],
+            ent_think=pass2_outputs.ent_think[row_index],
+            ent_answer=pass2_outputs.ent_answer[row_index],
             meta={
                 "injected_cue": True,
                 "prev_output": ctx.results_ctx.firstpass_choice[ctx.batch_index],
@@ -631,14 +725,58 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             pass2_result["soft_reward_detail"],
         ) = rush_soft_match_reward(
             pass2_result["pred_answer"],
-            ctx.example["solution"],
+                ctx.example["solution"],
         )
         pass2_result["improved_over_pass1"] = (
             bool(pass2_result["is_correct_pred"])
             and not bool(pass1_result["is_correct_pred"])
         )
 
-    return {
+    # Optional multi-cue reconsideration passes (pass2a / pass2b / pass2c).
+    def _pack_extra_result(
+        cue_str_extra: str,
+        outputs_extra: PassOutputs,
+    ) -> Dict[str, Any]:
+        extra_res = _pack_pass_result(
+            full_text=outputs_extra.full_texts[row_index],
+            ent_think=outputs_extra.ent_think[row_index],
+            ent_answer=outputs_extra.ent_answer[row_index],
+            meta={
+                "injected_cue": True,
+                "prev_output": ctx.results_ctx.firstpass_choice[ctx.batch_index],
+                "cue_prefix_str": cue_str_extra,
+                "stop_reason_think": outputs_extra.stop_reason_think[row_index],
+                "stop_reason_answer": outputs_extra.stop_reason_answer[row_index],
+            },
+        )
+        extra_res["is_correct_pred"] = bool(
+            extra_res.get("pred_answer_canon")
+            and extra_res["pred_answer_canon"] in gold_set
+        )
+        (
+            extra_res["soft_reward"],
+            extra_res["soft_reward_detail"],
+        ) = rush_soft_match_reward(
+            extra_res["pred_answer"],
+            ctx.example["solution"],
+        )
+        extra_res["improved_over_pass1"] = (
+            bool(extra_res["is_correct_pred"])
+            and not bool(pass1_result["is_correct_pred"])
+        )
+        return extra_res
+
+    extra_pass_results: Dict[str, Dict[str, Any]] = build_extra_pass_results_for_cues(
+        two_pass=config.two_pass,
+        extra_passes=extra_passes,
+        pack_result_for_extra=_pack_extra_result,
+    )
+
+    # For convenience, expose the main pass2 as pass2c when we have ≥3 cues.
+    if config.two_pass and pass2_result is not None and len(extra_pass_results) >= 2:
+        extra_pass_results.setdefault("pass2c", pass2_result)
+
+    row_dict: Dict[str, Any] = {
         "example_id": ctx.example["id"],
         "gold_answer": ctx.example["solution"],
         "gold_answer_canon_set": sorted(list(gold_set)),
@@ -650,6 +788,11 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             pass2=pass2_result,
         ),
     }
+    for key in ("pass2a", "pass2b", "pass2c"):
+        if key in extra_pass_results:
+            row_dict[key] = extra_pass_results[key]
+
+    return row_dict
 
 
 def _write_results_for_batch(
@@ -657,6 +800,7 @@ def _write_results_for_batch(
     pass1: PassOutputs,
     pass2: Optional[PassOutputs],
     results_ctx: ResultsContext,
+    extra_passes: Optional[List[Tuple[str, PassOutputs]]] = None,
 ) -> None:
     """Write JSONL rows for a batch, only for missing sample indices."""
     with open(results_ctx.outpath, "a", encoding="utf-8") as handle:
@@ -665,17 +809,60 @@ def _write_results_for_batch(
             for sample_idx in example["missing_indices"]:
                 row_ctx = SampleRowContext(
                     example=example,
-                    pass1=pass1,
-                    pass2=pass2,
                     results_ctx=results_ctx,
                     batch_index=batch_index,
                     sample_idx=sample_idx,
                     gold_set=gold_set,
+                    passes=SampleRowPasses(
+                        pass1=pass1,
+                        pass2=pass2,
+                        extra_passes=extra_passes,
+                    ),
                 )
                 row = _build_row_for_sample(row_ctx)
                 json.dump(row, handle, ensure_ascii=False)
                 handle.write("\n")
                 results_ctx.existing_by_example[example["id"]].add(sample_idx)
+
+
+def _compute_second_pass_outputs_for_carpark(
+    *,
+    context: InferenceContext,
+    batch_items: List[Dict[str, Any]],
+    firstpass_choice: List[str],
+    num_samples: int,
+) -> Tuple[List[str], Optional[PassOutputs], Optional[List[Tuple[str, PassOutputs]]]]:
+    """
+    Run optional second-pass reconsideration for a carpark batch.
+
+    Returns:
+        cue_strs: list of cue strings (with trailing spaces)
+        main_pass2: the PassOutputs corresponding to the last cue (for pass2)
+        extra_passes: list of (cue_str, PassOutputs) for earlier cues
+    """
+    cue_strs = build_second_pass_cue_strings(context.config.second_pass_phrase)
+    extra_passes: List[Tuple[str, PassOutputs]] = []
+    main_pass2: Optional[PassOutputs] = None
+
+    if context.config.two_pass and cue_strs:
+        for idx, cue_str in enumerate(cue_strs):
+            second_pass_ctx = SecondPassContext(
+                batch_items=batch_items,
+                inference=context,
+                firstpass_choice=firstpass_choice,
+                num_samples=num_samples,
+                cue_str=cue_str,
+            )
+            outputs_i = _run_pass2_for_batch(second_pass_ctx)
+            if idx == len(cue_strs) - 1:
+                main_pass2 = outputs_i
+            else:
+                extra_passes.append((cue_str, outputs_i))
+    else:
+        total_rows = len(batch_items) * num_samples
+        main_pass2 = empty_pass_outputs(total_rows)
+
+    return cue_strs, main_pass2, extra_passes
 
 
 def _build_batch_items_for_range(
@@ -757,33 +944,27 @@ def _run_inference_on_split_core(
             context.config,
         )
 
-        cue_str = context.config.second_pass_phrase.strip() + " "
-        if context.config.two_pass:
-            second_pass_ctx = SecondPassContext(
-                batch_items=batch_items,
-                inference=context,
-                firstpass_choice=firstpass_choice,
-                num_samples=num_samples,
-                cue_str=cue_str,
-            )
-            pass2_outputs = _run_pass2_for_batch(second_pass_ctx)
-        else:
-            total_rows = len(batch_items) * num_samples
-            pass2_outputs = empty_pass_outputs(total_rows)
+        cue_strs, main_pass2, extra_passes = _compute_second_pass_outputs_for_carpark(
+            context=context,
+            batch_items=batch_items,
+            firstpass_choice=firstpass_choice,
+            num_samples=num_samples,
+        )
 
         results_ctx = ResultsContext(
             outpath=outpath,
             inference=context,
             num_samples=num_samples,
-            cue_str=cue_str,
+            cue_str=cue_strs[-1] if cue_strs else "",
             firstpass_choice=firstpass_choice,
             existing_by_example=existing_by_example,
         )
         _write_results_for_batch(
             batch_items=batch_items,
             pass1=pass1_outputs,
-            pass2=pass2_outputs if context.config.two_pass else None,
+            pass2=main_pass2 if context.config.two_pass else None,
             results_ctx=results_ctx,
+            extra_passes=extra_passes if extra_passes else None,
         )
 
 
@@ -791,7 +972,19 @@ def _run_inference_on_split_core(
 
 
 def run_inference_on_split(**kwargs) -> None:
-    """Public wrapper matching the signature used by unified runners."""
+    """
+    Public wrapper matching the signature used by unified runners.
+
+    This function adapts flat keyword arguments from the unified CLI into a
+    :class:`CarparkInferenceConfig` and runs the full two-pass inference loop.
+
+    :param kwargs: Keyword-only arguments including ``split_name``, ``examples``,
+        ``tokenizer``, ``model``, ``step``, ``outdir``, and common sampling
+        options (``batch_size``, ``num_samples``, ``temperature``, ``top_p``,
+        ``entropy_mode``, ``eos_ids``, ``two_pass``, ``second_pass_phrase``,
+        ``second_pass_use_sample_idx``, ``think_cap``, ``answer_cap``).
+    :returns: ``None``. Results are written to a JSONL file under ``outdir``.
+    """
     config_kwargs = build_math_inference_config_kwargs(
         batch_size=kwargs.get("batch_size", 8),
         num_samples=kwargs.get("num_samples", 1),
@@ -802,7 +995,7 @@ def run_inference_on_split(**kwargs) -> None:
         two_pass=kwargs.get("two_pass", False),
         second_pass_phrase=kwargs.get(
             "second_pass_phrase",
-            "Wait, we need to reconsider. Let's think this through step by step.",
+            DEFAULT_SECOND_PASS_PHRASE,
         ),
         second_pass_use_sample_idx=kwargs.get("second_pass_use_sample_idx", 0),
         think_cap=kwargs.get("think_cap", 750),
@@ -834,7 +1027,17 @@ def load_rush_dataset(
     prompt_col: str = "messages",
     solution_col: str = "solution",
 ):
-    """Load Rush Hour dataset and ensure required columns are present."""
+    """
+    Load a Rush Hour dataset and ensure required columns are present.
+
+    :param dataset_id: Hugging Face dataset identifier or local path.
+    :param split: Dataset split name (for example, ``\"train\"`` or ``\"test\"``).
+    :param cache_dir: Directory to use as a datasets cache.
+    :param prompt_col: Column name containing chat messages or prompts.
+    :param solution_col: Column name containing gold solutions.
+    :returns: A datasets-like object exposing ``column_names`` and ``select``.
+    :raises ValueError: If the requested prompt or solution columns are missing.
+    """
     _, load_dataset = require_datasets()
     dataset = load_dataset(
         dataset_id,
@@ -858,6 +1061,9 @@ def main(argv: Optional[List[str]] = None) -> None:
     CLI entrypoint for carpark inference.
 
     Delegates to the shared unified carpark runner so CLI wiring stays centralized.
+
+    :param argv: Optional list of CLI arguments; defaults to :data:`sys.argv`.
+    :returns: ``None`` after the run completes.
     """
     run_carpark_main(lambda: sys.modules[__name__], HFBackend, argv)
 

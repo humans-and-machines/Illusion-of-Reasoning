@@ -23,8 +23,16 @@ def find_markers_and_context(
     """
     Scan ``think_text`` for the earliest match among ``patterns``.
 
-    Returns:
-        (markers, earliest_pos, context_prefix, excerpt)
+    :param think_text: Model reasoning text (may be ``None`` or empty).
+    :param prompt_text: Prompt text used to build contextual prefixes.
+    :param patterns: Sequence of ``(name, regex)`` marker patterns to search for.
+    :param skip_prefix_chars: Number of characters at the start of ``think_text``
+        to ignore when searching (for example, injected cues).
+    :returns: Tuple ``(markers, earliest_pos, context_prefix, excerpt)`` where
+        ``markers`` is the list of matched marker names, ``earliest_pos`` is
+        the earliest character index of any match, ``context_prefix`` is a
+        combined prompt+prefix string, and ``excerpt`` is a short window around
+        the earliest match.
     """
     if not think_text:
         return [], None, None, None

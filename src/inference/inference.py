@@ -69,7 +69,12 @@ MAX_TOKENS = 1224  # generous upper-bound so the model can finish naturally
 
 
 def _require_torch_modules():
-    """Import torch and torch.nn.functional dynamically, raising if missing."""
+    """
+    Import ``torch`` and ``torch.nn.functional`` dynamically, raising if missing.
+
+    :returns: A tuple ``(torch_module, functional_module)`` with the imported modules.
+    :raises ImportError: If PyTorch is not installed in the environment.
+    """
     try:
         torch_module = import_module("torch")
         functional_module = import_module("torch.nn.functional")
@@ -80,7 +85,13 @@ def _require_torch_modules():
 
 
 def append_jsonl(path: str, row: dict) -> None:
-    """Append a JSON-serializable row to a JSONL file, creating parent directories."""
+    """
+    Append a JSON-serializable row to a JSONL file, creating parent directories.
+
+    :param path: Path to the JSONL file to append to.
+    :param row: Mapping or object that can be serialized by :mod:`json`.
+    :returns: ``None``. The row is appended to ``path`` on disk.
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as jsonl_file:
         json.dump(row, jsonl_file, ensure_ascii=False)
@@ -88,7 +99,12 @@ def append_jsonl(path: str, row: dict) -> None:
 
 
 def _load_seen_problems(output_path: str) -> set:
-    """Return the set of problems already present in an existing JSONL file."""
+    """
+    Load the set of problems already present in an existing JSONL file.
+
+    :param output_path: Path to the JSONL file containing prior results.
+    :returns: Set of problem strings that already appear in the file.
+    """
     if not os.path.exists(output_path):
         return set()
     seen_problems: set = set()
@@ -105,7 +121,14 @@ def _load_seen_problems(output_path: str) -> set:
 
 
 def _build_generation_kwargs(tokenizer_obj, num_samples: int, temperature: float) -> dict:
-    """Construct generation keyword arguments for the language model."""
+    """
+    Construct generation keyword arguments for the language model.
+
+    :param tokenizer_obj: Tokenizer instance providing an ``eos_token_id`` attribute.
+    :param num_samples: Number of samples to generate per prompt.
+    :param temperature: Sampling temperature; ignored when ``num_samples == 1``.
+    :returns: Dictionary of keyword arguments suitable for ``generate`` calls.
+    """
     do_sample = num_samples > 1
     return {
         "max_new_tokens": MAX_TOKENS,
@@ -120,7 +143,13 @@ def _build_generation_kwargs(tokenizer_obj, num_samples: int, temperature: float
 
 
 def _compute_entropies(scores, functional_module) -> list[float]:
-    """Compute average token entropy for each generated sequence."""
+    """
+    Compute average token entropy for each generated sequence.
+
+    :param scores: Sequence of logits tensors returned by ``generate``.
+    :param functional_module: ``torch.nn.functional`` module providing ``softmax``.
+    :returns: List of mean token entropies, one per generated sequence.
+    """
     if not scores:
         return []
     num_sequences = scores[0].shape[0]
@@ -139,7 +168,14 @@ def _compute_entropies(scores, functional_module) -> list[float]:
 
 
 def _decode_new_tokens(tokenizer_obj, sequences, input_ids):
-    """Decode only the newly generated tokens for each sequence."""
+    """
+    Decode only the newly generated tokens for each sequence.
+
+    :param tokenizer_obj: Tokenizer used to decode token IDs into text.
+    :param sequences: Tensor of full generated sequences including the prompt.
+    :param input_ids: Tensor of input IDs that seeded the generation.
+    :returns: List of decoded strings corresponding to the new tokens only.
+    """
     prompt_length = input_ids.shape[-1]
     return tokenizer_obj.batch_decode(
         sequences[:, prompt_length:],
@@ -153,7 +189,15 @@ def _write_batch_rows(
     entropies,
     context,
 ) -> None:
-    """Write JSONL rows for a single batch of generated samples."""
+    """
+    Write JSONL rows for a single batch of generated samples.
+
+    :param batch: Iterable of dataset examples containing at least ``\"problem\"`` and ``\"answer\"``.
+    :param decoded_sequences: List of decoded outputs, one per sample.
+    :param entropies: List of average token entropies aligned with ``decoded_sequences``.
+    :param context: Batch-level context carrying configuration and output path.
+    :returns: ``None``. Rows are appended to the configured JSONL file.
+    """
     for batch_index, example in enumerate(batch):
         for sample_idx in range(context.config.num_samples):
             flat_index = batch_index * context.config.num_samples + sample_idx
@@ -182,7 +226,17 @@ def _write_batch_rows(
 
 @dataclass
 class InferenceConfig:
-    """Configuration bundle for a single inference run."""
+    """
+    Configuration bundle for a single inference run.
+
+    :param split_name: Name of the dataset split being processed.
+    :param step: Training or checkpoint step identifier for logging and filenames.
+    :param output_dir: Directory where JSONL results will be written.
+    :param batch_size: Number of examples to process per batch.
+    :param num_samples: Number of samples to generate per problem.
+    :param temperature: Sampling temperature for generation.
+    :param examples: Dataset object providing ``select`` and iteration.
+    """
 
     split_name: str
     step: int
@@ -195,7 +249,13 @@ class InferenceConfig:
 
 @dataclass
 class BatchWriteContext:
-    """Context object passed to _write_batch_rows."""
+    """
+    Context object passed to :func:`_write_batch_rows`.
+
+    :param config: Inference configuration used for the run.
+    :param output_path: Path to the JSONL file being written.
+    :param seen_problems: Set of problems that have already been written.
+    """
 
     config: InferenceConfig
     output_path: str
@@ -204,7 +264,17 @@ class BatchWriteContext:
 # —————————————————— inference loop ———————————————————
 
 def run_inference_on_split(config: InferenceConfig) -> None:
-    """Generate completions, compute avg token-entropy, and save JSONL."""
+    """
+    Convenience wrapper for backward compatibility.
+
+    This entry point exists for older call sites and simply indicates that
+    the caller must provide a tokenizer and model via
+    :func:`run_inference_on_split_with_model`.
+
+    :param config: Inference configuration for the run.
+    :returns: ``None``. The function always raises a :class:`RuntimeError`.
+    :raises RuntimeError: Always; callers should use ``run_inference_on_split_with_model``.
+    """
     raise RuntimeError(
         "run_inference_on_split must be called with tokenizer and lm_model",
     )  # pragma: no cover
@@ -216,7 +286,14 @@ def run_inference_on_split_with_model(
     tokenizer,
     lm_model,
 ) -> None:
-    """Generate completions, compute avg token-entropy, and save JSONL."""
+    """
+    Generate completions, compute average token entropy, and save JSONL rows.
+
+    :param config: Inference configuration specifying dataset and generation parameters.
+    :param tokenizer: Tokenizer used to encode prompts and decode outputs.
+    :param lm_model: Hugging Face-style model exposing a ``generate`` method.
+    :returns: ``None``. Results are appended to the output JSONL file.
+    """
     torch_module, functional_module = _require_torch_modules()
 
     output_path = os.path.join(
@@ -282,7 +359,13 @@ def run_inference_on_split_with_model(
     )
 
 def _load_openr1_math(cache_dir: str, num_examples: int):
-    """Load the OpenR1-Math-220k training split via datasets, capped to num_examples."""
+    """
+    Load the OpenR1-Math-220k training split via :mod:`datasets`.
+
+    :param cache_dir: Directory to use as a datasets cache.
+    :param num_examples: Maximum number of examples to keep from the training split.
+    :returns: A dataset object representing the shuffled subset.
+    """
     _, load_dataset_fn = require_datasets()
     dataset = load_dataset_fn("open-r1/OpenR1-Math-220k", cache_dir=cache_dir)["train"]
     return dataset.shuffle(seed=42).select(range(num_examples))

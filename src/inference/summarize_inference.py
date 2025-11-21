@@ -363,7 +363,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 # ------------------------------ Main -----------------------------------------
 
 def main() -> None:
-    """CLI entrypoint that filters and aggregates crossword inference JSONL results."""
+    """
+    CLI entrypoint that filters and aggregates crossword inference JSONL results.
+
+    :returns: ``None``. The function parses arguments, performs aggregation, and prints summaries.
+    """
     parser = _build_arg_parser()
     args = parser.parse_args()
 

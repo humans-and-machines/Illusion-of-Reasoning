@@ -15,7 +15,7 @@
 
 """Configuration dataclasses for training scripts (SFT/GRPO)."""
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from types import SimpleNamespace
 from typing import Any, Optional
 
@@ -163,88 +163,37 @@ class ScriptArguments(trl.ScriptArguments):
                     )
 
 
-# Note: shared options could use a mixin to reduce code duplication.
 @dataclass
-class GRPOConfig(trl.GRPOConfig):
-    """
-    args for callbacks, benchmarks etc
-    """
+class ChatBenchmarkConfig:
+    """Shared options for callbacks, benchmarks, and chat-style prompting."""
 
     benchmarks: list[str] = field(
-        default_factory=lambda: [],
+        default_factory=list,
         metadata={"help": "The benchmarks to run after training."},
     )
     callbacks: list[str] = field(
-        default_factory=lambda: [],
+        default_factory=list,
         metadata={"help": "The callbacks to run during training."},
     )
     chat_template: Optional[str] = field(
         default=None,
         metadata={"help": "The chat template to use."},
     )
-    hub_model_revision: Optional[str] = field(
-        default="main", metadata={"help": "The Hub model branch to push the model to."}
-    )
-    num_completions_to_print: int = field(
-        default=0,
-        metadata={"help": "Number of completions to print."},
-    )
-    overwrite_hub_revision: bool = field(
-        default=False,
-        metadata={"help": "Whether to overwrite the Hub revision."},
-    )
-    push_to_hub_revision: bool = field(
-        default=False,
-        metadata={"help": "Whether to push to a Hub revision/branch."},
-    )
     system_prompt: Optional[str] = field(
         default=None,
-        metadata={"help": "The optional system prompt to use."},
-    )
-    wandb_log_unique_prompts: bool = field(
-        default=True,
         metadata={
             "help": (
-                "Whether to log the unique prompts to wandb. This will create "
-                "a new run for each unique prompt."
+                "The optional system prompt to use "
+                "(for training and/or benchmarking)."
             )
         },
     )
-    wandb_entity: Optional[str] = field(
-        default=None,
-        metadata={"help": ("The entity to store runs under.")},
-    )
-    wandb_project: Optional[str] = field(
-        default=None,
-        metadata={"help": ("The project to store runs under.")},
-    )
-    wandb_run_group: Optional[str] = field(
-        default=None,
-        metadata={"help": ("The group to store runs under.")},
-    )
+
 
 @dataclass
-class SFTConfig(trl.SFTConfig):
-    """
-    args for callbacks, benchmarks etc
-    """
+class HubRevisionConfig:
+    """Configuration related to pushing checkpoints to the Hub."""
 
-    benchmarks: list[str] = field(
-        default_factory=lambda: [],
-        metadata={"help": "The benchmarks to run after training."},
-    )
-    callbacks: list[str] = field(
-        default_factory=lambda: [],
-        metadata={"help": "The callbacks to run during training."},
-    )
-    chat_template: Optional[str] = field(
-        default=None,
-        metadata={"help": "The chat template to use."},
-    )
-    system_prompt: Optional[str] = field(
-        default=None,
-        metadata={"help": "The optional system prompt to use for benchmarking."},
-    )
     hub_model_revision: Optional[str] = field(
         default="main",
         metadata={"help": "The Hub model branch to push the model to."},
@@ -257,44 +206,80 @@ class SFTConfig(trl.SFTConfig):
         default=False,
         metadata={"help": "Whether to push to a Hub revision/branch."},
     )
+
+
+@dataclass
+class WandbRunConfig:
+    """Configuration for Weights & Biases runs."""
+
     wandb_entity: Optional[str] = field(
         default=None,
-        metadata={"help": ("The entity to store runs under.")},
+        metadata={"help": "The entity to store runs under."},
     )
     wandb_project: Optional[str] = field(
         default=None,
-        metadata={"help": ("The project to store runs under.")},
+        metadata={"help": "The project to store runs under."},
     )
     wandb_run_group: Optional[str] = field(
         default=None,
-        metadata={"help": ("The group to store runs under.")},
+        metadata={"help": "The group to store runs under."},
+    )
+    wandb_log_unique_prompts: bool = field(
+        default=True,
+        metadata={
+            "help": (
+                "Whether to log unique prompts to W&B. This will create "
+                "a new run for each unique prompt."
+            )
+        },
     )
 
 
 @dataclass
-class GRPOScriptArguments(ScriptArguments):
+class GRPOOnlyTrainingConfig:
+    """GRPO-specific training extras."""
+
+    num_completions_to_print: int = field(
+        default=0,
+        metadata={"help": "Number of completions to print."},
+    )
+
+
+class GRPOConfig(trl.GRPOConfig):  # pylint: disable=too-few-public-methods
     """
-    Script arguments for the GRPO training script.
+    Thin wrapper around :class:`trl.GRPOConfig` for type-checking.
+
+    All project-specific training options live in separate dataclasses
+    (:class:`ChatBenchmarkConfig`, :class:`HubRevisionConfig`,
+    :class:`WandbRunConfig`, :class:`GRPOOnlyTrainingConfig`) which are merged
+    into an instance of this class at CLI parse time.
+    """
+
+
+class SFTConfig(trl.SFTConfig):  # pylint: disable=too-few-public-methods
+    """
+    Thin wrapper around :class:`trl.SFTConfig` for type-checking.
+
+    Project-specific training options are provided by
+    :class:`ChatBenchmarkConfig`, :class:`HubRevisionConfig`, and
+    :class:`WandbRunConfig` and merged into instances of this class by callers.
+    """
+
+
+@dataclass
+class GRPORewardConfig:
+    """
+    Reward-related script arguments for the GRPO training script.
 
     Args:
         reward_funcs (`list[str]`):
             List of reward functions. Possible values:
             'accuracy', 'format', 'reasoning_steps', 'cosine',
             'repetition_penalty', 'length', 'tag_count'.
-        cosine_min_value_wrong (`float`):
-            Minimum reward for cosine scaling for wrong answers.
-        cosine_max_value_wrong (`float`):
-            Maximum reward for cosine scaling for wrong answers.
-        cosine_min_value_correct (`float`):
-            Minimum reward for cosine scaling for correct answers.
-        cosine_max_value_correct (`float`):
-            Maximum reward for cosine scaling for correct answers.
-        cosine_max_len (`int`):
-            Maximum length for cosine scaling.
-        max_completion_len (`int`):
-            Maximum number of tokens in completion.
-        soft_punish_cache (`int`):
-            Minimum number of tokens in completion.
+        repetition_n_grams (`int`):
+            Number of n-grams for repetition penalty reward.
+        repetition_max_penalty (`float`):
+            Maximum (negative) penalty for repetition penalty reward.
     """
 
     reward_funcs: list[str] = field(
@@ -307,6 +292,38 @@ class GRPOScriptArguments(ScriptArguments):
             )
         },
     )
+    repetition_n_grams: int = field(
+        default=3,
+        metadata={"help": "Number of n-grams for repetition penalty reward"},
+    )
+    repetition_max_penalty: float = field(
+        default=-1.0,
+        metadata={
+            "help": (
+                "Maximum (negative) penalty for the repetition penalty reward."
+            )
+        },
+    )
+
+
+@dataclass
+class GRPOCosineRewardConfig:
+    """
+    Cosine-scaling parameters for GRPO reward shaping.
+
+    Args:
+        cosine_min_value_wrong (`float`):
+            Minimum reward for cosine scaling for wrong answers.
+        cosine_max_value_wrong (`float`):
+            Maximum reward for cosine scaling for wrong answers.
+        cosine_min_value_correct (`float`):
+            Minimum reward for cosine scaling for correct answers.
+        cosine_max_value_correct (`float`):
+            Maximum reward for cosine scaling for correct answers.
+        cosine_max_len (`int`):
+            Maximum length for cosine scaling.
+    """
+
     cosine_min_value_wrong: float = field(
         default=0.0,
         metadata={"help": "Minimum reward for wrong answers"},
@@ -327,14 +344,23 @@ class GRPOScriptArguments(ScriptArguments):
         default=1000,
         metadata={"help": "Maximum length for scaling"},
     )
-    repetition_n_grams: int = field(
-        default=3,
-        metadata={"help": "Number of n-grams for repetition penalty reward"},
-    )
-    repetition_max_penalty: float = field(
-        default=-1.0,
-        metadata={"help": "Maximum (negative) penalty for for repetition penalty reward"},
-    )
+
+
+@dataclass
+class GRPODatasetColumnsConfig:
+    """
+    Dataset column and generation-length parameters for GRPO.
+
+    Args:
+        dataset_prompt_column (`str`):
+            Column to use as prompts for training.
+        dataset_solution_column (`str`):
+            Column to use as the gold solution/answer for training.
+        max_completion_len (`int`):
+            Maximum number of characters in completion.
+        soft_punish_cache (`int`):
+            Minimum number of characters in completion.
+    """
 
     dataset_prompt_column: str = field(
         default="problem",
@@ -342,9 +368,10 @@ class GRPOScriptArguments(ScriptArguments):
     )
     dataset_solution_column: str = field(
         default="answer",
-        metadata={"help": "Column to use as the gold solution/answer for training."},
+        metadata={
+            "help": "Column to use as the gold solution/answer for training."
+        },
     )
-
     max_completion_len: int = field(
         default=16384,
         metadata={"help": "Maximum number of characters in completion."},
@@ -354,15 +381,57 @@ class GRPOScriptArguments(ScriptArguments):
         metadata={"help": "Minimum number of characters in completion."},
     )
 
+
+@dataclass
+class GRPOSpanKLConfig:
+    """
+    Span-wise KL control parameters for GRPO.
+
+    Args:
+        span_kl_target (`float`):
+            Per-token KL target.
+        span_kl_beta0 (`float`):
+            Initial KL coefficient.
+        span_kl_horizon (`int`):
+            Horizon for KL controller.
+    """
+
     span_kl_target: float = field(
         default=0.05,
-        metadata={"help": "per-token KL target"},
+        metadata={"help": "Per-token KL target."},
     )
     span_kl_beta0: float = field(
         default=0.12,
-        metadata={"help": "initial KL coeff"},
+        metadata={"help": "Initial KL coefficient."},
     )
     span_kl_horizon: int = field(
         default=10000,
-        metadata={"help": "horizon for KL controller"},
+        metadata={"help": "Horizon for KL controller."},
     )
+
+
+class GRPOScriptArguments(ScriptArguments):  # pylint: disable=too-few-public-methods
+    """
+    Base script arguments for the GRPO training script.
+
+    GRPO-specific options are provided via separate dataclasses
+    (:class:`GRPORewardConfig`, :class:`GRPOCosineRewardConfig`,
+    :class:`GRPODatasetColumnsConfig`, :class:`GRPOSpanKLConfig`) and merged
+    into an instance of this class at CLI parse time.
+    """
+
+
+def merge_dataclass_attributes(target: Any, *configs: Any) -> Any:
+    """
+    Copy all fields from one or more dataclass instances onto ``target``.
+
+    This is used to keep the configuration objects that external code sees
+    (``GRPOConfig``, ``SFTConfig``, ``GRPOScriptArguments``) small and tidy
+    while still exposing a flat attribute namespace at runtime.
+    """
+    for cfg in configs:
+        if cfg is None:
+            continue
+        for key, value in asdict(cfg).items():
+            setattr(target, key, value)
+    return target

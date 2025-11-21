@@ -1,17 +1,19 @@
+"""Task-aware reward routing and nested-completion helpers for GRPO training."""
+
 from __future__ import annotations
 
 import functools
 import importlib
 import os
-from typing import Any, Dict, List, Optional, Tuple
-
-torch = importlib.import_module("torch")
+from typing import Any, Optional
 
 from .rewards_core import (
     pure_accuracy_reward,
     pure_accuracy_reward_math,
     rush_solution_shaped,
 )
+
+torch = importlib.import_module("torch")
 
 
 def _flatten_nested_for_rewards(prompts, completions):
@@ -338,4 +340,3 @@ def reward_router(*, prompts=None, completions=None, tasks=None, proc=None, **kw
 
 
 __all__ = ["reward_router", "_wrap_reward_for_nested"]
-

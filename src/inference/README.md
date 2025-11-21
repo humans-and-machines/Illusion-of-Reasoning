@@ -95,7 +95,10 @@ In most new code you should import from `src.inference.common` where possible; o
 
 ## Math inference core (`math_core.py`)
 
-`math_core.py` implements the two-pass math inference loop for HF models:
+`math_core.py` implements the two-pass math inference loop for HF models.
+The second pass now supports **multiple independent reconsideration cues**
+per sample (e.g. three different “rethink” instructions off the same pass‑1
+reasoning).
 
 - **Configuration**
   - `MathSamplingConfig(SamplingConfigBase)` – adds `batch_size`, `num_samples` on top of shared sampling fields.
@@ -119,6 +122,20 @@ In most new code you should import from `src.inference.common` where possible; o
 - **Results & correctness**
   - Uses `extract_problem_and_answer`, `canon_math`, `contains_canon`, `build_math_pass_meta`, `pack_math_pass_result` (via `common`) to canonicalize answers, compute entropies and reconsideration markers, and produce a per-pass row dict.
   - Writes JSONL rows with full `<think>...</think><answer>...</answer>` contents plus entropy series and reconsideration metadata.
+  - When `two_pass` is enabled and `second_pass_phrase` contains **multiple cues**
+    separated by `|||`, the core will:
+    - Split the phrase into individual cues (e.g. three different sentences).
+    - Run one **independent reconsideration pass per cue**, always starting from
+      the same chosen pass‑1 sample.
+    - Populate the JSONL row with:
+      - `pass1` – baseline pass (no injected cue).
+      - `pass2a`, `pass2b`, `pass2c` – per‑cue reconsideration passes (first,
+        second, third cue respectively).
+      - `pass2` – for backwards compatibility, this is set equal to `pass2c`
+        (the last reconsideration pass).
+    - For each reconsideration pass, the usual per‑pass fields are present:
+      entropies, token counts, `has_reconsider_cue`, `reconsider_markers`,
+      and correctness flags (including `improved_over_pass1`).
 
 - **Public surface**
   - `load_math500(cache_dir, split, seed, dataset_path=None)` – load the MATH-500 dataset from disk.
@@ -144,9 +161,19 @@ canonicalization and scoring:
   - Defines `CarparkInferenceConfig` (I/O + column names + `GenerationLimits` + sampling config + second-pass settings).
   - `InferenceContext` – parallel to `MathInferenceContext`, bundling tokenizer, model, config.
   - `_gen_batch(...)` – wraps `run_generate_batch` with the car-park config.
-  - `run_inference_on_split(...)` – two-pass Rush Hour loop:
+  - `run_inference_on_split(...)` – two-pass Rush Hour loop with optional multi-cue reconsideration:
     - Pass 1: generate `<think>` and `<answer>` blocks for each example/sample.
-    - Pass 2 (optional): reconsideration pass using chosen samples from pass 1.
+    - Pass 2 (optional): one or more reconsideration passes using the chosen
+      sample from pass 1.
+      - If `second_pass_phrase` contains **multiple cues** separated by `|||`,
+        the core runs one reconsideration pass per cue, always starting from the
+        same pass‑1 reasoning.
+      - The JSONL rows expose:
+        - `pass1` – baseline pass.
+        - `pass2a`, `pass2b`, `pass2c` – per‑cue reconsideration passes when
+          three cues are provided.
+        - `pass2` – set equal to the last reconsideration pass (e.g. `pass2c`)
+          for backwards compatibility with existing analysis code.
   - `_pack_pass_result(...)` – uses `build_entropy_pass_base`, `add_token_and_tag_fields`, and Rush Hour correctness metrics.
   - `run_carpark_main(...)` – the unified runner entry point (invoked from `unified_carpark_runner.py`).
 
@@ -156,7 +183,9 @@ If you need to add a new Rush Hour runner that uses a different backend, you can
 
 ## Crossword inference (`crossword_core.py`)
 
-`crossword_core.py` implements inference for cryptic crosswords:
+`crossword_core.py` implements inference for cryptic crosswords, including
+optional multi-cue reconsideration in the second pass (similar to the math
+and carpark cores).
 
 - **Config**
   - `CrosswordCapsConfig` – `batch_size`, `num_samples`, `think_cap`, `answer_cap`.
@@ -176,7 +205,15 @@ If you need to add a new Rush Hour runner that uses a different backend, you can
 
 - **Results & runners**
   - `_pack_pass_result(...)` – assembles a per-pass result dict including reconsideration markers and entropy info, using `build_entropy_pass_base` and `add_token_and_tag_fields`.
-  - `run_inference_on_split(examples, tokenizer, model, config)` – main crossword loop.
+  - `run_inference_on_split(examples, tokenizer, model, config)` – main crossword loop:
+    - Pass 1: baseline `<think>/<answer>` for each clue/sample.
+    - Pass 2 (optional): one or more reconsideration passes driven by
+      `CrosswordTwoPassConfig.phrase`.
+      - If the phrase contains multiple cues separated by `|||`, the loop runs
+        one reconsideration pass per cue starting from the same pass‑1 output.
+      - Result rows expose `pass1`, `pass2a`, `pass2b`, `pass2c` (per‑cue
+        reconsiderations when three cues are used) and `pass2` (aliased to the
+        last reconsideration pass).
   - `unified_crossword_runner.py` / `run_crossword_main(...)` – CLI wrapper to run crossword inference with HF models, defined in `unified_runner_base.py`.
 
 ---
@@ -382,4 +419,3 @@ When adding new functionality, a few guidelines:
   - Use `gateway_utils` for JSONL and CLI plumbing instead of duplicating it.
 
 This keeps most logic centralized and makes it easier to maintain the inference stack across different tasks and backends.
-

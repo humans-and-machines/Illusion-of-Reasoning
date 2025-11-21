@@ -486,7 +486,14 @@ def _populate_bin_aggregates(
 
         _update_pass1_agg(agg, prob_key, pass1_record, gold, config)
 
-        pass2_section = record.get("pass2") or {}
+        # Prefer canonical pass2; fall back to multi-cue variants when present.
+        pass2_section = (
+            record.get("pass2")
+            or record.get("pass2c")
+            or record.get("pass2b")
+            or record.get("pass2a")
+            or {}
+        )
         _update_pass2_agg(agg, prob_key, pass2_section, gold, config)
 
     return aggs, skipped_missing

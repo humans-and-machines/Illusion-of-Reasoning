@@ -14,6 +14,7 @@ from packaging import version
 from src.inference.backends import HFBackend
 from src.inference.common import (
     SamplingConfigBase,
+    build_extra_pass_results_for_cues,
     finite_mean as _finite_mean,
     load_local_json_dataset,
     repeat_for_samples as _repeat_for_samples,
@@ -23,6 +24,7 @@ from src.inference.common import (
     setup_script_logger,
 )
 from src.inference.math_pass_utils import (
+    DEFAULT_SECOND_PASS_PHRASE,
     RECONSIDER_PATTERNS as _RECONSIDER_PATTERNS,
     add_token_and_tag_fields,
     build_entropy_pass_base,
@@ -120,9 +122,7 @@ class CrosswordTwoPassConfig:
     """Configuration for optional second-pass reconsideration."""
 
     enabled: bool = False
-    phrase: str = (
-        "Wait, we need to reconsider. Let's think this through step by step."
-    )
+    phrase: str = DEFAULT_SECOND_PASS_PHRASE
     sample_index: int = 0
 
 
@@ -226,7 +226,14 @@ except (ImportError, AttributeError) as exc:
 
 # ───────────────────────── Prompt builders ─────────────────────────
 def chat_base_for_pass1(tokenizer, clue: str, enumeration: Optional[str]) -> str:
-    """Build the chat-formatted prompt for crossword pass 1."""
+    """
+    Build the chat-formatted prompt for crossword pass 1.
+
+    :param tokenizer: Chat tokenizer providing ``apply_chat_template``.
+    :param clue: Cryptic crossword clue text.
+    :param enumeration: Optional enumeration string (for example, ``\"4\"`` or ``\"3,5\"``).
+    :returns: A formatted prompt string suitable for first-pass generation.
+    """
     enum_text = f" ({enumeration})" if enumeration else ""
     user_text = f"Clue: {clue}{enum_text}"
     return tokenizer.apply_chat_template(
@@ -246,7 +253,16 @@ def chat_base_for_pass2(
     prev_output: str,
     cue: str,
 ) -> str:
-    """Build the chat-formatted prompt for crossword pass 2."""
+    """
+    Build the chat-formatted prompt for crossword pass 2.
+
+    :param tokenizer: Chat tokenizer providing ``apply_chat_template``.
+    :param clue: Cryptic crossword clue text.
+    :param enumeration: Optional enumeration string (for example, ``\"4\"`` or ``\"3,5\"``).
+    :param prev_output: First-pass reasoning and answer to show as assistant output.
+    :param cue: Cue text encouraging reconsideration in the second pass.
+    :returns: A formatted prompt string suitable for second-pass generation.
+    """
     enum_text = f" ({enumeration})" if enumeration else ""
     return tokenizer.apply_chat_template(
         [
@@ -469,7 +485,7 @@ def _run_second_pass_for_batch(
     inputs: SecondPassInputs,
     generation: BatchGenerationContext,
     caps: CrosswordCapsConfig,
-    two_pass_cfg: CrosswordTwoPassConfig,
+    cue_phrase: str,
 ) -> Tuple[
     List[str],
     List[List[float]],
@@ -477,14 +493,15 @@ def _run_second_pass_for_batch(
     List[str],
     List[str],
 ]:
-    """Run the second think+answer pass for a batch."""
+    """Run the second think+answer pass for a batch with a given cue."""
     state: Dict[str, Any] = {
         "batch": inputs.batch,
         "firstpass_choice": inputs.firstpass_choice,
         "num_samples": inputs.num_samples,
     }
     state["total_rows"] = len(state["batch"]) * state["num_samples"]
-    state["cue_str"] = two_pass_cfg.phrase.strip() + " "
+    cue_phrase_stripped = cue_phrase.strip()
+    state["cue_str"] = cue_phrase_stripped + " "
 
     state["base2"] = [
         chat_base_for_pass2(
@@ -492,7 +509,7 @@ def _run_second_pass_for_batch(
             example["_clue"],
             example["_enum"],
             state["firstpass_choice"][batch_index],
-            two_pass_cfg.phrase.strip(),
+            cue_phrase_stripped,
         )
         for batch_index, example in enumerate(state["batch"])
     ]
@@ -550,19 +567,67 @@ def _run_second_pass_for_batch(
     )
 
 
-def _write_results_for_batch(
+def _build_extra_pass_results_for_row(
     *,
-    batch: List[Dict[str, Any]],
+    example: Dict[str, Any],
+    batch_index: int,
+    row_index: int,
+    canon_gold: Optional[str],
     firstpass_choice: List[str],
-    results: Dict[str, Any],
+    extra_passes: List[Tuple[str, Dict[str, Any]]],
+    pass1: Dict[str, Any],
+    config: CrosswordInferenceConfig,
+) -> Dict[str, Dict[str, Any]]:
+    """Build optional multi-cue reconsideration results for a single row."""
+
+    def _pack_extra_result(
+        cue_phrase_extra: str,
+        res_dict: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        extra_meta = {
+            "clue": example["_clue"],
+            "enumeration": example["_enum"],
+            "injected_cue": True,
+            "canon_gold": canon_gold,
+            "prev_output": firstpass_choice[batch_index],
+            "cue_prefix_str": cue_phrase_extra.strip(),
+            "stop_reason_think": res_dict["think2_stop"][row_index],
+            "stop_reason_answer": res_dict["answer2_stop"][row_index],
+        }
+        extra_res = _pack_pass_result(
+            full_text=res_dict["pass2_full"][row_index],
+            ent_think=res_dict["think2_ents"][row_index],
+            ent_answer=res_dict["answer2_ents"][row_index],
+            meta=extra_meta,
+        )
+        extra_res["improved_over_pass1"] = bool(
+            extra_res.get("is_correct_pred"),
+        ) and not bool(pass1.get("is_correct_pred"))
+        return extra_res
+
+    return build_extra_pass_results_for_cues(
+        two_pass=config.two_pass.enabled,
+        extra_passes=extra_passes,
+        pack_result_for_extra=_pack_extra_result,
+    )
+
+
+def _write_results_for_example(
+    *,
+    example: Dict[str, Any],
+    batch_index: int,
     context: Dict[str, Any],
 ) -> None:
-    """Write per-example results for a batch to disk."""
-    for batch_index, example in enumerate(batch):
-        canon_gold = _canon_cross(example["_gold"])
-        for sample_idx in range(context["num_samples"]):
-            row_index = batch_index * context["num_samples"] + sample_idx
-            pass1_meta = {
+    """Write all sample rows for a single example."""
+    canon_gold = _canon_cross(example["_gold"])
+    for sample_idx in range(context["num_samples"]):
+        row_index = batch_index * context["num_samples"] + sample_idx
+        results = context["results"]
+        pass1 = _pack_pass_result(
+            full_text=results["pass1_full"][row_index],
+            ent_think=results["think1_ents"][row_index],
+            ent_answer=results["answer1_ents"][row_index],
+            meta={
                 "clue": example["_clue"],
                 "enumeration": example["_enum"],
                 "injected_cue": False,
@@ -571,50 +636,88 @@ def _write_results_for_batch(
                 "cue_prefix_str": "",
                 "stop_reason_think": results["think1_stop"][row_index],
                 "stop_reason_answer": results["answer1_stop"][row_index],
-            }
-            pass1 = _pack_pass_result(
-                full_text=results["pass1_full"][row_index],
-                ent_think=results["think1_ents"][row_index],
-                ent_answer=results["answer1_ents"][row_index],
-                meta=pass1_meta,
-            )
-            pass2: Optional[Dict[str, Any]] = None
-            if context["config"].two_pass.enabled:
-                pass2_meta = {
+            },
+        )
+
+        pass2: Optional[Dict[str, Any]] = None
+        if context["config"].two_pass.enabled:
+            cue_prefix = context.get("cue_phrase_main", context["config"].two_pass.phrase).strip()
+            pass2 = _pack_pass_result(
+                full_text=results["pass2_full"][row_index],
+                ent_think=results["think2_ents"][row_index],
+                ent_answer=results["answer2_ents"][row_index],
+                meta={
                     "clue": example["_clue"],
                     "enumeration": example["_enum"],
                     "injected_cue": True,
                     "canon_gold": canon_gold,
-                    "prev_output": firstpass_choice[batch_index],
-                    "cue_prefix_str": context["config"].two_pass.phrase.strip(),
+                    "prev_output": context["firstpass_choice"][batch_index],
+                    "cue_prefix_str": cue_prefix,
                     "stop_reason_think": results["think2_stop"][row_index],
                     "stop_reason_answer": results["answer2_stop"][row_index],
-                }
-                pass2 = _pack_pass_result(
-                    full_text=results["pass2_full"][row_index],
-                    ent_think=results["think2_ents"][row_index],
-                    ent_answer=results["answer2_ents"][row_index],
-                    meta=pass2_meta,
-                )
-                pass2["improved_over_pass1"] = bool(
-                    pass2.get("is_correct_pred"),
-                ) and not bool(pass1.get("is_correct_pred"))
+                },
+            )
+            pass2["improved_over_pass1"] = bool(
+                pass2.get("is_correct_pred"),
+            ) and not bool(pass1.get("is_correct_pred"))
 
-            row = {
-                "problem": example["_clue"],
-                "gold_answer": example["_gold"],
-                "gold_answer_canon": canon_gold,
-                "enumeration": example["_enum"],
-                "step": context["config"].step,
-                "split": context["config"].split_name,
-                "sample_idx": sample_idx,
-                "pass1": pass1,
-                "pass2": pass2,
-            }
-            with open(context["outpath"], "a", encoding="utf-8") as out_file:
-                json.dump(row, out_file, ensure_ascii=False)
-                out_file.write("\n")
-        context["seen"].add(example["_clue"])
+        extra_pass_results = _build_extra_pass_results_for_row(
+            example=example,
+            batch_index=batch_index,
+            row_index=row_index,
+            canon_gold=canon_gold,
+            firstpass_choice=context["firstpass_choice"],
+            extra_passes=context.get("extra_passes") or [],
+            pass1=pass1,
+            config=context["config"],
+        )
+
+        if (
+            context["config"].two_pass.enabled
+            and pass2 is not None
+            and len(extra_pass_results) >= 2
+        ):
+            extra_pass_results.setdefault("pass2c", pass2)
+
+        row = {
+            "problem": example["_clue"],
+            "gold_answer": example["_gold"],
+            "gold_answer_canon": canon_gold,
+            "enumeration": example["_enum"],
+            "step": context["config"].step,
+            "split": context["config"].split_name,
+            "sample_idx": sample_idx,
+            "pass1": pass1,
+            "pass2": pass2,
+        }
+        for key in ("pass2a", "pass2b", "pass2c"):
+            if key in extra_pass_results:
+                row[key] = extra_pass_results[key]
+        with open(context["outpath"], "a", encoding="utf-8") as out_file:
+            json.dump(row, out_file, ensure_ascii=False)
+            out_file.write("\n")
+
+    context["seen"].add(example["_clue"])
+
+
+def _write_results_for_batch(
+    *,
+    batch: List[Dict[str, Any]],
+    firstpass_choice: List[str],
+    results: Dict[str, Any],
+    context: Dict[str, Any],
+) -> None:
+    """Write per-example results for a batch to disk."""
+    context = dict(context)
+    context["firstpass_choice"] = firstpass_choice
+    context["results"] = results
+
+    for batch_index, example in enumerate(batch):
+        _write_results_for_example(
+            example=example,
+            batch_index=batch_index,
+            context=context,
+        )
 
 
 def _process_batch(
@@ -629,6 +732,7 @@ def _process_batch(
     batch = _build_batch_from_slice(batch_ds, seen)
     if not batch:
         return
+
     first_pass_results = dict(
         zip(
             (
@@ -653,38 +757,14 @@ def _process_batch(
         two_pass_cfg=config.two_pass,
     )
 
-    if config.two_pass.enabled:
-        second_inputs = SecondPassInputs(
+    cue_phrase_main, second_pass_results, extra_second_passes = (
+        _compute_second_pass_results_for_crossword(
             batch=batch,
             firstpass_choice=firstpass_choice,
-            num_samples=config.caps.num_samples,
+            generation=generation,
+            config=config,
         )
-        second_pass_results = dict(
-            zip(
-                (
-                    "pass2_full",
-                    "think2_ents",
-                    "answer2_ents",
-                    "think2_stop",
-                    "answer2_stop",
-                ),
-                _run_second_pass_for_batch(
-                    inputs=second_inputs,
-                    generation=generation,
-                    caps=config.caps,
-                    two_pass_cfg=config.two_pass,
-                ),
-            ),
-        )
-    else:
-        total_rows = len(batch) * config.caps.num_samples
-        second_pass_results = {
-            "pass2_full": [""] * total_rows,
-            "think2_ents": [[] for _ in range(total_rows)],
-            "answer2_ents": [[] for _ in range(total_rows)],
-            "think2_stop": [""] * total_rows,
-            "answer2_stop": [""] * total_rows,
-        }
+    )
 
     results_state: Dict[str, Any] = {
         **first_pass_results,
@@ -695,6 +775,8 @@ def _process_batch(
         "outpath": outpath,
         "num_samples": config.caps.num_samples,
         "seen": seen,
+        "cue_phrase_main": cue_phrase_main,
+        "extra_passes": extra_second_passes,
     }
     _write_results_for_batch(
         batch=batch,
@@ -704,6 +786,93 @@ def _process_batch(
     )
 
 
+def _compute_second_pass_results_for_crossword(
+    *,
+    batch: List[Dict[str, Any]],
+    firstpass_choice: List[str],
+    generation: BatchGenerationContext,
+    config: CrosswordInferenceConfig,
+) -> Tuple[str, Dict[str, Any], List[Tuple[str, Dict[str, Any]]]]:
+    """
+    Compute second-pass results (single or multi-cue) for a crossword batch.
+
+    Returns:
+        cue_phrase_main: the primary cue phrase used for the main pass2.
+        second_pass_results: dict with pass2_* arrays (like first_pass_results).
+        extra_second_passes: list of (cue_phrase, results_dict) for earlier cues.
+    """
+    extra_second_passes: List[Tuple[str, Dict[str, Any]]] = []
+    cue_phrase_main: str = ""
+
+    if config.two_pass.enabled:
+        second_inputs = SecondPassInputs(
+            batch=batch,
+            firstpass_choice=firstpass_choice,
+            num_samples=config.caps.num_samples,
+        )
+        raw_phrase = config.two_pass.phrase or ""
+        if "|||" in raw_phrase:
+            cue_phrases = [part.strip() for part in raw_phrase.split("|||") if part.strip()]
+        else:
+            cue_phrases = [raw_phrase.strip()] if raw_phrase.strip() else []
+
+        if cue_phrases:
+            second_pass_results: Dict[str, Any] = {}
+            for idx, phrase in enumerate(cue_phrases):
+                res_dict = dict(
+                    zip(
+                        (
+                            "pass2_full",
+                            "think2_ents",
+                            "answer2_ents",
+                            "think2_stop",
+                            "answer2_stop",
+                        ),
+                        _run_second_pass_for_batch(
+                            inputs=second_inputs,
+                            generation=generation,
+                            caps=config.caps,
+                            cue_phrase=phrase,
+                        ),
+                    ),
+                )
+                if idx == len(cue_phrases) - 1:
+                    second_pass_results = res_dict
+                    cue_phrase_main = phrase
+                else:
+                    extra_second_passes.append((phrase, res_dict))
+        else:
+            cue_phrase_main = config.two_pass.phrase.strip()
+            second_pass_results = dict(
+                zip(
+                    (
+                        "pass2_full",
+                        "think2_ents",
+                        "answer2_ents",
+                        "think2_stop",
+                        "answer2_stop",
+                    ),
+                    _run_second_pass_for_batch(
+                        inputs=second_inputs,
+                        generation=generation,
+                        caps=config.caps,
+                        cue_phrase=cue_phrase_main,
+                    ),
+                ),
+            )
+    else:
+        total_rows = len(batch) * config.caps.num_samples
+        second_pass_results = {
+            "pass2_full": [""] * total_rows,
+            "think2_ents": [[] for _ in range(total_rows)],
+            "answer2_ents": [[] for _ in range(total_rows)],
+            "think2_stop": [""] * total_rows,
+            "answer2_stop": [""] * total_rows,
+        }
+
+    return cue_phrase_main, second_pass_results, extra_second_passes
+
+
 # ───────────────────── Inference Loop ─────────────────────
 def run_inference_on_split(
     examples,
@@ -711,7 +880,15 @@ def run_inference_on_split(
     model,
     config: CrosswordInferenceConfig,
 ) -> None:
-    """Run crossword inference over a dataset and save JSONL results."""
+    """
+    Run crossword inference over a dataset and save JSONL results.
+
+    :param examples: Dataset object containing crossword clues and answers.
+    :param tokenizer: Tokenizer compatible with the underlying language model.
+    :param model: Language model used to generate reasoning and answers.
+    :param config: Crossword inference configuration controlling caps and sampling.
+    :returns: ``None``. Results are appended to a JSONL file under ``config.output_dir``.
+    """
     outpath = os.path.join(
         config.output_dir,
         f"step{config.step:04d}_{config.split_name}.jsonl",
@@ -745,15 +922,24 @@ def run_inference_on_split(
         )
 
 def load_crossword_local(dataset_path: str):
-    """Load crossword examples from a local JSONL file."""
+    """
+    Load crossword examples from a local JSONL file.
+
+    :param dataset_path: Path to a JSONL file containing crossword records.
+    :returns: Dataset-like object created by :func:`load_local_json_dataset`.
+    """
     logger.info("Loading CROSSWORD JSONL from: %s", dataset_path)
     return load_local_json_dataset(dataset_path)
 
 # ───────────────────────── Main ─────────────────────────
 def main(argv: Optional[List[str]] = None) -> None:
-    """Legacy CLI entrypoint for crossword_core.
+    """
+    Legacy CLI entrypoint for ``crossword_core``.
 
     Delegates to the shared unified crossword runner so CLI wiring stays centralized.
+
+    :param argv: Optional list of CLI arguments; defaults to :data:`sys.argv`.
+    :returns: ``None`` after the run completes.
     """
     run_crossword_main(lambda: sys.modules[__name__], HFBackend, argv)
 

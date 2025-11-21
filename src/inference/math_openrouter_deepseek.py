@@ -60,7 +60,13 @@ SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
 
 # ----------------------- OpenRouter client + call -----------------------
 def _make_client():
-    """Construct an OpenAI client pointed at the OpenRouter base URL."""
+    """
+    Construct an OpenAI client pointed at the OpenRouter base URL.
+
+    :returns: Configured ``openai.OpenAI`` client instance for OpenRouter.
+    :raises RuntimeError: If ``OPENROUTER_API_KEY`` is not set in the environment.
+    :raises ImportError: If the ``openai`` package is not installed.
+    """
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
         raise RuntimeError("OPENROUTER_API_KEY env var is required for OpenRouter.")
@@ -79,6 +85,14 @@ def _make_client():
 
 
 def _call_model(client, problem: str, args: argparse.Namespace):
+    """
+    Call the OpenRouter model for a single math problem.
+
+    :param client: OpenRouter client returned by :func:`_make_client`.
+    :param problem: Raw problem text to send to the model.
+    :param args: Parsed CLI arguments containing model and sampling options.
+    :returns: Parsed response tuple as returned by :func:`parse_openai_chat_response`.
+    """
     # If you want OpenRouter's explicit reasoning traces, uncomment extra_body.
     messages = build_math_gateway_messages(SYSTEM_PROMPT, problem)
     resp = client.chat.completions.create(
@@ -95,7 +109,11 @@ def _call_model(client, problem: str, args: argparse.Namespace):
 
 # ----------------------- Main helpers + loop -----------------------
 def _parse_args() -> argparse.Namespace:
-    """Parse command-line arguments for the OpenRouter DeepSeek-R1 runner."""
+    """
+    Parse command-line arguments for the OpenRouter DeepSeek-R1 runner.
+
+    :returns: Parsed :class:`argparse.Namespace` with configuration values.
+    """
     parser = build_math_gateway_arg_parser(
         default_temperature=0.05,
         description="OpenRouter DeepSeek-R1 MATH-500 runner.",
@@ -119,7 +137,14 @@ def _prepare_dataset(
     args: argparse.Namespace,
     outpath: str,
 ) -> tuple[Dataset, Dict[str, set[int]], str]:
-    """Load, optionally subsample, and shuffle the dataset; return dataset and tracking info."""
+    """
+    Load, optionally subsample, and shuffle the dataset.
+
+    :param args: Parsed CLI arguments controlling dataset choice and sampling.
+    :param outpath: Output path used to determine resume/fill behavior.
+    :returns: Tuple ``(dataset, existing, dataset_name_for_log)`` where
+        ``existing`` maps problems to the set of already-filled sample indices.
+    """
     dataset, existing, dataset_name_for_log = prepare_math_gateway_dataset_from_args(
         args=args,
         outpath=outpath,
@@ -131,7 +156,14 @@ def _prepare_dataset(
 
 
 def _generate_samples(client, args: argparse.Namespace, outpath: str) -> None:
-    """Main generation loop over the dataset."""
+    """
+    Main generation loop over the dataset.
+
+    :param client: OpenRouter client used to issue chat completions.
+    :param args: Parsed CLI arguments controlling generation behavior.
+    :param outpath: Path to the JSONL file where results are written.
+    :returns: ``None``. Samples are written to disk and progress is logged.
+    """
     dataset, existing, _ = _prepare_dataset(args, outpath)
 
     total_new = 0
@@ -193,7 +225,11 @@ def _generate_samples(client, args: argparse.Namespace, outpath: str) -> None:
 
 
 def main() -> None:
-    """CLI entry point for generating DeepSeek-R1 samples via OpenRouter."""
+    """
+    CLI entry point for generating DeepSeek-R1 samples via OpenRouter.
+
+    :returns: ``None``. The function parses arguments and runs the generation loop.
+    """
     args = _parse_args()
     random.seed(args.seed)
     outpath = os.path.join(args.output_dir, f"step{args.step:04d}_{args.split}.jsonl")

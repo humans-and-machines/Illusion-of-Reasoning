@@ -56,7 +56,16 @@ def _load_hf_tokenizer(
     trust_remote_code: bool,
     cache_dir: Optional[str],
 ):
-    """Load and configure a HuggingFace tokenizer for causal LM inference."""
+    """
+    Load and configure a HuggingFace tokenizer for causal LM inference.
+
+    :param auto_tokenizer_cls: ``transformers.AutoTokenizer``-compatible class.
+    :param tok_src: Model or tokenizer identifier to load.
+    :param revision: Optional model revision or commit hash.
+    :param trust_remote_code: Whether to allow custom code from the repository.
+    :param cache_dir: Optional cache directory for downloaded artifacts.
+    :returns: A tokenizer configured for left-padding and truncation.
+    """
     tokenizer = auto_tokenizer_cls.from_pretrained(
         tok_src,
         revision=revision,
@@ -81,7 +90,20 @@ def _load_hf_model(
     device_map: str,
     attn_implementation: Optional[str],
 ):
-    """Load a HuggingFace causal LM with the requested dtype and device map."""
+    """
+    Load a HuggingFace causal LM with the requested dtype and device map.
+
+    :param auto_model_cls: ``transformers.AutoModelForCausalLM``-compatible class.
+    :param torch_mod: Imported :mod:`torch` module.
+    :param model_name_or_path: Name or path of the model to load.
+    :param revision: Optional model revision or commit hash.
+    :param trust_remote_code: Whether to allow custom code from the repository.
+    :param cache_dir: Optional cache directory for downloaded artifacts.
+    :param dtype: String alias for the desired torch dtype (``\"float16\"`` or ``\"bfloat16\"``).
+    :param device_map: Device mapping passed to ``from_pretrained`` (for example, ``\"auto\"``).
+    :param attn_implementation: Optional attention implementation override.
+    :returns: A causal language model set to evaluation mode.
+    """
     torch_dtype = torch_mod.bfloat16 if dtype == "bfloat16" else torch_mod.float16
     model = auto_model_cls.from_pretrained(
         model_name_or_path,
@@ -97,7 +119,16 @@ def _load_hf_model(
 
 @dataclass
 class HFDecodeContext:
-    """Bundle decode-and-classify inputs to keep helper signature small."""
+    """
+    Bundle decode-and-classify inputs to keep helper signature small.
+
+    :param tokenizer: Tokenizer used to decode generated IDs into text.
+    :param model: Model instance exposing a ``config.eos_token_id`` attribute.
+    :param sequences: Tensor of generated token IDs.
+    :param input_lengths: Per-row input lengths used to trim prefixes.
+    :param stop_strings: List of strings used to detect manual stopping.
+    :param max_new_tokens: Optional cap on new tokens, used to detect max-length stops.
+    """
 
     tokenizer: Any
     model: Any
@@ -114,6 +145,12 @@ def _prepare_hf_inputs(
 ):
     """
     Tokenize prompts and move them (and attention-mask lengths) to the right device.
+
+    :param tokenizer: Tokenizer used to encode string prompts.
+    :param prompts: List of prompt strings to tokenize.
+    :param max_length: Optional maximum sequence length for truncation.
+    :returns: Tuple ``(inputs, input_lengths)`` with device-placed tensors and
+        original input lengths.
     """
     inputs = tokenizer(
         prompts,
@@ -130,7 +167,14 @@ def _build_hf_stopping_criteria(
     tokenizer,
     stop_strings: Optional[List[str]],
 ):
-    """Construct a StoppingCriteriaList for the provided stop strings, if any."""
+    """
+    Construct a :class:`StoppingCriteriaList` for the provided stop strings, if any.
+
+    :param stopping_criteria_list_cls: ``transformers.StoppingCriteriaList`` class.
+    :param tokenizer: Tokenizer used by :class:`StopOnSubstrings`.
+    :param stop_strings: Optional list of string triggers to stop generation.
+    :returns: A :class:`StoppingCriteriaList` instance or ``None`` if no stop strings.
+    """
     if not stop_strings:
         return None
     return stopping_criteria_list_cls([StopOnSubstrings(tokenizer, stop_strings)])
@@ -139,7 +183,14 @@ def _build_hf_stopping_criteria(
 # ----------------------- HF backend -----------------------
 @dataclass
 class HFGenerateResult:
-    """Container for HuggingFace generate() outputs."""
+    """
+    Container for HuggingFace ``generate()`` outputs.
+
+    :param texts: Decoded text outputs for each generated row.
+    :param stop_reasons: Human-readable stop reasons per row.
+    :param sequences: Tensor of generated token IDs.
+    :param output: Raw object returned by ``model.generate``.
+    """
 
     texts: List[str]
     stop_reasons: List[str]
@@ -148,9 +199,20 @@ class HFGenerateResult:
 
 
 class HFBackend:
-    """Backend that wraps a transformers AutoModelForCausalLM + tokenizer."""
+    """
+    Backend that wraps a transformers ``AutoModelForCausalLM`` and tokenizer.
+
+    Instances expose a simple ``generate`` method that accepts a list of
+    string prompts and returns decoded texts plus stop reasons.
+    """
 
     def __init__(self, tokenizer, model):
+        """
+        Initialize an :class:`HFBackend` with a tokenizer and model.
+
+        :param tokenizer: Tokenizer instance compatible with the model.
+        :param model: Causal language model exposing ``generate`` and ``config``.
+        """
         self.tokenizer = tokenizer
         self.model = model
 
@@ -168,7 +230,17 @@ class HFBackend:
         tokenizer_path: Optional[str] = None,
     ) -> "HFBackend":
         """
-        Load a tokenizer + causal LM from HuggingFace and wrap them in HFBackend.
+        Load a tokenizer and causal LM from HuggingFace and wrap them in HFBackend.
+
+        :param model_name_or_path: Name or path of the model to load.
+        :param revision: Optional model revision or commit hash.
+        :param cache_dir: Optional cache directory for downloaded artifacts.
+        :param dtype: String alias for the desired torch dtype (for example ``\"float16\"``).
+        :param device_map: Device mapping passed to ``from_pretrained``.
+        :param attn_implementation: Optional attention implementation override.
+        :param trust_remote_code: Whether to allow custom model/tokenizer code.
+        :param tokenizer_path: Optional alternate path or identifier for the tokenizer.
+        :returns: An :class:`HFBackend` instance ready for generation.
         """
         env = _load_torch_and_transformers()
         tok_src = tokenizer_path or model_name_or_path
@@ -202,6 +274,12 @@ class HFBackend:
     ) -> HFGenerateResult:
         """
         Generate continuations for a batch of string prompts.
+
+        :param prompts: List of input prompt strings.
+        :param stop_strings: Optional list of string triggers to stop generation.
+        :param max_length: Optional maximum sequence length for tokenization.
+        :param gen_kwargs: Additional keyword arguments forwarded to ``model.generate``.
+        :returns: :class:`HFGenerateResult` containing decoded texts and metadata.
         """
         env = _load_torch_and_transformers()
         inputs, input_lengths = _prepare_hf_inputs(self.tokenizer, prompts, max_length)
@@ -243,6 +321,9 @@ class HFBackend:
     def _decode_and_classify(ctx: HFDecodeContext) -> Tuple[List[str], List[str]]:
         """
         Decode generated sequences and compute stop reasons for each row.
+
+        :param ctx: Decode context bundling tokenizer, sequences, and limits.
+        :returns: A pair ``(texts, stop_reasons)`` aligned per generated row.
         """
         total_rows = ctx.sequences.shape[0]
         texts: List[str] = []
@@ -276,7 +357,13 @@ class HFBackend:
 # ----------------------- Azure backend -----------------------
 @dataclass
 class AzureGenerateResult:
-    """Container for batched Azure generation outputs."""
+    """
+    Container for batched Azure generation outputs.
+
+    :param texts: Decoded text outputs for each request.
+    :param finish_reasons: Finish reasons reported by the API per request.
+    :param raw: Raw SDK response objects for each request.
+    """
 
     texts: List[str]
     finish_reasons: List[str]
@@ -287,6 +374,14 @@ class AzureBackend:
     """Backend that wraps an Azure/OpenAI client for chat-style generation."""
 
     def __init__(self, client: Any, deployment: str, uses_v1: bool) -> None:
+        """
+        Initialize an :class:`AzureBackend` with a client and deployment info.
+
+        :param client: Azure/OpenAI client instance.
+        :param deployment: Deployment or model name used for inference.
+        :param uses_v1: Whether to prefer the Responses API (v1) over Chat Completions.
+        :raises ValueError: If ``client`` is ``None``.
+        """
         if client is None:
             raise ValueError("Azure client is required")
         self.client = client
@@ -298,8 +393,12 @@ class AzureBackend:
         """
         Construct an AzureBackend using environment / YAML configuration.
 
-        The optional `deployment` parameter overrides the configured deployment
+        The optional ``deployment`` parameter overrides the configured deployment
         name if provided.
+
+        :param deployment: Optional deployment name to use instead of the default.
+        :returns: An :class:`AzureBackend` instance using the configured client.
+        :raises RuntimeError: If Azure configuration modules are not available.
         """
         if load_azure_config is None or build_preferred_client is None:
             raise RuntimeError(
@@ -327,6 +426,12 @@ class AzureBackend:
     ) -> tuple[str, str, Any]:
         """
         Call the underlying Azure/OpenAI client for a single message batch.
+
+        :param messages: List of role/content message dictionaries.
+        :param temperature: Sampling temperature for the model.
+        :param top_p: Optional nucleus-sampling parameter.
+        :param max_output_tokens: Maximum number of tokens to generate.
+        :returns: Tuple ``(text, finish_reason, raw_response)``.
         """
         if hasattr(self.client, "responses"):
             return self._call_responses_api(
@@ -352,6 +457,12 @@ class AzureBackend:
     ) -> tuple[str, str, Any]:
         """
         Call the Azure Responses-style API (if available on the client).
+
+        :param messages: List of role/content message dictionaries.
+        :param temperature: Sampling temperature for the model.
+        :param top_p: Optional nucleus-sampling parameter.
+        :param max_output_tokens: Maximum number of tokens to generate.
+        :returns: Tuple ``(text, finish_reason, raw_response)`` from the responses API.
         """
         resp = self.client.responses.create(
             model=self.deployment,
@@ -391,6 +502,12 @@ class AzureBackend:
     ) -> tuple[str, str, Any]:
         """
         Call the Chat Completions API as a fallback.
+
+        :param messages: List of role/content message dictionaries.
+        :param temperature: Sampling temperature for the model.
+        :param top_p: Optional nucleus-sampling parameter.
+        :param max_output_tokens: Maximum number of tokens to generate.
+        :returns: Tuple ``(text, finish_reason, raw_response)`` from chat completions.
         """
         chat = getattr(self.client, "chat", None)
         if chat is None or not hasattr(chat, "completions"):
@@ -418,6 +535,12 @@ class AzureBackend:
     ) -> AzureGenerateResult:
         """
         Generate responses for a batch of message lists.
+
+        :param batch_messages: List of chat histories, one per request.
+        :param temperature: Sampling temperature for the model.
+        :param top_p: Optional nucleus-sampling parameter.
+        :param max_output_tokens: Maximum number of tokens to generate.
+        :returns: :class:`AzureGenerateResult` with texts, finish reasons, and raw responses.
         """
         texts: List[str] = []
         finish_reasons: List[str] = []

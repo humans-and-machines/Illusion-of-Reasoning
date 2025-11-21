@@ -66,15 +66,31 @@ def load_math500(
     dataset_path: Optional[str] = None,
 ) -> "Dataset":
     """
-    Thin wrapper delegating to math_core.load_math500 to keep a single shared
-    implementation of the MATH-500 loading logic.
+    Load the MATH-500 benchmark via :mod:`datasets` using the shared core logic.
+
+    This is a thin wrapper around :func:`src.inference.math_core.load_math500`
+    so that the Azure runner reuses a single implementation of the loading and
+    normalization logic.
+
+    :param cache_dir: Directory to use as a datasets cache.
+    :param split: Dataset split name (for example, ``\"test\"``).
+    :param seed: Random seed used when sub-sampling competition-math fallback data.
+    :param dataset_path: Optional local JSON file to load instead of remote datasets.
+    :returns: A datasets-like object exposing ``map`` and ``select``.
     """
     return _load_math500_core(cache_dir, split, seed, dataset_path)
 
 
 @dataclass
 class AzureCallParams:
-    """Lightweight container for Azure generation parameters."""
+    """
+    Lightweight container for Azure generation parameters.
+
+    :param temperature: Sampling temperature for the model.
+    :param top_p: Nucleus-sampling parameter for the model.
+    :param max_output_tokens: Maximum number of tokens to generate.
+    :param request_timeout: Per-request timeout in seconds.
+    """
 
     temperature: float
     top_p: float
@@ -84,7 +100,14 @@ class AzureCallParams:
 
 # ----------------------- Azure client + call -----------------------
 def _make_client(args: argparse.Namespace):
-    """Construct an Azure/OpenAI client and resolve endpoint/deployment."""
+    """
+    Construct an Azure/OpenAI client and resolve endpoint/deployment.
+
+    :param args: Parsed CLI arguments that may override endpoint and deployment.
+    :returns: Tuple ``(client, uses_v1, endpoint, deployment, api_version)`` where
+        ``uses_v1`` indicates whether the Responses API is preferred.
+    :raises RuntimeError: If an API key cannot be resolved from arguments or environment.
+    """
     cfg = load_azure_config()
     endpoint = (args.endpoint or cfg["endpoint"]).rstrip("/")
     deployment = args.deployment or cfg["deployment"]
@@ -111,7 +134,16 @@ def _call_model(
     problem: str,
     params: AzureCallParams,
 ):
-    """Call the Azure DeepSeek deployment and return (text, finish_reason, usage)."""
+    """
+    Call the Azure DeepSeek deployment and return text, finish reason, and usage.
+
+    :param client: Azure/OpenAI client created by :func:`_make_client`.
+    :param uses_v1: Whether to prefer the Responses API (v1) over Chat Completions.
+    :param deployment: Name of the Azure deployment to use.
+    :param problem: Raw problem text to send to the model.
+    :param params: Generation parameters such as temperature and max tokens.
+    :returns: Tuple ``(text, finish_reason, usage)`` describing the model response.
+    """
     if uses_v1 and hasattr(client, "responses"):
         resp = client.responses.create(
             model=deployment,
@@ -157,7 +189,14 @@ def _call_model(
 
 
 def _prepare_dataset(args: argparse.Namespace, outpath: str):
-    """Load and shuffle dataset, returning (dataset, existing)."""
+    """
+    Load and shuffle the dataset, applying resume/fill logic.
+
+    :param args: Parsed CLI arguments controlling dataset choice and sampling.
+    :param outpath: Output path used to determine which samples already exist.
+    :returns: Tuple ``(dataset, existing)`` where ``existing`` maps problems
+        to the set of already-filled sample indices.
+    """
     dataset, existing, _ = prepare_math_gateway_dataset_from_args(
         args=args,
         outpath=outpath,
@@ -176,7 +215,16 @@ def _generate_samples(
     call_params: AzureCallParams,
     output_path: str,
 ) -> None:
-    """Main generation loop over the dataset."""
+    """
+    Main generation loop over the dataset.
+
+    :param client: Azure/OpenAI client created by :func:`_make_client`.
+    :param uses_v1: Whether to use the Responses API for generation.
+    :param args: Parsed CLI arguments controlling generation behavior.
+    :param call_params: Azure generation parameters such as temperature and limits.
+    :param output_path: Path to the JSONL file where results are written.
+    :returns: ``None``. Samples are written to disk and progress is logged.
+    """
     dataset, existing = _prepare_dataset(args, output_path)
 
     total_new = 0
@@ -227,7 +275,19 @@ def _build_result_row(
     args: argparse.Namespace,
     call_params: AzureCallParams,
 ) -> Dict[str, Any]:
-    """Build a JSONL row for a single generated sample."""
+    """
+    Build a JSONL row for a single generated sample.
+
+    :param problem: Normalized problem text for the example.
+    :param gold_answer: Ground-truth answer associated with the problem.
+    :param sample_idx: Sample index for this generation.
+    :param text: Raw model output text.
+    :param finish_reason: Finish reason reported by the Azure API.
+    :param usage: Optional usage object returned by the Azure SDK.
+    :param args: Parsed CLI arguments (used for metadata fields).
+    :param call_params: Azure generation parameters used for the call.
+    :returns: Dictionary representing one JSONL row.
+    """
     canon_gold = _canon_math(gold_answer)
     _, ans = _extract_blocks(text)
     pred_canon = _canon_math(ans)
@@ -266,7 +326,11 @@ def _build_result_row(
 
 
 def _parse_args() -> argparse.Namespace:
-    """Parse CLI arguments for Azure DeepSeek MATH-500 runner."""
+    """
+    Parse CLI arguments for the Azure DeepSeek MATH-500 runner.
+
+    :returns: Parsed :class:`argparse.Namespace` with configuration values.
+    """
     default_cfg = load_azure_config()
     parser = build_math_gateway_arg_parser(
         default_temperature=0.7,
@@ -297,7 +361,11 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """CLI entrypoint for single-pass Azure DeepSeek MATH-500 inference."""
+    """
+    CLI entrypoint for single-pass Azure DeepSeek MATH-500 inference.
+
+    :returns: ``None``. The function parses arguments and runs the generation loop.
+    """
     args = _parse_args()
     random.seed(args.seed)
 

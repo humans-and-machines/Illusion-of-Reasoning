@@ -8,7 +8,19 @@ from __future__ import annotations
 
 import importlib
 
-from .configs import GRPOConfig, GRPOScriptArguments
+from .configs import (
+    ChatBenchmarkConfig,
+    GRPOConfig,
+    GRPOCosineRewardConfig,
+    GRPODatasetColumnsConfig,
+    GRPOOnlyTrainingConfig,
+    GRPORewardConfig,
+    GRPOScriptArguments,
+    GRPOSpanKLConfig,
+    HubRevisionConfig,
+    WandbRunConfig,
+    merge_dataclass_attributes,
+)
 from .grpo_impl import main as _main
 
 
@@ -23,8 +35,51 @@ def _load_trl_parser():
 def main() -> None:
     """Parse CLI arguments and launch GRPO training."""
     model_config_cls, trl_parser_cls = _load_trl_parser()
-    parser = trl_parser_cls((GRPOScriptArguments, GRPOConfig, model_config_cls))
-    script_args, training_args, model_args = parser.parse_args_and_config()
+    parser = trl_parser_cls(
+        (
+            GRPOScriptArguments,
+            GRPORewardConfig,
+            GRPOCosineRewardConfig,
+            GRPODatasetColumnsConfig,
+            GRPOSpanKLConfig,
+            ChatBenchmarkConfig,
+            HubRevisionConfig,
+            WandbRunConfig,
+            GRPOOnlyTrainingConfig,
+            GRPOConfig,
+            model_config_cls,
+        )
+    )
+    (
+        script_args,
+        reward_cfg,
+        cosine_cfg,
+        dataset_cfg,
+        span_kl_cfg,
+        chat_cfg,
+        hub_cfg,
+        wandb_cfg,
+        grpo_only_cfg,
+        training_args,
+        model_args,
+    ) = parser.parse_args_and_config()
+
+    # Flatten the auxiliary config dataclasses onto the main script/training args
+    merge_dataclass_attributes(
+        script_args,
+        reward_cfg,
+        cosine_cfg,
+        dataset_cfg,
+        span_kl_cfg,
+    )
+    merge_dataclass_attributes(
+        training_args,
+        chat_cfg,
+        hub_cfg,
+        wandb_cfg,
+        grpo_only_cfg,
+    )
+
     _main(script_args, training_args, model_args)
 
 

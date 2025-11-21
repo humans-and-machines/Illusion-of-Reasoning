@@ -20,7 +20,8 @@ PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
 
 # ── Conda env ───────────────────────────────────────────────
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
-conda activate "${CONDA_ENV:-openr1}"
+CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
+conda activate "$CONDA_ENV"
 echo "✅ Conda: $(which python)"; python --version
 
 # Optional CUDA module (use if your cluster needs it)

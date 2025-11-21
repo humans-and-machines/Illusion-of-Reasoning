@@ -21,16 +21,20 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from src.inference.math_pass_utils import DEFAULT_SECOND_PASS_PHRASE
+
 
 # ---------------------------------------------------------------------------
 # HF cache helpers
 # ---------------------------------------------------------------------------
 def setup_hf_cache_dir_env(base_dir: str = "./.hf_cache") -> str:
     """
-    Initialize HuggingFace cache directory and environment variables.
+    Initialize HuggingFace cache directory and related environment variables.
 
-    Returns the absolute HF cache directory path so callers can pass it to
-    transformers / datasets loaders.
+    :param base_dir: Base directory to use for the HF cache (directories such
+        as ``HF_HOME`` and ``TRANSFORMERS_CACHE`` will be created under this).
+    :returns: Absolute path to the HF cache directory so callers can pass it
+        to transformers / datasets loaders.
     """
     hf_cache_dir = os.path.abspath(base_dir)
     os.environ.update(
@@ -46,6 +50,9 @@ def setup_script_logger(name: str) -> logging.Logger:
     Configure a basic process-wide logger using LOGLEVEL env and return a module logger.
 
     This mirrors the common pattern used in the inference entrypoints.
+
+    :param name: Logger name (typically ``__name__`` of the calling module).
+    :returns: Configured :class:`logging.Logger` instance.
     """
     loglevel = os.getenv("LOGLEVEL", "INFO").upper()
     logging.basicConfig(
@@ -61,7 +68,10 @@ def setup_script_logger(name: str) -> logging.Logger:
 # ---------------------------------------------------------------------------
 def require_datasets():
     """
-    Import and return (Dataset, load_dataset), raising with a consistent message if unavailable.
+    Import and return ``(Dataset, load_dataset)``, raising with a consistent message if unavailable.
+
+    :returns: Tuple ``(DatasetCls, load_dataset_fn)`` from :mod:`datasets`.
+    :raises ImportError: If the :mod:`datasets` package is not installed.
     """
     try:
         datasets_mod = import_module("datasets")
@@ -75,8 +85,12 @@ def require_datasets():
 
 def load_local_json_dataset(path: str) -> "Dataset":
     """
-    Read a JSONL-like local file into a datasets.Dataset.
+    Read a JSONL-like local file into a :class:`datasets.Dataset`.
+
     Lines that are empty or not JSON objects are skipped.
+
+    :param path: Path to a JSONL (or JSONL-like) file on disk.
+    :returns: Dataset constructed from the list of parsed JSON objects.
     """
     dataset_cls, _ = require_datasets()
 
@@ -100,6 +114,10 @@ def append_jsonl_row(path: str, row: Dict[str, Any]) -> None:
     """
     Append a single JSON-serializable row to a JSONL file, creating parent
     directories as needed.
+
+    :param path: Path to the JSONL file on disk.
+    :param row: Mapping that can be serialized by :mod:`json`.
+    :returns: ``None``. The row is appended to ``path``.
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as handle:
@@ -110,6 +128,9 @@ def append_jsonl_row(path: str, row: Dict[str, Any]) -> None:
 def iter_jsonl_objects(path: str) -> Iterable[dict]:
     """
     Yield JSON objects from a JSONL file, skipping empty or invalid lines.
+
+    :param path: Path to a JSONL file on disk.
+    :returns: Iterator over successfully parsed JSON objects.
     """
     if not os.path.exists(path):
         return
@@ -127,8 +148,10 @@ def iter_jsonl_objects(path: str) -> Iterable[dict]:
 
 def scan_existing_problem_samples(path: str) -> Dict[str, set]:
     """
-    Scan an existing JSONL results file and return a mapping
-    {problem -> {sample_idx,...}}.
+    Scan an existing JSONL results file and return a mapping of seen samples.
+
+    :param path: Path to a JSONL results file on disk.
+    :returns: Mapping ``{problem -> {sample_idx, ...}}`` capturing existing rows.
     """
     if not os.path.exists(path):
         return {}
@@ -156,9 +179,11 @@ def scan_existing_pass1_results(
     """
     Scan a JSONL results file and recover seen problems and pass-1 outputs.
 
-    Returns:
-      existing_samples: problem -> set(sample_idx) that already exist
-      existing_pass1: (problem, sample_idx) -> pass1['output'] text (if available)
+    :param path: Path to a JSONL results file on disk.
+    :returns: Tuple ``(existing_samples, existing_pass1)`` where
+        ``existing_samples`` maps problems to the set of seen sample indices
+        and ``existing_pass1`` maps ``(problem, sample_idx)`` pairs to the
+        stored pass-1 output text.
     """
     existing_samples: DefaultDict[str, set] = defaultdict(set)
     existing_pass1: Dict[Tuple[Any, Any], str] = {}
@@ -178,6 +203,9 @@ def scan_existing_pass1_results(
 def extract_problem_and_answer(example: Dict[str, Any]) -> Tuple[Optional[str], Any]:
     """
     Extract a unified (problem, answer) pair from a heterogeneous example dict.
+
+    :param example: Example record with task-specific keys.
+    :returns: Tuple ``(problem, answer)`` where either element may be ``None``.
     """
     problem = (
         example.get("problem")
@@ -207,6 +235,14 @@ def build_math_gateway_row_base(
 ) -> Dict[str, Any]:
     """
     Common prefix for single-pass MATH JSONL rows used by gateway scripts.
+
+    :param problem: Normalized problem text.
+    :param gold_answer: Gold answer value (raw).
+    :param gold_answer_canon: Canonicalized gold answer, if available.
+    :param split: Dataset split name (for example, ``\"test\"``).
+    :param step: Training or checkpoint step identifier.
+    :param sample_idx: Sample index for this generation.
+    :returns: Dictionary containing shared row fields.
     """
     return {
         "problem": problem,
@@ -222,6 +258,10 @@ def build_usage_dict(usage: Any) -> Dict[str, Any]:
     """
     Build a usage dict from an OpenAI/Portkey-style usage object, tolerating
     missing attributes.
+
+    :param usage: Usage object exposing token-count attributes, or ``None``.
+    :returns: Dictionary with ``prompt_tokens``, ``completion_tokens``, and
+        ``total_tokens`` fields (possibly ``None``).
     """
     return {
         "prompt_tokens": getattr(usage, "prompt_tokens", None),
@@ -240,6 +280,13 @@ def build_two_pass_row_base(
 ) -> Dict[str, Any]:
     """
     Shared core fields for two-pass rows (carpark/math-llama style).
+
+    :param step: Training or checkpoint step identifier.
+    :param split_name: Dataset split name (for example, ``\"test\"``).
+    :param sample_idx: Sample index for this generation.
+    :param pass1: Packed pass-1 result dictionary.
+    :param pass2: Packed pass-2 result dictionary, or ``None``.
+    :returns: Dictionary with shared two-pass row fields.
     """
     return {
         "step": step,
@@ -252,7 +299,15 @@ def build_two_pass_row_base(
 
 @dataclass
 class PassOutputs:
-    """Container for per-pass outputs used when writing rows."""
+    """
+    Container for per-pass outputs used when writing rows.
+
+    :param full_texts: Full text outputs for each row.
+    :param ent_think: Token-level entropy series for think phases.
+    :param ent_answer: Token-level entropy series for answer phases.
+    :param stop_reason_think: Stop reasons for think phases.
+    :param stop_reason_answer: Stop reasons for answer phases.
+    """
 
     full_texts: List[str]
     ent_think: List[List[float]]
@@ -265,6 +320,10 @@ def limit_dataset_examples(dataset, num_examples: Optional[int]):
     """
     If num_examples is set and positive, return a sliced dataset with at most that
     many rows; otherwise return the dataset unchanged.
+
+    :param dataset: Dataset object supporting ``select`` and ``len``.
+    :param num_examples: Maximum number of examples to keep, or ``None``.
+    :returns: Original dataset or a truncated view.
     """
     if num_examples is not None and num_examples > 0:
         return dataset.select(range(min(num_examples, len(dataset))))
@@ -288,6 +347,18 @@ def prepare_math_gateway_dataset(
     Load a MATH-style dataset (local MATH-500 or remote HF path), optionally cap
     the number of examples, shuffle, scan existing results, and log summary
     stats. Returns (dataset, existing_problem_samples, dataset_name_for_log).
+
+    :param dataset_id: Identifier such as ``\"MATH-500\"`` or a HF dataset path.
+    :param split: Dataset split name (for example, ``\"test\"``).
+    :param seed: Random seed for shuffling.
+    :param num_examples: Optional cap on number of examples.
+    :param dataset_path: Optional local JSONL path for MATH-500-style records.
+    :param outpath: Path to output JSONL file (used to scan existing rows).
+    :param logger: Logger used for informational messages.
+    :param load_math500_fn: Callable that loads the MATH-500 dataset.
+    :param load_remote_dataset_fn: Callable that loads a remote dataset.
+    :param cache_dir: Optional HF cache directory; a default is used if ``None``.
+    :returns: Tuple ``(dataset, existing, dataset_name_for_log)``.
     """
     hf_cache_dir = cache_dir or os.path.abspath("./.hf_cache")
     if dataset_id.upper() == "MATH-500":
@@ -325,7 +396,15 @@ def prepare_math_gateway_dataset_from_args(
     cache_dir: Optional[str] = None,
 ):
     """
-    Convenience wrapper mapping common CLI args into prepare_math_gateway_dataset.
+    Convenience wrapper mapping common CLI args into :func:`prepare_math_gateway_dataset`.
+
+    :param args: Argument namespace with dataset-related fields.
+    :param outpath: Path to output JSONL file (used to scan existing rows).
+    :param logger: Logger used for informational messages.
+    :param load_math500_fn: Callable that loads the MATH-500 dataset.
+    :param load_remote_dataset_fn: Callable that loads a remote dataset.
+    :param cache_dir: Optional HF cache directory; a default is used if ``None``.
+    :returns: Tuple ``(dataset, existing, dataset_name_for_log)``.
     """
     return prepare_math_gateway_dataset(
         dataset_id=args.dataset_id,
@@ -342,7 +421,14 @@ def prepare_math_gateway_dataset_from_args(
 
 
 def load_remote_dataset_default(dataset_id: str, split: str, cache_dir: str):
-    """Default HF datasets loader used by math gateway scripts."""
+    """
+    Default HF datasets loader used by math gateway scripts.
+
+    :param dataset_id: Hugging Face dataset identifier.
+    :param split: Dataset split name (for example, ``\"test\"``).
+    :param cache_dir: Directory to use as a datasets cache.
+    :returns: Dataset object returned by :func:`datasets.load_dataset`.
+    """
     _, load_dataset_fn = require_datasets()
     return load_dataset_fn(dataset_id, split=split, cache_dir=cache_dir)
 
@@ -353,6 +439,10 @@ def load_remote_dataset_default(dataset_id: str, split: str, cache_dir: str):
 def add_basic_runner_args(arg_parser, *, default_dtype: str = "float16") -> None:
     """
     Attach common dataset/decoding/budget/system flags used by unified runners.
+
+    :param arg_parser: Argument parser to which options are added.
+    :param default_dtype: Default dtype string (for example, ``\"float16\"``).
+    :returns: ``None``. Arguments are added to ``arg_parser`` in place.
     """
     # Data selection
     arg_parser.add_argument("--split", default="test")
@@ -373,7 +463,12 @@ def add_basic_runner_args(arg_parser, *, default_dtype: str = "float16") -> None
 
 
 def add_model_and_output_args(arg_parser) -> None:
-    """Attach model + output_dir arguments shared by unified runners."""
+    """
+    Attach ``model_name_or_path`` and ``output_dir`` arguments shared by unified runners.
+
+    :param arg_parser: Argument parser to which options are added.
+    :returns: ``None``. Arguments are added to ``arg_parser`` in place.
+    """
     arg_parser.add_argument("--model_name_or_path", required=True)
     arg_parser.add_argument("--revision")
     arg_parser.add_argument("--output_dir", required=True)
@@ -383,6 +478,9 @@ def add_math_gateway_dataset_args(arg_parser) -> None:
     """
     Attach dataset selection arguments shared by simple math gateway scripts
     (Azure/OpenRouter/Portkey-style single-pass runners).
+
+    :param arg_parser: Argument parser to which dataset arguments are added.
+    :returns: ``None``. Arguments are added to ``arg_parser`` in place.
     """
     arg_parser.add_argument(
         "--dataset_id",
@@ -407,11 +505,14 @@ def add_math_gateway_dataset_args(arg_parser) -> None:
 def add_two_pass_args(arg_parser) -> None:
     """
     Attach the common two-pass control flags used by math/carpark/crossword runners.
+
+    :param arg_parser: Argument parser to which two-pass arguments are added.
+    :returns: ``None``. Arguments are added to ``arg_parser`` in place.
     """
     arg_parser.add_argument("--two_pass", action="store_true")
     arg_parser.add_argument(
         "--second_pass_phrase",
-        default="Wait, we need to reconsider. Let's think this through step by step.",
+        default=DEFAULT_SECOND_PASS_PHRASE,
     )
     arg_parser.add_argument("--second_pass_use_sample_idx", type=int, default=0)
 
@@ -424,9 +525,13 @@ def build_math_gateway_arg_parser(
     """
     Construct an ArgumentParser with shared math gateway arguments.
 
-    This includes output_dir, dataset selection, sampling/budget knobs,
+    This includes ``output_dir``, dataset selection, sampling/budget knobs,
     and basic seed/step controls. Caller should attach backend-specific
     arguments (Azure/OpenRouter/Portkey) on top.
+
+    :param default_temperature: Default temperature for sampling options.
+    :param description: Optional help text for the parser.
+    :returns: Configured :class:`argparse.ArgumentParser` instance.
     """
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
@@ -444,6 +549,10 @@ def build_math_gateway_arg_parser(
 def configure_unified_runner_common(arg_parser, *, default_dtype: str) -> None:
     """
     Attach the shared runtime/entropy/two-pass flags used by unified runners.
+
+    :param arg_parser: Argument parser to which arguments are added.
+    :param default_dtype: Default dtype string (for example, ``\"float16\"``).
+    :returns: ``None``. Arguments are added to ``arg_parser`` in place.
     """
     add_basic_runner_args(arg_parser, default_dtype=default_dtype)
     arg_parser.add_argument("--step", type=int, default=0)
@@ -469,6 +578,11 @@ def build_eos_ids_from_tokenizer(tokenizer, extra_tokens: Sequence[str]) -> Opti
     """
     Build a sorted list of EOS token IDs from a tokenizer, including its native
     eos_token_id and any additional tokens provided.
+
+    :param tokenizer: Tokenizer providing ``eos_token_id``, ``pad_token_id``,
+        and ``convert_tokens_to_ids``.
+    :param extra_tokens: Additional string tokens to treat as EOS.
+    :returns: Sorted list of EOS token IDs, or ``None`` if none are found.
     """
     eos_ids: set[int] = set()
     if tokenizer.eos_token_id is not None:
@@ -487,6 +601,10 @@ def configure_tokenizer_and_eos(
 ) -> Optional[List[int]]:
     """
     Apply standard padding/truncation settings and build an EOS-ID list.
+
+    :param tokenizer: Tokenizer to configure for left padding/truncation.
+    :param extra_tokens: Additional string tokens to treat as EOS.
+    :returns: Sorted list of EOS token IDs, or ``None`` if none are found.
     """
     tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
@@ -508,8 +626,18 @@ def init_unified_backend_and_eos(
     """
     Initialize a backend and a standard EOS-ID list for unified runners.
 
-    `backend_cls` is typically HFBackend, but is passed explicitly so tests
-    can monkeypatch it on the caller module.
+    ``backend_cls`` is typically :class:`HFBackend`, but is passed explicitly
+    so tests can monkeypatch it on the caller module.
+
+    :param backend_cls: Backend class exposing ``from_pretrained``.
+    :param model_name_or_path: Model identifier or path to load.
+    :param revision: Optional model revision or commit hash.
+    :param cache_dir: Directory to use as a HF cache.
+    :param dtype: String alias for desired torch dtype (for example, ``\"float16\"``).
+    :param device_map: Device mapping string passed to ``from_pretrained``.
+    :param attn_implementation: Optional attention implementation override.
+    :param tokenizer_path: Optional separate tokenizer identifier/path.
+    :returns: Tuple ``(backend, eos_ids)`` where ``eos_ids`` may be ``None``.
     """
     backend = backend_cls.from_pretrained(
         model_name_or_path,
@@ -545,6 +673,10 @@ OPENR1_PROMPT_TEMPLATE = (
 def build_math_gateway_messages(system_prompt: str, problem: str) -> List[Dict[str, str]]:
     """
     Standard two-message chat for math gateway calls: system + user(problem).
+
+    :param system_prompt: System prompt string to use for the chat.
+    :param problem: Problem text to inject into the user message.
+    :returns: List of role/content message dictionaries.
     """
     return [
         {"role": "system", "content": system_prompt},
@@ -560,6 +692,11 @@ def iter_math_gateway_samples(
     """
     Yield (problem, gold_answer, sample_idx) triples for samples that still
     need generation, shared by math gateway scripts.
+
+    :param dataset: Dataset object containing math examples.
+    :param num_samples: Number of samples to generate per problem.
+    :param existing: Mapping from problem to the set of existing sample indices.
+    :returns: Iterator over ``(problem, gold_answer, sample_idx)`` tuples.
     """
     for example in dataset:
         problem, gold_answer = extract_problem_and_answer(example)
@@ -576,6 +713,9 @@ def parse_openai_chat_response(resp: Any) -> Tuple[str, Any, Any]:
     """
     Extract (text, finish_reason, usage) from an OpenAI/OpenRouter/Portkey-style
     chat completion response object.
+
+    :param resp: Response object returned by an OpenAI-compatible client.
+    :returns: Tuple ``(text, finish_reason, usage)`` extracted from the response.
     """
     text = ""
     finish_reason = None
@@ -596,6 +736,10 @@ def add_math_gateway_sampling_args(
     """
     Attach the shared sampling/budget args used by math gateway runners
     (OpenRouter/Portkey/Azure) on top of dataset args.
+
+    :param parser: Argument parser to which sampling arguments are added.
+    :param default_temperature: Default temperature for the ``--temperature`` option.
+    :returns: ``None``. Arguments are added to ``parser`` in place.
     """
     parser.add_argument("--temperature", type=float, default=default_temperature)
     parser.add_argument("--top_p", type=float, default=0.95)
@@ -615,7 +759,18 @@ def call_with_retries(
     exception_types: Sequence[type[BaseException]] = (Exception,),
 ):
     """
-    Call `func()` with simple retry-on-exception semantics shared by math gateways.
+    Call ``func()`` with simple retry-on-exception semantics shared by math gateways.
+
+    :param func: Zero-argument callable to execute.
+    :param max_retries: Maximum number of retries before giving up.
+    :param retry_backoff: Base backoff in seconds (multiplied by attempt index).
+    :param logger: Logger used for warnings and errors.
+    :param sample_idx: Sample index used for logging context.
+    :param problem_snippet: Short snippet of the problem text for logging.
+    :param min_sleep: Optional minimum sleep duration between retries.
+    :param exception_types: Sequence of exception types that trigger retries.
+    :returns: Result of ``func()`` if it eventually succeeds.
+    :raises Exception: Re-raises the last exception if retries are exhausted.
     """
     attempt = 0
     while True:
@@ -659,6 +814,14 @@ def call_with_gateway_retries(
     Convenience wrapper around ``call_with_retries`` using standard CLI args.
 
     This deduplicates the common pattern used by math gateway runners.
+
+    :param func: Zero-argument callable to execute.
+    :param args: Parsed CLI arguments providing retry settings.
+    :param logger: Logger used for warnings and errors.
+    :param sample_idx: Sample index used for logging context.
+    :param problem_snippet: Short snippet of the problem text for logging.
+    :param min_sleep: Optional minimum sleep duration between retries.
+    :returns: Result of ``func()`` if it eventually succeeds.
     """
     return call_with_retries(
         func,

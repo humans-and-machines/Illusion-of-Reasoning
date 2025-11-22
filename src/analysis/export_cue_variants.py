@@ -25,7 +25,14 @@ import os
 from typing import Any, Dict, Iterable, List, Optional
 
 from src.analysis.io import scan_jsonl_files, iter_records_from_file
-from src.analysis.utils import nat_step_from_path, get_problem_id, coerce_bool, coerce_float
+from src.analysis.utils import (
+    add_results_root_and_split_args,
+    coerce_bool,
+    coerce_float,
+    get_problem_id,
+    nat_step_from_path,
+    parse_passes_argument,
+)
 
 
 DEFAULT_PASSES = ["pass1", "pass2", "pass2a", "pass2b", "pass2c"]
@@ -37,10 +44,7 @@ def _as_json(value: Any) -> str:
         return ""
     if isinstance(value, (str, int, float, bool)):
         return str(value)
-    try:
-        return json.dumps(value, ensure_ascii=False)
-    except Exception:
-        return str(value)
+    return json.dumps(value, ensure_ascii=False)
 
 
 def iter_flat_rows(
@@ -146,21 +150,15 @@ def export_cue_variants(
 
 
 def build_argparser() -> argparse.ArgumentParser:
+    """Build and return the CLI argument parser for this script."""
+
     parser = argparse.ArgumentParser(
         description=(
             "Export a flat CSV with one row per (sample, cue_variant) "
             "from JSONL results (pass1/pass2/pass2a/pass2b/pass2c)."
         ),
     )
-    parser.add_argument(
-        "results_root",
-        help="Root directory containing step*/.../*.jsonl (e.g., artifacts/results/GRPO-1.5B-math-temp-0.05-3).",
-    )
-    parser.add_argument(
-        "--split",
-        default=None,
-        help="Optional substring filter on filenames (e.g., 'test').",
-    )
+    add_results_root_and_split_args(parser)
     parser.add_argument(
         "--out_csv",
         default=None,
@@ -182,16 +180,11 @@ def build_argparser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Parse arguments and run the cue-variant export pipeline."""
     parser = build_argparser()
     args = parser.parse_args()
 
-    passes = [
-        p.strip()
-        for p in (args.passes or "").split(",")
-        if p.strip()
-    ]
-    if not passes:
-        raise SystemExit("Must specify at least one pass key via --passes.")
+    passes = parse_passes_argument(args.passes)
 
     if args.out_csv:
         out_csv = args.out_csv
@@ -209,4 +202,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

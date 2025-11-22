@@ -650,25 +650,26 @@ def rush_solution_shaped(
         completions = list(completions)
     ctx["completions"] = completions
 
-    gold = _canon_gold_candidates(
+    ctx["gold_cands"] = _canon_gold_candidates(
         gold or answer or kwargs.get("answers") or kwargs.get("gold_answers"),
     )
-    ctx["gold_cands"] = gold
-
-    temp = _rush_build_board_and_moves(
+    ctx["board"], ctx["board_target_moves"] = _rush_build_board_and_moves(
         prompts,
         board_str,
         board_size,
     )
-    ctx["board"] = temp[0]
 
     if gold_moves is not None:
         ctx["target_moves"] = gold_moves
-    elif temp[1] is not None:
-        ctx["target_moves"] = temp[1]
+    elif ctx["board_target_moves"] is not None:
+        ctx["target_moves"] = ctx["board_target_moves"]
     else:
         ctx["target_moves"] = min(
-            (_len_tokens(candidate) for candidate in gold if candidate is not None),
+            (
+                _len_tokens(candidate)
+                for candidate in ctx["gold_cands"]
+                if candidate is not None
+            ),
             default=None,
         )
 
@@ -678,41 +679,53 @@ def rush_solution_shaped(
 
     out_scores: List[float] = []
     for pred in completions:
-        pred_text = str(pred or "")
-        pred_can = _canon_seq_from_text(pred_text)
+        pred_can = _canon_seq_from_text(str(pred or ""))
 
         # 0) Formatting bonus when we see at least one valid token but parser fails.
         if pred_can is None:
-            bonus = _rush_formatting_bonus(
-                pred_text,
-                ctx["think_min_tokens"],
-                ctx["think_full_tokens"],
-                ctx["think_bonus_cap"],
+            out_scores.append(
+                _rush_formatting_bonus(
+                    str(pred or ""),
+                    ctx["think_min_tokens"],
+                    ctx["think_full_tokens"],
+                    ctx["think_bonus_cap"],
+                )
             )
-            out_scores.append(bonus)
             continue
 
-        temp = _rush_solve_terms(
+        solve_terms = _rush_solve_terms(
             pred_can,
             ctx["board"],
             ctx["target_moves"],
         )
 
-        score = (
-            ctx["weights"]["exact"]
-            * (
-                1.0
-                if any(
-                    pred_can == candidate for candidate in gold if candidate is not None
+        out_scores.append(
+            float(
+                max(
+                    0.0,
+                    min(
+                        1.0,
+                        ctx["weights"]["exact"]
+                        * (
+                            1.0
+                            if any(
+                                pred_can == candidate
+                                for candidate in ctx["gold_cands"]
+                                if candidate is not None
+                            )
+                            else 0.0
+                        )
+                        + ctx["weights"]["solve"] * solve_terms[1]
+                        + ctx["weights"]["prefix"]
+                        * max(
+                            _rush_prefix_credit(pred_can, ctx["gold_cands"]),
+                            solve_terms[0],
+                        )
+                        + ctx["weights"]["phi"] * solve_terms[2],
+                    ),
                 )
-                else 0.0
             )
-            + ctx["weights"]["solve"] * temp[1]
-            + ctx["weights"]["prefix"]
-            * max(_rush_prefix_credit(pred_can, gold), temp[0])
-            + ctx["weights"]["phi"] * temp[2]
         )
-        out_scores.append(float(max(0.0, min(1.0, score))))
 
     return out_scores
 

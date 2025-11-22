@@ -23,19 +23,38 @@ Parallelism
 Everything else is as before (step caps, robust correctness, per-temp CSV+plot).
 """
 
-import os, re, json, argparse, sys, gzip
-from typing import Optional, List, Dict, Any, Tuple, Callable, Iterable
-import concurrent.futures as cf
+import argparse
+import os
+import sys
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
+import concurrent.futures as cf
+import importlib
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from statsmodels.genmod.families.links import Logit
+from numpy.linalg import LinAlgError
 
-# Matplotlib + global styling
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+from src.analysis.core import discover_roots_for_temp_args
+from src.analysis.io import scan_files_step_only, iter_records_from_file
+from src.analysis.labels import aha_gpt_for_rec
+from src.analysis.metrics import (
+    extract_correct,
+    make_carpark_success_fn,
+    shift_conditional_counts,
+)
+from src.analysis.temperature_effects_cli import build_temperature_effects_arg_parser
+from src.analysis.utils import (
+    coerce_float,
+    extract_pass1_and_step,
+    get_problem_id as _get_problem_id,
+    gpt_keys_for_mode,
+    nat_step_from_path,
+    step_from_record_if_within_bounds,
+)
+
+# Matplotlib + global styling (lazy import to avoid hard dependency at import time)
+mpl = importlib.import_module("matplotlib")
+plt = importlib.import_module("matplotlib.pyplot")
 mpl.rcParams.update({
     "font.family": "serif",
     "font.serif": ["Times New Roman", "Times", "Nimbus Roman No9 L"],
@@ -49,641 +68,685 @@ mpl.rcParams.update({
     "ps.fonttype": 42,
 })
 
-# ---------- patterns ----------
+# ---------- constants ----------
 
-STEP_DIR_PAT = re.compile(r"(?:^|/)(step[-_]?\d{1,5})(?:/|$)", re.I)
-STEP_PATS = [
-    re.compile(r"step\s*[-_]?(\d+)", re.I),
-    re.compile(r"global[_-]?step\s*[-_]?(\d+)", re.I),
-    re.compile(r"checkpoint\s*[-_]?(\d+)", re.I),
-    re.compile(r"/(\d{2,5})(?=/|$)")
-]
-TEMP_PATS = [
-    re.compile(r"(?:^|[-_])temp[-_](?P<t>low|[0-9]+(?:\.[0-9]+)?)$", re.I),
-    re.compile(r"(?:^|[-_])(?P<t>low|[0-9]+(?:\.[0-9]+)?)[-_]temp$", re.I),
-    re.compile(r"(?:^|[-_])low[-_]temp$", re.I),
-]
+HARD_MAX_STEP = 1000
 
-SKIP_DIR_DEFAULT = {"compare-1shot", "1shot", "hf_cache"}
+# Directories that almost never contain user data of interest
+SKIP_DIR_DEFAULT = {"compare-1shot", "1shot", "hf_cache", "__pycache__"}
 
 # ---------- helpers ----------
 
-def parse_temp_from_dir(dirname: str, low_alias: float) -> Optional[float]:
-    d = dirname.lower()
-    for pat in TEMP_PATS:
-        m = pat.search(d)
-        if not m:
-            continue
-        tok = m.groupdict().get("t", "low").lower()
-        if tok == "low":
-            return float(low_alias)
-        try:
-            return float(tok)
-        except Exception:
-            return None
-    return None
 
-def nat_step_from_path(path: str) -> Optional[int]:
-    s = str(path)
-    for pat in STEP_PATS:
-        m = pat.search(s)
-        if m:
-            try:
-                return int(m.group(1))
-            except Exception:
-                pass
-    return None
+def _lazy_import_statsmodels():
+    """
+    Lazily import statsmodels pieces needed for GLM fits.
 
-def coerce_bool(x) -> Optional[int]:
-    if x is None:
-        return None
-    if isinstance(x, bool):
-        return int(x)
-    if isinstance(x, (int, np.integer)):
-        return int(bool(x))
-    if isinstance(x, str):
-        s = x.strip().lower()
-        if s in ("1","true","t","yes","y"): return 1
-        if s in ("0","false","f","no","n"):  return 0
-    try:
-        return int(bool(x))
-    except Exception:
-        return None
+    Using importlib avoids hard import-time dependencies in environments
+    where statsmodels is not installed, while still failing clearly at
+    runtime if these helpers are used without the package.
+    """
+    sm_module = importlib.import_module("statsmodels.api")
+    smf_module = importlib.import_module("statsmodels.formula.api")
+    links_module = importlib.import_module("statsmodels.genmod.families.links")
+    tools_module = importlib.import_module("statsmodels.tools.sm_exceptions")
+    logit_cls = getattr(links_module, "Logit")
+    perfect_sep_err = getattr(tools_module, "PerfectSeparationError")
+    return sm_module, smf_module, logit_cls, perfect_sep_err
 
-def coerce_float(x) -> Optional[float]:
-    if x is None:
-        return None
-    try:
-        return float(x)
-    except Exception:
-        return None
 
-def get_problem_id(rec: Dict[str, Any]) -> Optional[str]:
-    for k in ("problem_id","example_id","id","question","problem","clue","title","uid"):
-        v = rec.get(k)
-        if v is not None and not isinstance(v, (dict, list)):
-            return str(v)
-    v = rec.get("sample_idx")
-    return None if v is None else f"sample_{v}"
+# ---------- correctness / soft reward helpers ----------
 
-# ---------- shift gating ----------
 
-def _any_keys_true(p1: Dict[str, Any], rec: Dict[str, Any], keys: List[str]) -> int:
-    for k in keys:
-        v = p1.get(k, rec.get(k, None))
-        if v is None:
-            continue
-        out = coerce_bool(v)
-        if out == 1:
-            return 1
-    return 0
+def _extract_correct(pass1_data: Dict[str, Any], record: Dict[str, Any]) -> Optional[int]:
+    """
+    Thin wrapper around the shared correctness extractor from metrics.
+    """
+    return extract_correct(pass1_data, record)
 
-def _cue_gate_for_llm(p1: Dict[str, Any], domain: Optional[str]) -> int:
-    has_reconsider = coerce_bool(p1.get("has_reconsider_cue")) == 1
-    rec_marks = p1.get("reconsider_markers") or []
-    injected = ("injected_cue" in rec_marks)
-    reconsider_ok = has_reconsider and not injected
-    prefilter = p1.get("_shift_prefilter_markers") or []
-    judge     = p1.get("shift_markers_v1") or []
-    if str(domain).lower() == "crossword":
-        return int(reconsider_ok or bool(prefilter) or bool(judge))
-    else:
-        return int(reconsider_ok or bool(prefilter))
 
-def aha_gpt_for_rec(p1: Dict[str, Any], rec: Dict[str, Any],
-                    gpt_subset_native: bool, gpt_keys: List[str], domain: Optional[str]) -> int:
-    gpt_raw = _any_keys_true(p1, rec, gpt_keys)
-    if not gpt_subset_native:
-        return int(gpt_raw)
-    gate = _cue_gate_for_llm(p1, domain)
-    return int(gpt_raw & gate)
-
-# ---------- correctness extraction (robust) ----------
-
-def _find_in_obj(obj, keys: set) -> Optional[int]:
-    q = [obj]
-    while q:
-        cur = q.pop(0)
-        if isinstance(cur, dict):
-            for k, v in cur.items():
-                kl = str(k).lower()
-                if any(cand in kl for cand in keys):
-                    cb = coerce_bool(v)
-                    if cb is not None:
-                        return int(cb)
-                if kl in {"acc","accuracy","score"}:
-                    fv = coerce_float(v)
-                    if fv is not None:
-                        if fv in (0.0, 1.0): return int(fv)
-                        if 0.0 <= fv <= 1.0: return int(fv >= 0.5)
-            q.extend(cur.values())
-        elif isinstance(cur, list):
-            q.extend(cur)
-    return None
-
-CORRECT_KEYS = {
-    "is_correct","is_correct_pred","correct","pred_correct","y_is_correct",
-    "exact_match","em","acc","pass1_is_correct","pass1_correct",
-    "answer_correct","label_correct"
-}
-
-def _first_str(*xs) -> Optional[str]:
-    for x in xs:
-        if isinstance(x, str) and x.strip():
-            return x.strip()
-    return None
-
-def _extract_correct(p1: Dict[str, Any], rec: Dict[str, Any]) -> Optional[int]:
-    for src in (p1, rec):
-        cb = _find_in_obj(src, CORRECT_KEYS)
-        if cb is not None:
-            return cb
-    pred_canon = _first_str(rec.get("pred_answer_canon"), p1.get("pred_answer_canon"))
-    gold_canon = _first_str(rec.get("gold_answer_canon"), p1.get("gold_answer_canon"))
-    if pred_canon is not None and gold_canon is not None:
-        return int(pred_canon == gold_canon)
-    pred_raw = _first_str(rec.get("pred_answer"), p1.get("pred_answer"),
-                          rec.get("final_answer"), p1.get("final_answer"),
-                          rec.get("pred"), p1.get("pred"),
-                          rec.get("prediction"), p1.get("prediction"))
-    gold_raw = _first_str(rec.get("gold_answer"), p1.get("gold_answer"),
-                          rec.get("gold"), p1.get("gold"),
-                          rec.get("answer"), p1.get("answer"),
-                          rec.get("target"), p1.get("target"),
-                          rec.get("label"), p1.get("label"))
-    if pred_raw is not None and gold_raw is not None:
-        return int(pred_raw == gold_raw)
-    return None
-
-# ---------- carpark success ----------
-
-def _make_carpark_success_fn(op: str, thr: float) -> Callable[[Any], Optional[int]]:
-    def _cmp(val: Any) -> Optional[int]:
-        x = coerce_float(val)
-        if x is None:
-            return None
-        if op == "gt": return int(x >  thr)
-        if op == "ge": return int(x >= thr)
-        if op == "eq": return int(x == thr)
-        return int(x > thr)
-    return _cmp
-
-def _extract_soft_reward(rec: Dict[str, Any], p1: Dict[str, Any]) -> Optional[float]:
-    return coerce_float(rec.get("soft_reward", p1.get("soft_reward")))
-
-# ---------- file scanning & reading ----------
-
-STEP_FILE_PAT = re.compile(r"^(?:step|global[_-]?step|checkpoint)[-_]?\d{1,5}", re.I)
-
-def scan_files_step_only(root: str, split_substr: Optional[str], skip_substrings: set) -> List[str]:
-    out = []
-    for dp, _, fns in os.walk(root):
-        dp_norm = dp.replace("\\", "/").lower()
-        if any(s in dp_norm for s in skip_substrings):
-            continue
-        dir_has_step = STEP_DIR_PAT.search(dp_norm) is not None
-        for fn in fns:
-            low = fn.lower()
-            if not (low.endswith(".jsonl") or low.endswith(".jsonl.gz") or low.endswith(".json")):
-                continue
-            if split_substr and split_substr not in fn:
-                continue
-            file_has_step = STEP_FILE_PAT.search(fn) is not None
-            if not (dir_has_step or file_has_step):
-                continue
-            out.append(os.path.join(dp, fn))
-    out.sort()
-    return out
-
-def iter_records_from_file(path: str) -> Iterable[Dict[str, Any]]:
-    if path.endswith(".jsonl.gz"):
-        opener = gzip.open; mode = "rt"
-    else:
-        opener = open; mode = "r"
-    try:
-        with opener(path, mode, encoding="utf-8") as f:
-            if path.endswith(".json"):
-                text = f.read().strip()
-                if not text:
-                    return
-                try:
-                    obj = json.loads(text)
-                    if isinstance(obj, list):
-                        for rec in obj:
-                            if isinstance(rec, dict):
-                                yield rec
-                    elif isinstance(obj, dict):
-                        yield obj
-                except Exception:
-                    for line in text.splitlines():
-                        s = line.strip()
-                        if not s:
-                            continue
-                        try:
-                            rec = json.loads(s)
-                            if isinstance(rec, dict): yield rec
-                        except Exception:
-                            continue
-            else:
-                for line in f:
-                    s = line.strip()
-                    if not s: continue
-                    try:
-                        rec = json.loads(s)
-                        if isinstance(rec, dict): yield rec
-                    except Exception:
-                        continue
-    except Exception:
-        return
+def _extract_soft_reward(record: Dict[str, Any], pass1_data: Dict[str, Any]) -> Optional[float]:
+    """
+    Extract a soft_reward value from either the record or the pass-1 object.
+    """
+    return coerce_float(record.get("soft_reward", pass1_data.get("soft_reward")))
 
 # ---------- stats ----------
 
-def cond_counts(df: pd.DataFrame) -> Tuple[int, float, float, float]:
-    N = int(len(df))
-    n1 = int((df["shift"] == 1).sum())
-    n0 = N - n1
-    k1 = int(df.loc[df["shift"] == 1, "correct"].sum()) if n1 > 0 else 0
-    k0 = int(df.loc[df["shift"] == 0, "correct"].sum()) if n0 > 0 else 0
-    p1 = (k1 / n1) if n1 > 0 else np.nan
-    p0 = (k0 / n0) if n0 > 0 else np.nan
-    share = (n1 / N) if N > 0 else np.nan
-    return N, share, p1, p0
 
-def ame_glm_temp(sub_allT: pd.DataFrame) -> Tuple[float, float]:
-    sub = sub_allT.copy()
-    t = sub["temp"].to_numpy(dtype=float)
-    sub["temp_std"] = (t - t.mean()) / (t.std(ddof=0) + 1e-12)
-    sub["shift"] = sub["shift"].astype(float)
-    sub["correct"] = sub["correct"].astype(float)
+def _prepare_glm_frame(sub_all_temps: pd.DataFrame) -> pd.DataFrame:
+    """
+    Standardise temperature and coerce fields needed for the GLM.
+    """
+    glm_df = sub_all_temps.copy()
+    temp_values = glm_df["temp"].to_numpy(dtype=float)
+    mean_temp = float(temp_values.mean())
+    std_temp = float(temp_values.std(ddof=0) + 1e-12)
+    glm_df["temp_std"] = (temp_values - mean_temp) / std_temp
+    glm_df["shift"] = glm_df["shift"].astype(float)
+    glm_df["correct"] = glm_df["correct"].astype(float)
+    return glm_df
 
-    model = smf.glm(
+
+def _fit_shift_glm(glm_df: pd.DataFrame):
+    """
+    Fit the temperature/shift GLM and return the fitted result.
+    """
+    sm_module, smf_module, logit_cls, perfect_sep_err = _lazy_import_statsmodels()
+
+    model = smf_module.glm(
         formula="correct ~ C(problem_id) + temp_std + shift",
-        data=sub,
-        family=sm.families.Binomial(link=Logit()),
+        data=glm_df,
+        family=sm_module.families.Binomial(link=logit_cls()),
     )
     try:
-        res = model.fit(cov_type="cluster", cov_kwds={"groups": sub["problem_id"]}, maxiter=200)
-    except Exception:
+        res = model.fit(
+            cov_type="cluster",
+            cov_kwds={"groups": glm_df["problem_id"]},
+            maxiter=200,
+        )
+    except (perfect_sep_err, LinAlgError, ValueError):
         res = model.fit()
-        res = res.get_robustcov_results(cov_type="cluster", groups=sub["problem_id"])
+        res = res.get_robustcov_results(
+            cov_type="cluster",
+            groups=glm_df["problem_id"],
+        )
+    return res
 
-    X = res.model.exog
-    names = list(res.model.exog_names)
+
+def _average_marginal_effect_for_shift(res) -> Tuple[float, float]:
+    """
+    Compute the AME for the ``shift`` regressor and its p-value.
+    """
+
+    exog_names = list(res.model.exog_names)
     try:
-        j_shift = names.index("shift")
+        shift_index = exog_names.index("shift")
     except ValueError:
-        j_shift = max(i for i, nm in enumerate(names) if "shift" in nm)
+        shift_index = max(
+            idx for idx, name in enumerate(exog_names) if "shift" in name
+        )
 
-    def inv_logit(z): return 1.0/(1.0+np.exp(-z))
-    b = res.params.to_numpy()
-    x1 = X.copy(); x1[:, j_shift] = 1.0
-    x0 = X.copy(); x0[:, j_shift] = 0.0
-    ame = float(np.mean(inv_logit(x1 @ b) - inv_logit(x0 @ b)))
+    design_matrix = res.model.exog.copy()
+    params_vector = res.params.to_numpy()
+    logits_with_shift = design_matrix @ params_vector
+    probs_with_shift = 1.0 / (1.0 + np.exp(-logits_with_shift))
+    design_matrix[:, shift_index] = 0.0
+    logits_without_shift = design_matrix @ params_vector
+    probs_without_shift = 1.0 / (1.0 + np.exp(-logits_without_shift))
+    delta_probs = probs_with_shift - probs_without_shift
+    ame = float(np.mean(delta_probs))
     p_shift = float(res.pvalues.get("shift", np.nan))
     return ame, p_shift
 
-# ---------- discovery ----------
-def discover_dirs(scan_root: str, temps: List[float], low_alias: float, skip_substrings: set) -> Dict[float, Dict[str, str]]:
-    temps_set = set(float(t) for t in temps)
-    mapping: Dict[float, Dict[str, str]] = {}
-    for root, dirs, _ in os.walk(scan_root):
-        for d in dirs:
-            d_lower = d.lower()
-            if any(s in d_lower for s in skip_substrings):
-                continue
-            T = parse_temp_from_dir(d, low_alias)
-            if T is None or float(T) not in temps_set:
-                continue
 
-            if   "xword"   in d_lower: dom = "Crossword"
-            elif "carpark" in d_lower: dom = "Carpark"
-            elif "math"    in d_lower: dom = "Math2" if "7b" in d_lower else "Math"
-            elif ("low-temp" in d_lower or "low_temp" in d_lower) and "1.5b" in d_lower:
-                dom = "Math"
-            else:
-                continue
-
-            full = os.path.join(root, d)
-            mapping.setdefault(float(T), {})
-            prev = mapping[float(T)].get(dom)
-
-            def _rank_math(p: str) -> tuple:
-                b = os.path.basename(p).lower()
-                score = 0
-                if "1.5b" in b: score += 300
-                if "qwen" in b: score += 200
-                if "llama" in b: score += 100
-                if "low-temp" in b or "low_temp" in b: score += 10
-                return (score, len(p))
-
-            if dom == "Math":
-                if (prev is None) or (_rank_math(full) > _rank_math(prev)):
-                    mapping[float(T)][dom] = full
-            else:
-                if (prev is None) or (len(full) > len(prev)):
-                    mapping[float(T)][dom] = full
-
-    if mapping:
-        print("[info] discovered roots by temperature:")
-        for T in sorted(mapping):
-            items = ", ".join(f"{k}→{v}" for k, v in mapping[T].items())
-            print(f"  T={T}: {items}")
-    return mapping
+def ame_glm_temp(sub_all_temps: pd.DataFrame) -> Tuple[float, float]:
+    """
+    Fit a GLM and return the AME of shift along with its p-value.
+    """
+    glm_df = _prepare_glm_frame(sub_all_temps)
+    res = _fit_shift_glm(glm_df)
+    return _average_marginal_effect_for_shift(res)
 
 # ---------- PARALLEL WORKER ----------
 
-def _process_file_worker(task: Tuple[str, str, List[str], bool, Optional[int], Optional[int], str, float, float]) -> List[Dict[str, Any]]:
+
+class ParallelConfig(NamedTuple):
+    """
+    Configuration for parallel loading and gating of records.
+    """
+    gpt_keys: List[str]
+    gpt_subset_native: bool
+    min_step: Optional[int]
+    max_step: Optional[int]
+    carpark_op: str
+    carpark_thr: float
+    temp_value: float
+    workers: int
+    parallel_mode: str
+    chunksize: int
+
+
+def _compute_correct(
+    dom_lower: str,
+    record: Dict[str, Any],
+    pass1_data: Dict[str, Any],
+    carpark_success_fn: Callable[[Any], Optional[int]],
+) -> Optional[int]:
+    """
+    Compute correctness indicator for a record across domains.
+    """
+    if dom_lower.startswith("carpark"):
+        soft_reward = _extract_soft_reward(record, pass1_data)
+        ok_flag = carpark_success_fn(soft_reward)
+        if ok_flag is None:
+            return None
+        return int(ok_flag)
+    correct_flag = _extract_correct(pass1_data, record)
+    if correct_flag is None:
+        return None
+    return int(correct_flag)
+
+
+def _process_file_worker(task: Tuple[str, str, ParallelConfig]) -> List[Dict[str, Any]]:
     """
     One file -> list of rows.
-    task = (dom, path, gpt_keys, gpt_subset_native, min_step, max_step, carpark_op, carpark_thr, temp_value)
+
+    task = (dom, path, parallel_cfg)
     """
-    dom, path, gpt_keys, gpt_subset_native, min_step, max_step, carpark_op, carpark_thr, temp_value = task
+    dom, path, parallel_cfg = task
+    return _rows_for_file(dom, path, parallel_cfg)
+
+
+def _rows_for_file(
+    domain: str,
+    path: str,
+    parallel_cfg: ParallelConfig,
+) -> List[Dict[str, Any]]:
+    """
+    Load and gate rows for a single (domain, path) pair.
+    """
     rows: List[Dict[str, Any]] = []
-    carpark_success_fn = _make_carpark_success_fn(carpark_op, carpark_thr)
-    dom_lower = dom.lower()
+    carpark_success_fn = make_carpark_success_fn(
+        parallel_cfg.carpark_op,
+        parallel_cfg.carpark_thr,
+    )
+    dom_lower = domain.lower()
     step_from_name = nat_step_from_path(path)
 
     for rec in iter_records_from_file(path):
-        p1 = rec.get("pass1") or {}
-        if not isinstance(p1, dict):
-            p1 = {}
-
-        step = (rec.get("step") or rec.get("global_step") or
-                rec.get("training_step") or step_from_name)
-        try:
-            step = int(step) if step is not None else 0
-        except Exception:
-            step = 0
-
-        if min_step is not None and step < min_step:
-            continue
-        if max_step is not None and step > max_step:
+        pass1_data, _ = extract_pass1_and_step(rec, step_from_name)
+        if not pass1_data:
             continue
 
-        if dom_lower.startswith("carpark"):
-            sr = _extract_soft_reward(rec, p1)
-            ok = carpark_success_fn(sr)
-            if ok is None:
-                continue
-            correct = int(ok)
-        else:
-            corr = _extract_correct(p1, rec)
-            if corr is None:
-                continue
-            correct = int(corr)
-
-        pid = get_problem_id(rec)
-        if pid is None:
+        step = step_from_record_if_within_bounds(
+            rec,
+            path,
+            split_value=None,
+            min_step=parallel_cfg.min_step,
+            max_step=parallel_cfg.max_step,
+        )
+        if step is None:
             continue
 
-        shift = aha_gpt_for_rec(p1, rec, gpt_subset_native, gpt_keys, dom)
+        correct = _compute_correct(dom_lower, rec, pass1_data, carpark_success_fn)
+        if correct is None:
+            continue
 
-        rows.append({
-            "domain": str(dom),
-            "problem_id": f"{dom}::{pid}",
-            "step": int(step),
-            "temp": float(temp_value),
-            "correct": int(correct),
-            "shift": int(shift),
-        })
+        problem_id = _get_problem_id(rec)
+        if problem_id is None:
+            continue
+
+        shift = aha_gpt_for_rec(
+            pass1_data,
+            rec,
+            parallel_cfg.gpt_subset_native,
+            parallel_cfg.gpt_keys,
+            domain,
+        )
+
+        rows.append(
+            {
+                "domain": str(domain),
+                "problem_id": f"{domain}::{problem_id}",
+                "step": int(step),
+                "temp": float(parallel_cfg.temp_value),
+                "correct": int(correct),
+                "shift": int(shift),
+            }
+        )
 
     return rows
 
-def load_rows_parallel(files_by_domain: Dict[str, List[str]],
-                       gpt_keys: List[str], gpt_subset_native: bool,
-                       min_step: Optional[int], max_step: Optional[int],
-                       carpark_op: str, carpark_thr: float,
-                       temp_value: float, workers: int, parallel: str, chunksize: int) -> pd.DataFrame:
-    tasks: List[Tuple[str, str, List[str], bool, Optional[int], Optional[int], str, float, float]] = []
+
+def load_rows_parallel(
+    files_by_domain: Dict[str, List[str]],
+    parallel_cfg: ParallelConfig,
+) -> pd.DataFrame:
+    """
+    Load and gate rows in parallel across all domains.
+    """
+    tasks: List[Tuple[str, str, ParallelConfig]] = []
     for dom, files in files_by_domain.items():
         for path in files:
-            tasks.append((dom, path, gpt_keys, gpt_subset_native, min_step, max_step, carpark_op, carpark_thr, temp_value))
+            tasks.append((dom, path, parallel_cfg))
     if not tasks:
-        return pd.DataFrame(columns=["domain","problem_id","step","temp","correct","shift"])
+        return pd.DataFrame(
+            columns=["domain", "problem_id", "step", "temp", "correct", "shift"],
+        )
 
-    Exec = cf.ProcessPoolExecutor if parallel == "process" else cf.ThreadPoolExecutor
+    exec_cls = (
+        cf.ProcessPoolExecutor
+        if parallel_cfg.parallel_mode == "process"
+        else cf.ThreadPoolExecutor
+    )
     rows_all: List[Dict[str, Any]] = []
-    csize = max(1, chunksize if chunksize > 0 else len(tasks)//(workers*4) or 1)
-    with Exec(max_workers=workers) as ex:
-        for res in ex.map(_process_file_worker, tasks, chunksize=csize):
+    chunksize = parallel_cfg.chunksize
+    workers = parallel_cfg.workers
+    effective_chunksize = max(
+        1,
+        chunksize if chunksize > 0 else len(tasks) // (workers * 4) or 1,
+    )
+    with exec_cls(max_workers=workers) as executor:
+        for res in executor.map(
+            _process_file_worker,
+            tasks,
+            chunksize=effective_chunksize,
+        ):
             if res:
                 rows_all.extend(res)
     return pd.DataFrame(rows_all)
 
 # ---------- NEW: per-temperature raw-effect computation & plotting ----------
 
-def per_temp_delta(df_T_dom: pd.DataFrame) -> Tuple[float, float, int, int]:
-    N, _, p1, p0 = cond_counts(df_T_dom)
-    n1 = int((df_T_dom["shift"] == 1).sum())
-    n0 = int((df_T_dom["shift"] == 0).sum())
-    if not (np.isfinite(p1) and np.isfinite(p0)) or n1 == 0 or n0 == 0:
-        return (np.nan, np.nan, n1, n0)
-    delta = (p1 - p0) * 100.0
-    se = 100.0 * float(np.sqrt((p1*(1-p1))/n1 + (p0*(1-p0))/n0))
-    return (delta, se, n1, n0)
 
-def make_plot(pertemp_df: pd.DataFrame, out_png: str, out_pdf: Optional[str],
-              title: str, x_temps_sorted: List[float],
-              label_map: Dict[str, str], dpi: int = 300):
-    fig, ax = plt.subplots(figsize=(5, 3), constrained_layout=True)
+def per_temp_delta(df_temp_dom: pd.DataFrame) -> Tuple[float, float, int, int]:
+    """
+    Compute per-temperature delta (pp) and its standard error.
+    """
+    _, _, prob_shift, prob_no_shift = shift_conditional_counts(df_temp_dom)
+    n_shift = int((df_temp_dom["shift"] == 1).sum())
+    n_no_shift = int((df_temp_dom["shift"] == 0).sum())
+    if (
+        not (np.isfinite(prob_shift) and np.isfinite(prob_no_shift))
+        or n_shift == 0
+        or n_no_shift == 0
+    ):
+        return (np.nan, np.nan, n_shift, n_no_shift)
+    delta = (prob_shift - prob_no_shift) * 100.0
+    se_pp = 100.0 * float(
+        np.sqrt(
+            (prob_shift * (1 - prob_shift)) / n_shift
+            + (prob_no_shift * (1 - prob_no_shift)) / n_no_shift,
+        ),
+    )
+    return (delta, se_pp, n_shift, n_no_shift)
+
+
+class PlotConfig(NamedTuple):
+    """
+    Configuration for plotting raw effects vs temperature.
+    """
+    pertemp_df: pd.DataFrame
+    out_png: str
+    out_pdf: Optional[str]
+    title: str
+    x_temps_sorted: List[float]
+    label_map: Dict[str, str]
+    dpi: int = 300
+
+
+def make_plot(config: PlotConfig) -> None:
+    """
+    Plot raw effects vs temperature for each domain.
+    """
+    fig, axis = plt.subplots(figsize=(5, 3), constrained_layout=True)
 
     # Series order; empty ones are skipped automatically
     series = [
-        ("Math",      "C2", "o"),
-        ("Math2",     "C4", "s"),  # second math series (e.g., Qwen-7B)
+        ("Math", "C2", "o"),
+        ("Math2", "C4", "s"),  # second math series (e.g., Qwen-7B)
         ("Crossword", "C0", "o"),
-        ("Carpark",   "C3", "o"),
+        ("Carpark", "C3", "o"),
     ]
     for dom_key, color, marker in series:
-        sub = pertemp_df[pertemp_df["domain_key"] == dom_key].copy()
+        sub = config.pertemp_df[
+            config.pertemp_df["domain_key"] == dom_key
+        ].copy()
         if sub.empty:
             continue
-        sub = sub.set_index("temp").reindex(sorted(set(x_temps_sorted))).reset_index()
-        ax.errorbar(
-            sub["temp"], sub["delta_pp"], yerr=sub["se_pp"],
-            fmt=marker+"-", capsize=4, elinewidth=1, linewidth=2,
-            label=label_map.get(dom_key, dom_key), color=color
+        sub = (
+            sub.set_index("temp")
+            .reindex(sorted(set(config.x_temps_sorted)))
+            .reset_index()
+        )
+        axis.errorbar(
+            sub["temp"],
+            sub["delta_pp"],
+            yerr=sub["se_pp"],
+            fmt=f"{marker}-",
+            capsize=4,
+            elinewidth=1,
+            linewidth=2,
+            label=config.label_map.get(dom_key, dom_key),
+            color=color,
         )
 
     # Helpful x ticks: exactly the temperatures you passed; pad edges
-    xt = sorted(set(x_temps_sorted))
-    ax.set_xticks(xt)
-    ax.set_xticklabels([("{:.2f}".format(t)).rstrip("0").rstrip(".") for t in xt])
-    if len(xt) >= 2:
-        pad = 0.05 * (max(xt) - min(xt))
+    xticks = sorted(set(config.x_temps_sorted))
+    axis.set_xticks(xticks)
+    axis.set_xticklabels(
+        [f"{temp_value:.2f}".rstrip("0").rstrip(".") for temp_value in xticks],
+    )
+    if len(xticks) >= 2:
+        pad = 0.05 * (max(xticks) - min(xticks))
     else:
         pad = 0.05
-    ax.set_xlim(min(xt) - pad, max(xt) + pad)
+    axis.set_xlim(min(xticks) - pad, max(xticks) + pad)
 
-    ax.axhline(0.0, linewidth=1, linestyle="--", color="0.4")
-    ax.set_xlabel("Temperature")
-    ax.set_ylabel("Raw effect of shift on accuracy (pp)")
-    ax.set_title(title)
-    ax.legend(frameon=True, loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=3)
-    ax.grid(True, axis="y", alpha=0.25)
+    axis.axhline(0.0, linewidth=1, linestyle="--", color="0.4")
+    axis.set_xlabel("Temperature")
+    axis.set_ylabel("Raw effect of shift on accuracy (pp)")
+    axis.set_title(config.title)
+    axis.legend(
+        frameon=True,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.22),
+        ncol=3,
+    )
+    axis.grid(True, axis="y", alpha=0.25)
 
     fig.subplots_adjust(bottom=0.28)
-    fig.savefig(out_png, dpi=dpi, bbox_inches="tight")
-    if out_pdf:
-        fig.savefig(out_pdf, dpi=dpi, bbox_inches="tight")
+    fig.savefig(config.out_png, dpi=config.dpi, bbox_inches="tight")
+    if config.out_pdf:
+        fig.savefig(config.out_pdf, dpi=config.dpi, bbox_inches="tight")
     plt.close(fig)
 
 # ---------- main ----------
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--temps", nargs="+", type=float, required=True)
-    ap.add_argument("--scan_root", type=str, default=None)
-    ap.add_argument("--crossword_tpl", type=str, default=None)
-    ap.add_argument("--math_tpl",      type=str, default=None)   # e.g., Llama-8B
-    ap.add_argument("--math2_tpl",     type=str, default=None)   # e.g., Qwen-7B
-    ap.add_argument("--carpark_tpl",   type=str, default=None)
 
-    ap.add_argument("--label_crossword", type=str, default="Crossword")
-    ap.add_argument("--label_math",      type=str, default="Llama-8B-Math")
-    ap.add_argument("--label_math2",     type=str, default="Qwen-7B-Math")
-    ap.add_argument("--label_carpark",   type=str, default="Carpark")
-    ap.add_argument("--include_math2", action="store_true", default=True)
+def _build_arg_parser() -> argparse.ArgumentParser:
+    """
+    Build the CLI argument parser for this script.
+    """
+    return build_temperature_effects_arg_parser()
 
-    ap.add_argument("--split", default=None)
-    ap.add_argument("--out_dir", default=None)
-    ap.add_argument("--dataset_name", default="MIXED")
-    ap.add_argument("--model_name",   default="7B_vs_8B")
 
-    ap.add_argument("--gpt_mode", choices=["canonical","broad"], default="canonical")
-    ap.add_argument("--no_gpt_subset_native", action="store_true")
-    ap.add_argument("--min_step", type=int, default=None)
-    ap.add_argument("--max_step", type=int, default=None)
-
-    ap.add_argument("--carpark_success_op", choices=["gt","ge","eq"], default="gt")
-    ap.add_argument("--carpark_soft_threshold", type=float, default=0.0)
-
-    ap.add_argument("--low_alias", type=float, default=0.3)
-    ap.add_argument("--skip_substr", nargs="*", default=["compare-1shot", "1shot", "hf_cache"])
-
-    # plotting knobs
-    ap.add_argument("--make_plot", action="store_true")
-    ap.add_argument("--plot_title", type=str, default=None)
-    ap.add_argument("--dpi", type=int, default=300)
-
-    # PARALLEL knobs
-    ap.add_argument("--workers", type=int, default=40, help="Parallel workers (processes or threads).")
-    ap.add_argument("--parallel", choices=["process","thread"], default="process", help="Process pool (default) or thread pool.")
-    ap.add_argument("--chunksize", type=int, default=8, help="Task chunk size for executor.map.")
-
-    args = ap.parse_args()
-
-    # output dir
+def _compute_out_dir(args: argparse.Namespace) -> str:
+    """
+    Determine the base output directory for this run.
+    """
     if args.out_dir:
-        out_dir = args.out_dir
-    else:
-        guess = args.scan_root or (args.crossword_tpl or args.math_tpl or args.math2_tpl or args.carpark_tpl or ".")
-        out_dir = os.path.join(guess if isinstance(guess, str) else ".", "temperature_effects")
-    os.makedirs(out_dir, exist_ok=True)
+        return args.out_dir
+    guess = args.scan_root or (
+        args.crossword_tpl
+        or args.math_tpl
+        or args.math2_tpl
+        or args.carpark_tpl
+        or "."
+    )
+    return os.path.join(guess if isinstance(guess, str) else ".", "temperature_effects")
 
-    # GPT keys
+
+def _compute_gpt_keys(args: argparse.Namespace) -> Tuple[bool, List[str]]:
+    """
+    Build GPT gating configuration from CLI args.
+    """
     gpt_subset_native = not args.no_gpt_subset_native
-    gpt_keys = (["change_way_of_thinking","shift_in_reasoning_v1"]
-                if args.gpt_mode == "canonical"
-                else ["change_way_of_thinking","shift_in_reasoning_v1","shift_llm","shift_gpt","pivot_llm","rechecked"])
+    keys = gpt_keys_for_mode(args.gpt_mode)
+    return gpt_subset_native, keys
 
-    # Step cap (hard cap 1000)
-    HARD_MAX = 1000
-    max_step_eff = HARD_MAX if args.max_step is None else min(args.max_step, HARD_MAX)
-    if args.max_step is None or args.max_step > HARD_MAX:
-        print(f"[info] Capping max_step to {max_step_eff} (hard cap = {HARD_MAX}).")
 
-    carpark_op  = args.carpark_success_op
-    carpark_thr = args.carpark_soft_threshold
+def _discover_roots(
+    args: argparse.Namespace,
+    skip_set: set,
+) -> Dict[float, Dict[str, str]]:
+    """
+    Construct the mapping {temp -> domain -> root_dir}.
+    """
+    return discover_roots_for_temp_args(
+        args,
+        skip_set,
+        include_math3=False,
+    )
 
-    skip_set = set(s.lower() for s in args.skip_substr) | SKIP_DIR_DEFAULT
 
-    # Discover roots
-    if args.scan_root:
-        roots_by_temp = discover_dirs(args.scan_root, args.temps, args.low_alias, skip_set)
-    else:
-        roots_by_temp = {}
-        for T in args.temps:
-            dmap: Dict[str, str] = {}
-            if args.crossword_tpl:
-                p = args.crossword_tpl.format(T=T);  dmap["Crossword"] = p if os.path.isdir(p) else None
-            if args.math_tpl:
-                p = args.math_tpl.format(T=T);       dmap["Math"]      = p if os.path.isdir(p) else None
-            if args.math2_tpl:
-                p = args.math2_tpl.format(T=T);      dmap["Math2"]     = p if os.path.isdir(p) else None
-            if args.carpark_tpl:
-                p = args.carpark_tpl.format(T=T);    dmap["Carpark"]   = p if os.path.isdir(p) else None
-            roots_by_temp[float(T)] = {k:v for k,v in dmap.items() if v}
+class AnalysisContext(NamedTuple):
+    """
+    Immutable configuration for the main aggregation loop.
+    """
 
-    if not roots_by_temp:
-        sys.exit("No usable folders discovered. Check --scan_root or templates + temps.")
+    args: argparse.Namespace
+    gpt_subset_native: bool
+    gpt_keys: List[str]
+    max_step_eff: int
+    carpark_op: str
+    carpark_thr: float
+    skip_set: set
 
-    domain_frames: Dict[str, List[pd.DataFrame]] = {"Crossword": [], "Math": [], "Math2": [], "Carpark": []}
-    pertemp_rows: List[Dict[str, Any]] = []
-    x_temps_sorted = sorted(roots_by_temp.keys())
 
-    for T, dmap in roots_by_temp.items():
-        files_by_domain: Dict[str, List[str]] = {}
-        discover_keys = ["Crossword","Math","Math2","Carpark"] if args.include_math2 else ["Crossword","Math","Carpark"]
-        for dom in discover_keys:
-            path = dmap.get(dom)
-            if not path:
-                continue
-            files = scan_files_step_only(path, args.split, skip_set)
-            if files:
-                files_by_domain[dom] = files
-
-        if not files_by_domain:
+def _discover_files_for_temp(
+    domain_map: Dict[str, str],
+    args: argparse.Namespace,
+    skip_set: set,
+) -> Dict[str, List[str]]:
+    """
+    Build the per-domain file list for a single temperature.
+    """
+    files_by_domain: Dict[str, List[str]] = {}
+    discover_keys = (
+        ["Crossword", "Math", "Math2", "Carpark"]
+        if args.include_math2
+        else ["Crossword", "Math", "Carpark"]
+    )
+    for dom in discover_keys:
+        path = domain_map.get(dom)
+        if not path:
             continue
+        files = scan_files_step_only(path, args.split, skip_set)
+        if files:
+            files_by_domain[dom] = files
+    return files_by_domain
 
-        # PARALLEL load
-        df_T = load_rows_parallel(
-            files_by_domain=files_by_domain,
-            gpt_keys=gpt_keys,
-            gpt_subset_native=gpt_subset_native,
-            min_step=args.min_step,
-            max_step=max_step_eff,
-            carpark_op=carpark_op,
-            carpark_thr=carpark_thr,
-            temp_value=T,
-            workers=args.workers,
-            parallel=args.parallel,
-            chunksize=args.chunksize,
+
+def _load_df_for_temp(
+    temp_value: float,
+    files_by_domain: Dict[str, List[str]],
+    ctx: "AnalysisContext",
+) -> pd.DataFrame:
+    """
+    Use ParallelConfig + load_rows_parallel to load rows for a temperature.
+    """
+    args = ctx.args
+    parallel_cfg = ParallelConfig(
+        gpt_keys=ctx.gpt_keys,
+        gpt_subset_native=ctx.gpt_subset_native,
+        min_step=args.min_step,
+        max_step=ctx.max_step_eff,
+        carpark_op=ctx.carpark_op,
+        carpark_thr=ctx.carpark_thr,
+        temp_value=temp_value,
+        workers=args.workers,
+        parallel_mode=args.parallel,
+        chunksize=args.chunksize,
+    )
+    return load_rows_parallel(
+        files_by_domain=files_by_domain,
+        parallel_cfg=parallel_cfg,
+    )
+
+
+def _log_no_rows_for_temp(
+    temp_value: float,
+    files_by_domain: Dict[str, List[str]],
+    domain_map: Dict[str, str],
+) -> None:
+    """
+    Emit a warning when no rows are loaded for a temperature.
+    """
+    print(f"[warn] T={temp_value}: no rows loaded after parsing/gating.")
+    for dom_dbg, flist in files_by_domain.items():
+        print(
+            f"    files[{dom_dbg}]={len(flist)} under {domain_map.get(dom_dbg)}",
         )
 
-        if df_T.empty:
-            print(f"[warn] T={T}: no rows loaded after parsing/gating.")
-            for dom_dbg, flist in files_by_domain.items():
-                print(f"    files[{dom_dbg}]={len(flist)} under {dmap.get(dom_dbg)}")
+
+def _log_loaded_rows(df_temp: pd.DataFrame, temp_value: float) -> None:
+    """
+    Emit a compact summary of loaded rows by domain for a temperature.
+    """
+    summary_parts: List[str] = []
+    for dom_show in ["Crossword", "Math", "Math2", "Carpark"]:
+        n_dom = int((df_temp["domain"] == dom_show).sum())
+        summary_parts.append(f"{dom_show}={n_dom}")
+    print(
+        f"[info] loaded rows @ T={temp_value}: "
+        + ", ".join(summary_parts),
+    )
+
+
+def _append_domain_and_pertemp(
+    df_temp: pd.DataFrame,
+    temp_value: float,
+    domain_frames: Dict[str, List[pd.DataFrame]],
+    pertemp_rows: List[Dict[str, Any]],
+) -> None:
+    """
+    Update per-domain frames and per-temperature aggregates.
+    """
+    for dom in ["Crossword", "Math", "Math2", "Carpark"]:
+        sub = df_temp[df_temp["domain"] == dom]
+        if not sub.empty:
+            domain_frames[dom].append(sub)
+
+    # per-temp raw effects (include Math2)
+    for dom in ["Crossword", "Math", "Math2", "Carpark"]:
+        sub = df_temp[df_temp["domain"] == dom]
+        if sub.empty:
             continue
-
-        parts = []
-        for dom_show in ["Crossword","Math","Math2","Carpark"]:
-            n_dom = int((df_T["domain"] == dom_show).sum())
-            parts.append(f"{dom_show}={n_dom}")
-        print(f"[info] loaded rows @ T={T}: " + ", ".join(parts))
-
-        for dom in ["Crossword","Math","Math2","Carpark"]:
-            sub = df_T[df_T["domain"] == dom]
-            if not sub.empty:
-                domain_frames[dom].append(sub)
-
-        # per-temp raw effects (include Math2)
-        for dom in ["Crossword","Math","Math2","Carpark"]:
-            sub = df_T[df_T["domain"] == dom]
-            if sub.empty:
-                continue
-            delta_pp, se_pp, n1, n0 = per_temp_delta(sub)
-            pertemp_rows.append({
-                "temp": float(T),
+        delta_pp, se_pp, n_shift, n_no_shift = per_temp_delta(sub)
+        pertemp_rows.append(
+            {
+                "temp": float(temp_value),
                 "domain_key": dom,
                 "domain": dom,
                 "delta_pp": delta_pp,
                 "se_pp": se_pp,
-                "n_shift": n1,
-                "n_noshift": n0,
-            })
+                "n_shift": n_shift,
+                "n_noshift": n_no_shift,
+            }
+        )
 
+
+def _collect_domain_and_pertemp(
+    ctx: "AnalysisContext",
+    roots_by_temp: Dict[float, Dict[str, str]],
+) -> Tuple[Dict[str, List[pd.DataFrame]], List[Dict[str, Any]], List[float]]:
+    """
+    Load rows for each temperature and domain and build aggregates.
+    """
+    args = ctx.args
+    domain_frames: Dict[str, List[pd.DataFrame]] = {
+        "Crossword": [],
+        "Math": [],
+        "Math2": [],
+        "Carpark": [],
+    }
+    pertemp_rows: List[Dict[str, Any]] = []
+    x_temps_sorted = sorted(roots_by_temp.keys())
+
+    for temp_value, domain_map in roots_by_temp.items():
+        files_by_domain = _discover_files_for_temp(
+            domain_map,
+            args,
+            ctx.skip_set,
+        )
+        if not files_by_domain:
+            continue
+
+        df_temp = _load_df_for_temp(temp_value, files_by_domain, ctx)
+        if df_temp.empty:
+            _log_no_rows_for_temp(temp_value, files_by_domain, domain_map)
+            continue
+
+        _log_loaded_rows(df_temp, temp_value)
+        _append_domain_and_pertemp(
+            df_temp,
+            temp_value,
+            domain_frames,
+            pertemp_rows,
+        )
+
+    return domain_frames, pertemp_rows, x_temps_sorted
+
+
+def _summarize_domains(
+    domain_frames: Dict[str, List[pd.DataFrame]],
+    label_map: Dict[str, str],
+) -> pd.DataFrame:
+    """
+    Build per-domain aggregate table with AMEs.
+    """
+    rows: List[Dict[str, Any]] = []
+    for dom in ["Crossword", "Math", "Math2", "Carpark"]:
+        if not domain_frames[dom]:
+            continue
+        domain_df = pd.concat(domain_frames[dom], ignore_index=True)
+        total_count, share, acc_shift, acc_no_shift = shift_conditional_counts(domain_df)
+        if np.isfinite(acc_shift) and np.isfinite(acc_no_shift):
+            delta_pp = (acc_shift - acc_no_shift) * 100.0
+        else:
+            delta_pp = np.nan
+        ame, p_shift = ame_glm_temp(domain_df)
+        rows.append(
+            {
+                "domain_key": dom,
+                "domain": label_map[dom],
+                "N": total_count,
+                "share_shift": share,
+                "acc_shift": acc_shift,
+                "delta_pp": delta_pp,
+                "AME": ame,
+                "p": p_shift,
+            }
+        )
+
+    if not rows:
+        sys.exit("No per-domain aggregates available.")
+
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "domain",
+            "N",
+            "share_shift",
+            "acc_shift",
+            "delta_pp",
+            "AME",
+            "p",
+        ],
+    )
+
+
+def _emit_domain_table(
+    tab: pd.DataFrame,
+    out_csv: str,
+) -> None:
+    """
+    Pretty-print and save the per-domain aggregate table.
+    """
+    tab.to_csv(out_csv, index=False)
+    print("[info] Aggregates by domain:")
+    with pd.option_context("display.max_columns", None, "display.width", 140):
+        disp = tab.copy()
+        disp["share_shift"] = disp["share_shift"].map(
+            lambda value: f"{value:.4f}" if pd.notna(value) else "--",
+        )
+        disp["acc_shift"] = disp["acc_shift"].map(
+            lambda value: f"{value:.4f}" if pd.notna(value) else "--",
+        )
+        disp["delta_pp"] = disp["delta_pp"].map(
+            lambda value: f"{value:+.2f}" if pd.notna(value) else "--",
+        )
+        disp["AME"] = disp["AME"].map(
+            lambda value: f"{value:.4f}" if pd.notna(value) else "--",
+        )
+        disp["p"] = disp["p"].map(
+            lambda value: f"{value:.3g}" if pd.notna(value) else "--",
+        )
+        print(disp.to_string(index=False))
+    print(f"\nSaved CSV -> {out_csv}")
+
+
+def _write_outputs(
+    args: argparse.Namespace,
+    domain_frames: Dict[str, List[pd.DataFrame]],
+    pertemp_rows: List[Dict[str, Any]],
+    x_temps_sorted: List[float],
+) -> None:
+    """
+    Materialize per-domain and per-temperature outputs (tables + plots).
+    """
     label_map = {
         "Crossword": args.label_crossword,
         "Math": args.label_math,
@@ -691,70 +754,113 @@ def main():
         "Carpark": args.label_carpark,
     }
 
-    # Domain-level aggregates with AME per domain
-    rows = []
-    for dom in ["Crossword","Math","Math2","Carpark"]:
-        if not domain_frames[dom]:
-            continue
-        df = pd.concat(domain_frames[dom], ignore_index=True)
-        N, share, p1, p0 = cond_counts(df)
-        delta_pp = (p1 - p0) * 100.0 if (np.isfinite(p1) and np.isfinite(p0)) else np.nan
-        ame, p_shift = ame_glm_temp(df)
-        rows.append({
-            "domain_key": dom,
-            "domain": label_map[dom],
-            "N": N,
-            "share_shift": share,
-            "acc_shift": p1,
-            "delta_pp": delta_pp,
-            "AME": ame,
-            "p": p_shift,
-        })
-
-    if not rows:
-        sys.exit("No per-domain aggregates available.")
-
-    tab = pd.DataFrame(rows, columns=["domain","N","share_shift","acc_shift","delta_pp","AME","p"])
+    tab = _summarize_domains(domain_frames, label_map)
 
     slug = f"{args.dataset_name}__{args.model_name}".replace(" ", "_")
-    out_dir = args.out_dir or os.path.join(args.scan_root or ".", "temperature_effects")
+    out_dir_final = (
+        args.out_dir
+        or os.path.join(args.scan_root or ".", "temperature_effects")
+    )
+    os.makedirs(out_dir_final, exist_ok=True)
+    out_csv = os.path.join(out_dir_final, f"temperature_shift_table__{slug}.csv")
+    _emit_domain_table(tab, out_csv)
+
+    if not pertemp_rows:
+        return
+
+    pertemp = pd.DataFrame(pertemp_rows)
+    pertemp["domain"] = pertemp["domain_key"].map(label_map).fillna(
+        pertemp["domain_key"],
+    )
+    pertemp_csv = os.path.join(
+        out_dir_final,
+        f"temperature_shift_raw_effects__{slug}.csv",
+    )
+    pertemp.sort_values(["domain_key", "temp"]).to_csv(
+        pertemp_csv,
+        index=False,
+    )
+    print(f"Saved per-temperature raw effects CSV -> {pertemp_csv}")
+
+    if not args.make_plot:
+        return
+
+    png_path = os.path.join(
+        out_dir_final,
+        f"temperature_shift_plot__{slug}.png",
+    )
+    pdf_path = os.path.join(
+        out_dir_final,
+        f"temperature_shift_plot__{slug}.pdf",
+    )
+    make_plot(
+        PlotConfig(
+            pertemp_df=pertemp,
+            out_png=png_path,
+            out_pdf=pdf_path,
+            title=(
+                args.plot_title
+                or f"Raw effect vs temperature — {args.model_name}"
+            ),
+            x_temps_sorted=x_temps_sorted,
+            label_map=label_map,
+            dpi=args.dpi,
+        )
+    )
+    print(f"Saved plot PNG -> {png_path}")
+    print(f"Saved plot PDF -> {pdf_path}")
+
+
+def main() -> None:
+    """
+    Entry point: parse CLI args, run analysis, and emit outputs.
+    """
+    parser = _build_arg_parser()
+    args = parser.parse_args()
+
+    out_dir = _compute_out_dir(args)
     os.makedirs(out_dir, exist_ok=True)
-    out_csv = os.path.join(out_dir, f"temperature_shift_table__{slug}.csv")
-    tab.to_csv(out_csv, index=False)
 
-    print("[info] Aggregates by domain:")
-    with pd.option_context("display.max_columns", None, "display.width", 140):
-        disp = tab.copy()
-        disp["share_shift"] = disp["share_shift"].map(lambda v: f"{v:.4f}" if pd.notna(v) else "--")
-        disp["acc_shift"]   = disp["acc_shift"].map(  lambda v: f"{v:.4f}" if pd.notna(v) else "--")
-        disp["delta_pp"]    = disp["delta_pp"].map(   lambda v: f"{v:+.2f}" if pd.notna(v) else "--")
-        disp["AME"]         = disp["AME"].map(        lambda v: f"{v:.4f}" if pd.notna(v) else "--")
-        disp["p"]           = disp["p"].map(          lambda v: f"{v:.3g}" if pd.notna(v) else "--")
-        print(disp.to_string(index=False))
-    print(f"\nSaved CSV -> {out_csv}")
+    gpt_subset_native, gpt_keys = _compute_gpt_keys(args)
 
-    if pertemp_rows:
-        pertemp = pd.DataFrame(pertemp_rows)
-        pertemp["domain"] = pertemp["domain_key"].map(label_map).fillna(pertemp["domain_key"])
-        pertemp_csv = os.path.join(out_dir, f"temperature_shift_raw_effects__{slug}.csv")
-        pertemp.sort_values(["domain_key","temp"]).to_csv(pertemp_csv, index=False)
-        print(f"Saved per-temperature raw effects CSV -> {pertemp_csv}")
+    # Step cap (hard cap 1000)
+    max_step_eff = (
+        HARD_MAX_STEP
+        if args.max_step is None
+        else min(args.max_step, HARD_MAX_STEP)
+    )
+    if args.max_step is None or args.max_step > HARD_MAX_STEP:
+        print(
+            f"[info] Capping max_step to {max_step_eff} "
+            f"(hard cap = {HARD_MAX_STEP}).",
+        )
 
-        if args.make_plot:
-            plot_title = args.plot_title or f"Raw effect vs temperature — {args.model_name}"
-            png_path = os.path.join(out_dir, f"temperature_shift_plot__{slug}.png")
-            pdf_path = os.path.join(out_dir, f"temperature_shift_plot__{slug}.pdf")
-            make_plot(
-                pertemp_df=pertemp,
-                out_png=png_path,
-                out_pdf=pdf_path,
-                title=plot_title,
-                x_temps_sorted=x_temps_sorted,
-                label_map=label_map,
-                dpi=args.dpi,
-            )
-            print(f"Saved plot PNG -> {png_path}")
-            print(f"Saved plot PDF -> {pdf_path}")
+    carpark_op = args.carpark_success_op
+    carpark_thr = args.carpark_soft_threshold
+    skip_set = {substr.lower() for substr in args.skip_substr} | SKIP_DIR_DEFAULT
+
+    roots_by_temp = _discover_roots(args, skip_set)
+    if not roots_by_temp:
+        sys.exit(
+            "No usable folders discovered. "
+            "Check --scan_root or templates + temps.",
+        )
+
+    ctx = AnalysisContext(
+        args=args,
+        gpt_subset_native=gpt_subset_native,
+        gpt_keys=gpt_keys,
+        max_step_eff=max_step_eff,
+        carpark_op=carpark_op,
+        carpark_thr=carpark_thr,
+        skip_set=skip_set,
+    )
+    domain_frames, pertemp_rows, x_temps_sorted = _collect_domain_and_pertemp(
+        ctx,
+        roots_by_temp,
+    )
+    _write_outputs(args, domain_frames, pertemp_rows, x_temps_sorted)
+
 
 if __name__ == "__main__":
     main()

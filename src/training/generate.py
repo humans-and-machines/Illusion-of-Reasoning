@@ -72,7 +72,17 @@ def build_distilabel_pipeline(
     base_url: str = "http://localhost:8000/v1",
     config: Optional[DistilabelPipelineConfig] = None,
 ):
-    """Build and configure a distilabel Pipeline for text generation."""
+    """
+    Build and configure a distilabel :class:`Pipeline` for text generation.
+
+    :param model: Model name or identifier understood by the distilabel/OpenAI LLM client.
+    :param base_url: Base URL of the vLLM (or OpenAI-compatible) server.
+    :param config: Optional :class:`DistilabelPipelineConfig` describing prompt,
+        batching, and generation settings. When ``None``, a default config is used.
+    :returns: A configured distilabel :class:`Pipeline` object with a single
+        :class:`TextGeneration` step attached.
+    :raises RuntimeError: If the ``distilabel`` package is not installed.
+    """
     if config is None:
         config = DistilabelPipelineConfig()
 

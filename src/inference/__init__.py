@@ -1,8 +1,22 @@
-"""Inference package initialization.
+"""
+Inference package initialization.
 
-This module intentionally avoids importing heavy submodules (like carpark_core)
-at import time so that lightweight callers (e.g., math-only runners) do not
-require optional dependencies such as torch/transformers.
+The package is organized into layered subpackages:
+
+- :mod:`src.inference.domains` – task-specific inference loops (math/carpark/crossword/summarize).
+- :mod:`src.inference.utils` – shared helpers, backends, and registries.
+- :mod:`src.inference.runners` and :mod:`src.inference.cli` – reusable runner logic plus thin CLIs.
+- :mod:`src.inference.gateways` – remote math runners (Azure, OpenRouter, Portkey).
+
+Only lightweight, stable symbols are re-exported here to keep import-time
+dependencies minimal.
 """
 
-__all__: list[str] = []
+from __future__ import annotations
+
+from src.inference.utils.common import GenerationLimits, SamplingConfigBase
+
+__all__ = [
+    "GenerationLimits",
+    "SamplingConfigBase",
+]

@@ -20,13 +20,15 @@ def _require_datasets_module():
 
 
 def get_dataset(args: ScriptArguments) -> Any:
-    """Load a dataset or a mixture of datasets based on the configuration.
+    """
+    Load a dataset or a mixture of datasets based on the configuration.
 
-    Args:
-        args (ScriptArguments): Script arguments containing dataset configuration.
-
-    Returns:
-        Any: The loaded dataset or dataset dict (train/test).
+    :param args: Script arguments containing dataset configuration, including
+        either a single ``dataset_name`` or a ``dataset_mixture`` definition.
+    :returns: The loaded dataset object, or a mapping such as ``{\"train\": ds}``
+        when a train/test split is created.
+    :raises ValueError: If neither ``dataset_name`` nor ``dataset_mixture`` is set,
+        or if a mixture configuration fails to load any datasets.
     """
     datasets_module = _require_datasets_module()
 

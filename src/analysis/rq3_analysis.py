@@ -9,7 +9,7 @@ This module centralizes the analysis code for RQ3:
 
   • Do second-pass / reconsideration steps help more when the model is
     uncertain?  (H3; GLMs over PASS-1 entropy buckets)
-      → src/analysis/h3-analysis.py
+      → src/analysis/h3_analysis.py
 
   • How do uncertainty-bucket interventions behave and how can we export
     per-cue variants for custom plots?
@@ -37,24 +37,15 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from typing import List, Optional
 
 from src.analysis import export_cue_variants, h3_analysis
-
-
-def _run_module_main_with_argv(module_main, argv: List[str], prog: str) -> None:
-    """
-    Invoke a module-style ``main`` with a synthetic ``sys.argv``, preserving
-    the caller's arguments. This lets us reuse existing CLIs without
-    modifying their internals.
-    """
-    old_argv = list(sys.argv)
-    sys.argv = [prog] + argv
-    try:
-        module_main()
-    finally:
-        sys.argv = old_argv
+from src.analysis.utils import (
+    add_split_and_out_dir_args,
+    build_results_root_argv,
+    parse_passes_argument,
+    run_module_main_with_argv,
+)
 
 
 def _run_h3_analysis(
@@ -70,9 +61,7 @@ def _run_h3_analysis(
     h3_out = os.path.join(out_dir, "h3_analysis")
     os.makedirs(h3_out, exist_ok=True)
 
-    argv: List[str] = [results_root]
-    if split:
-        argv += ["--split", split]
+    argv: List[str] = build_results_root_argv(results_root, split)
     argv += [
         "--out_dir",
         h3_out,
@@ -81,7 +70,7 @@ def _run_h3_analysis(
         "--num_buckets",
         str(int(num_buckets)),
     ]
-    _run_module_main_with_argv(h3_analysis.main, argv, prog="h3_analysis.py")
+    run_module_main_with_argv(h3_analysis.main, argv, prog="h3_analysis.py")
 
 
 def _export_cue_variants(
@@ -105,6 +94,9 @@ def _export_cue_variants(
 
 
 def build_argparser() -> argparse.ArgumentParser:
+    """
+    Build and return the argument parser for the RQ3 CLI entrypoint.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "RQ3: Analyze how uncertainty and forced reconsideration interact "
@@ -115,15 +107,9 @@ def build_argparser() -> argparse.ArgumentParser:
         "results_root",
         help="Root containing step*/.../*.jsonl for a two-pass run.",
     )
-    parser.add_argument(
-        "--split",
-        default=None,
-        help="Optional substring filter on filenames (e.g., 'test').",
-    )
-    parser.add_argument(
-        "--out_dir",
-        default=None,
-        help="Base output directory (default: <results_root>/rq3).",
+    add_split_and_out_dir_args(
+        parser,
+        out_dir_help="Base output directory (default: <results_root>/rq3).",
     )
     parser.add_argument(
         "--uncertainty_field",
@@ -162,6 +148,9 @@ def build_argparser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """
+    Parse command-line arguments and run the requested RQ3 analyses.
+    """
     parser = build_argparser()
     args = parser.parse_args()
 
@@ -178,13 +167,7 @@ def main() -> None:
         )
 
     if args.export_cues:
-        passes = [
-            p.strip()
-            for p in (args.passes or "").split(",")
-            if p.strip()
-        ]
-        if not passes:
-            raise SystemExit("Must specify at least one pass key via --passes.")
+        passes = parse_passes_argument(args.passes)
         _export_cue_variants(
             results_root=args.results_root,
             split=args.split,

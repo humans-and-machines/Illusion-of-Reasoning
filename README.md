@@ -12,6 +12,28 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 
 This repository demonstrates GRPO fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset (plus crossword and Rush Hour generators). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. SFT scaffolding exists in the codebase but was not used for the paper’s results.
 
+The `src/inference/` package contains the main evaluation stack used throughout the project:
+
+- **Math (MATH-500 / OpenR1-Math-220k)**  
+  - `src/inference/domains/math/math_core.py`: two-pass math inference core with resume/fill logic and entropy/marker logging.
+  - `src/inference/domains/math/math_llama_core.py`: DeepSpeed/ZeRO-backed Llama runner reusing the math core.
+  - `src/inference/cli/unified_math.py`: unified CLI entrypoint for HF math models (via `unified_runner_base`).
+  - `src/inference/runners/openr1_math_runner.py`: legacy single-pass batch runner for Qwen checkpoints.
+  - `src/inference/gateways/providers/{azure,openrouter,portkey}.py`: gateway-based clients for Azure/OpenRouter/Portkey endpoints.
+- **Rush Hour (car-park)**  
+  - `src/inference/domains/carpark/carpark_core.py`: two-pass Rush Hour inference and scoring with soft-match rewards.
+  - `src/inference/cli/unified_carpark.py`: unified CLI wrapper over the carpark core.
+- **Crossword (cryptic clues)**  
+  - `src/inference/domains/crossword/crossword_core.py`: crossword inference core with reconsideration markers and entropy summaries.
+  - `src/inference/cli/unified_crossword.py`: unified CLI wrapper over the crossword core.
+- **Shared utilities**  
+  - `src/inference/backends/`: HF and Azure backends that abstract model plumbing.
+  - `src/inference/utils/common.py`, `src/inference/utils/gateway_utils.py`, `src/inference/utils/math_pass_utils.py`, `src/inference/utils/text_utils.py`: shared sampling, entropy, canonicalization, and retry helpers.
+  - `src/inference/domains/summarize/summarize_inference_core.py`, `src/inference/runners/summarize_inference_runner.py`: step-level aggregation/CSV export for pass-1/pass-2 runs.
+  - `src/inference/utils/task_registry.py`: central registry for task prompts, caps, and dataset loaders.
+
+All public functions and classes in `src/inference/` now have Sphinx-style docstrings (with `:param:` and `:returns:`) so that API documentation can be generated automatically via `sphinx.ext.autodoc` if desired.
+
 ---
 
 ## Table of Contents
@@ -36,6 +58,7 @@ Illusion-of-Reasoning/
 ├── recipes/         # task/model YAMLs for GRPO (MaxEnt-GRPO variants)
 ├── data/            # task data (car_park, crossword) + human assessment prompts
 ├── src/training/    # training/generation entrypoints (grpo.py, generate.py, rlif.py, rewards*; sft.py present but not used for paper)
+├── src/inference/   # inference cores, unified runners, backends, and analysis helpers
 ├── scripts -> src/scripts/  # launchers for inference/training, annotation, analysis, viz, utils, slurm
 ├── artifacts/models/        # experiment outputs and checkpoints
 ├── tools/           # local cache helpers and conda hook installers

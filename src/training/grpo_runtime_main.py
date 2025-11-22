@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from types import SimpleNamespace
 from typing import Any
 
 from .grpo_runtime_env import (
@@ -145,17 +146,16 @@ def _prepare_datasets(
     return dataset, train_ds, eval_ds
 
 
-def _build_trainer(
-    script_args: Any,
-    training_args: Any,
-    model_args: Any,
-    model: Any,
-    tokenizer: Any,
-    reward_funcs: Any,
-    easy_pool,
-    train_ds,
-    eval_ds,
-):
+def _build_trainer(context: Any):
+    training_args = context.training_args
+    model_args = context.model_args
+    model = context.model
+    tokenizer = context.tokenizer
+    reward_funcs = context.reward_funcs
+    easy_pool = context.easy_pool
+    train_ds = context.train_ds
+    eval_ds = context.eval_ds
+
     replay_buffer = ReplayBuffer(capacity=4000, C=1.0, debug_steps=3)
     callback_objects = get_callbacks(
         training_args,
@@ -218,8 +218,7 @@ def main(script_args, training_args, model_args):
         training_args=training_args,
         tokenizer=tokenizer,
     )
-    trainer = _build_trainer(
-        script_args=script_args,
+    context = SimpleNamespace(
         training_args=training_args,
         model_args=model_args,
         model=model,
@@ -229,6 +228,7 @@ def main(script_args, training_args, model_args):
         train_ds=train_ds,
         eval_ds=eval_ds,
     )
+    trainer = _build_trainer(context)
 
     # -------- Train (FORCED resume path) --------
     last_checkpoint = training_args.resume_from_checkpoint

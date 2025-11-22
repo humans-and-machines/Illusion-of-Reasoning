@@ -51,7 +51,7 @@ try:  # pragma: no cover - optional dependencies at runtime
     from trl.data_utils import is_conversational, maybe_apply_chat_template
     from trl.extras.profiling import profiling_context
     from trl.trainer.grpo_trainer import pad, unwrap_model_for_generation
-except ImportError:  # pragma: no cover - type-check / lint environment
+except (ImportError, RuntimeError):  # pragma: no cover - type-check / lint environment
     GRPOTrainer = Trainer
 
     def is_conversational(*_args: Any, **_kwargs: Any) -> bool:
@@ -802,26 +802,38 @@ class HierarchicalRollout:
         """Return the token ids used to detect </think> and <answer> tags."""
         return self.think_close_ids, self.answer_tag_ids
 
-    @torch.no_grad()
     def __call__(
         self,
         input_ids: torch.Tensor,
         max_new_tokens: Optional[int] = None,
         **gen_kwargs
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        device = input_ids.device
-        reason_ids = self._run_stage1_reasoning(
-            input_ids,
-            device,
-            **gen_kwargs,
-        )
-        full_ids = self._run_stage2_answer(
-            reason_ids,
-            device,
-            max_new_tokens=max_new_tokens,
-            **gen_kwargs,
-        )
-        return reason_ids, full_ids
+        """
+        Run the two-stage rollout with an optional ``torch.no_grad`` guard.
+
+        When torch is unavailable (for example, in minimal test environments),
+        we simply skip installing the no-grad context.
+        """
+
+        def _run():
+            device = input_ids.device
+            reason_ids = self._run_stage1_reasoning(
+                input_ids,
+                device,
+                **gen_kwargs,
+            )
+            full_ids = self._run_stage2_answer(
+                reason_ids,
+                device,
+                max_new_tokens=max_new_tokens,
+                **gen_kwargs,
+            )
+            return reason_ids, full_ids
+
+        if torch is None:
+            return _run()
+        with torch.no_grad():
+            return _run()
 
     def _run_stage1_reasoning(
         self,

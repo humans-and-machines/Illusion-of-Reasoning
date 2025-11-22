@@ -16,7 +16,7 @@ from types import SimpleNamespace
 import pytest
 
 torch = pytest.importorskip("torch")
-math_core = pytest.importorskip("src.inference.math_core")
+math_core = pytest.importorskip("src.inference.domains.math.math_core")
 
 
 class FakeTokenizer:

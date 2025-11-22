@@ -54,14 +54,19 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 # ── Paths ───────────────────────────────────────────────────
 # Default to the explicit Qwen2.5-1.5B math checkpoint root; override via MODEL_ROOT if needed.
 MODEL_ROOT="${MODEL_ROOT:-/n/fs/similarity/Illusion-of-Reasoning/artifacts/models/Qwen2.5-1.5B/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_math.py}"
 
 # Single step and temperature
 CHECKPOINT_STEPS=(950)
 TEMPS=("0.05")
 
-STEP=${CHECKPOINT_STEPS[0]}
-TEMP=${TEMPS[0]}
+# Allow overrides via INFER_STEP / INFER_TEMP env vars so we can sweep without editing the file.
+DEFAULT_STEP="${CHECKPOINT_STEPS[0]}"
+DEFAULT_TEMP="${TEMPS[0]}"
+STEP="${INFER_STEP:-$DEFAULT_STEP}"
+TEMP="${INFER_TEMP:-$DEFAULT_TEMP}"
+NUM_EXAMPLES="${NUM_EXAMPLES:-1000}"
+DATASET_START="${DATASET_START:-0}"
 CKPT_DIR="$MODEL_ROOT/checkpoint-$STEP"
 test -d "$CKPT_DIR" || { echo "Missing $CKPT_DIR"; exit 1; }
 
@@ -75,7 +80,9 @@ temp_to_root () {
     *)    echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-${1}-3" ;;
   esac
 }
+# Allow overrides of the artifacts/results root via INFER_OUTPUT_ROOT.
 OUTPUT_ROOT="$(temp_to_root "$TEMP")"
+OUTPUT_ROOT="${INFER_OUTPUT_ROOT:-$OUTPUT_ROOT}"
 OUTDIR="$OUTPUT_ROOT/step${STEP}"
 
 # Per-task caches (unique per temp+step)
@@ -88,7 +95,7 @@ export TRITON_CACHE_DIR="$OUTDIR/.triton"
 export TORCHINDUCTOR_CACHE_DIR="$OUTDIR/.torchinductor"
 export TMPDIR="$OUTDIR/.tmp"
 
-RECONSIDER_CUE="Hold on, this reasoning might be wrong. Let's go back and check each step carefully. ||| Actually, this approach doesn't look correct. Let's restart and work through the solution more systematically. ||| Wait, we need to reconsider. Let's think this through step by step."
+RECONSIDER_CUE="Hold on, this reasoning might be wrong. Let's go back and check each step carefully. ||| Actually, this approach doesn't look correct. Let's restart and work through the solution more systematically. ||| Wait, something is not right, we need to reconsider. Let's think this through step by step."
 
 echo "→ step=${STEP} temp=${TEMP} → $OUTDIR"
 
@@ -97,7 +104,8 @@ python -u "$SCRIPT_PATH" \
   --output_dir "$OUTDIR" \
   --batch_size 1 \
   --entropy_mode full \
-  --num_examples 1000 \
+  --num_examples "$NUM_EXAMPLES" \
+  --dataset_start "$DATASET_START" \
   --num_samples 8 \
   --temperature "$TEMP" \
   --top_p 0.95 \

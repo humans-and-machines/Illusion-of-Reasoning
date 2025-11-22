@@ -5,11 +5,11 @@
 #
 # Default scripts (edit as needed). These are the
 # canonical inference sweeps for each domain/model:
-#   - carpark-inference.slurm     (unified_carpark_runner)
-#   - crossword-inference.slurm   (unified_crossword_runner)
-#   - math7b-inference.slurm      (unified_math_runner, Qwen 7B)
-#   - math8b-inference.slurm      (unified_math_runner, Llama 8B)
-#   - math-inference.slurm        (unified_math_runner, Qwen 1.5B)
+#   - carpark-inference.slurm     (cli/unified_carpark)
+#   - crossword-inference.slurm   (cli/unified_crossword)
+#   - math7b-inference.slurm      (cli/unified_math, Qwen 7B)
+#   - math8b-inference.slurm      (cli/unified_math, Llama 8B)
+#   - math-inference.slurm        (cli/unified_math, Qwen 1.5B)
 #
 # Usage:
 #   bash run_inference_per_script_looper.sh

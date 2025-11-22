@@ -11,7 +11,7 @@ the figure/graph scripts themselves.
 from __future__ import annotations
 
 import os
-from typing import Iterable, Mapping, Sequence
+from typing import Mapping, Sequence
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -20,6 +20,10 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------------------------
 # Global style helpers
 # ---------------------------------------------------------------------------
+
+A4_PORTRAIT: tuple[float, float] = (8.27, 11.69)
+A4_LANDSCAPE: tuple[float, float] = (11.69, 8.27)
+
 
 DEFAULT_STYLE: Mapping[str, object] = {
     "axes.titlesize": 14,
@@ -49,6 +53,62 @@ def apply_default_style(extra: Mapping[str, object] | None = None) -> None:
     mpl.rcParams.update(params)
 
 
+def apply_entropy_plot_style(extra: Mapping[str, object] | None = None) -> None:
+    """
+    Apply a Times-like style tuned for entropy/uncertainty plots (graph_3/graph_4).
+    """
+    base_extra: dict[str, object] = {
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+    }
+    if extra:
+        base_extra.update(extra)
+    apply_default_style(base_extra)
+
+
+def apply_paper_font_style(
+    font_family: str = "Times New Roman",
+    font_size: int = 12,
+    mathtext_fontset: str | None = "dejavuserif",
+) -> None:
+    """
+    Style tuned for A4-style paper figures and PDFs (H1/H3 summaries,
+    figure_1/figure_2), shared to avoid duplicated rcParams blocks.
+    """
+    params: dict[str, object] = {
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+        "font.family": "serif",
+        "font.serif": [
+            font_family,
+            "Times",
+            "DejaVu Serif",
+            "Computer Modern Roman",
+        ],
+        "font.size": font_size,
+        "axes.titlesize": font_size,
+        "axes.labelsize": font_size,
+        "xtick.labelsize": font_size,
+        "ytick.labelsize": font_size,
+        "legend.fontsize": font_size,
+        "figure.titlesize": font_size,
+    }
+    if mathtext_fontset:
+        params["mathtext.fontset"] = mathtext_fontset
+    mpl.rcParams.update(params)
+
+
+def a4_size_inches(orientation: str = "landscape") -> tuple[float, float]:
+    """
+    Return (width, height) in inches for an A4 page.
+
+    ``orientation`` may be ``\"landscape\"`` or ``\"portrait\"`` (case-insensitive).
+    """
+    if str(orientation).lower().startswith("p"):
+        return A4_PORTRAIT
+    return A4_LANDSCAPE
+
+
 # ---------------------------------------------------------------------------
 # Small convenience helpers
 # ---------------------------------------------------------------------------
@@ -76,5 +136,3 @@ def save_figure(
         path = f"{outbase}.{fmt}"
         fig.savefig(path, dpi=dpi, bbox_inches=bbox)
     plt.close(fig)
-
-

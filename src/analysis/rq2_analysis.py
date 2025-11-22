@@ -9,7 +9,7 @@ This module provides a small orchestration layer for the analyses that
 underpin RQ2 in the paper:
 
   • Training-stage effects of shifts (per-step GLMs, uncertainty buckets):
-      → src/analysis/h2-analysis.py
+      → src/analysis/h2_analysis.py
   • Temperature-wise effects of shifts (raw deltas + GLMs):
       → src/analysis/temperature_effects.py
 
@@ -25,7 +25,7 @@ Typical usage (per domain/root)
       --split test
 
 By default this will:
-  1) run h2-analysis.py with its default settings, writing into
+  1) run h2_analysis.py with its default settings, writing into
      <results_root>/rq2/h2_analysis
   2) (optionally) invoke temperature_effects.py if you pass --temp_root
      pointing at a directory containing per-temperature runs.
@@ -35,24 +35,10 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from typing import List, Optional
 
 from src.analysis import h2_analysis, temperature_effects
-
-
-def _run_module_main_with_argv(module_main, argv: List[str], prog: str) -> None:
-    """
-    Invoke a module-style ``main`` with a synthetic ``sys.argv``, preserving
-    the caller's arguments. This lets us reuse existing CLIs without
-    modifying their internals.
-    """
-    old_argv = list(sys.argv)
-    sys.argv = [prog] + argv
-    try:
-        module_main()
-    finally:
-        sys.argv = old_argv
+from src.analysis.utils import add_split_and_out_dir_args, run_module_main_with_argv
 
 
 def _run_h2_analysis(
@@ -70,7 +56,7 @@ def _run_h2_analysis(
     if split:
         argv += ["--split", split]
     argv += ["--out_dir", h2_out]
-    _run_module_main_with_argv(h2_analysis.main, argv, prog="h2_analysis.py")
+    run_module_main_with_argv(h2_analysis.main, argv, prog="h2_analysis.py")
 
 
 def _run_temperature_effects(
@@ -93,10 +79,11 @@ def _run_temperature_effects(
     if split:
         argv += ["--split", split]
     argv += ["--out_dir", te_out, "--low_alias", str(low_alias)]
-    _run_module_main_with_argv(temperature_effects.main, argv, prog="temperature_effects.py")
+    run_module_main_with_argv(temperature_effects.main, argv, prog="temperature_effects.py")
 
 
 def build_argparser() -> argparse.ArgumentParser:
+    """Build and return the argument parser for the RQ2 analysis entrypoint."""
     parser = argparse.ArgumentParser(
         description=(
             "RQ2: Analyze how the effect of reasoning shifts varies with "
@@ -107,15 +94,9 @@ def build_argparser() -> argparse.ArgumentParser:
         "results_root",
         help="Root containing step*/.../*.jsonl for a fixed temperature run.",
     )
-    parser.add_argument(
-        "--split",
-        default=None,
-        help="Optional substring filter on filenames (e.g., 'test').",
-    )
-    parser.add_argument(
-        "--out_dir",
-        default=None,
-        help="Base output directory (default: <results_root>/rq2).",
+    add_split_and_out_dir_args(
+        parser,
+        out_dir_help="Base output directory (default: <results_root>/rq2).",
     )
     parser.add_argument(
         "--no_stage",
@@ -149,6 +130,7 @@ def build_argparser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Parse CLI arguments and run the RQ2 training-stage and temperature analyses."""
     parser = build_argparser()
     args = parser.parse_args()
 

@@ -32,7 +32,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export MALLOC_ARENA_MAX=2
 
 # ── Paths & defaults ─────────────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_carpark_runner.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_carpark.py}"
 MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-carpark-v1}"
 
 # Carpark (Rush Hour) dataset config

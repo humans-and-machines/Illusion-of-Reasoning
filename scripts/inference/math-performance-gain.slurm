@@ -51,7 +51,7 @@ export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$PROJECT_ROOT/.triton}"
 mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" "$TMPDIR" logs "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" .hf_cache
 
 # ── Paths ───────────────────────────────────────────────────
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/unified_math_runner.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_math.py}"
 
 # Tuned (local) root and step to compare
 MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"

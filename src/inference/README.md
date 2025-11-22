@@ -22,30 +22,29 @@ This document explains how the pieces fit together and how to use them.
 
 At a high level the inference stack is:
 
-- **Core task loops**
-  - `math_core.py` – two-pass MATH inference using HF models.
-  - `carpark_core.py` – two-pass Rush Hour inference.
-  - `crossword_core.py` – cryptic-crossword inference with reconsideration logic.
+- **Domain task loops** (`src/inference/domains`)
+  - `math/math_core.py` – two-pass MATH inference using HF models.
+  - `carpark/carpark_core.py` – two-pass Rush Hour inference.
+  - `crossword/crossword_core.py` – cryptic-crossword inference with reconsideration logic.
+  - `summarize/summarize_inference_core.py` – shared aggregation helpers for summarizing JSONL outputs.
 
-- **Shared plumbing / utilities**
+- **Shared plumbing / utilities** (`src/inference/utils`)
   - `common.py` – core generation utilities (tokenization, entropy, batch helpers).
   - `gateway_utils.py` – dataset / JSONL / CLI / gateway helpers.
   - `math_pass_utils.py` – math-specific tagging, entropy and reconsideration helpers.
   - `text_utils.py` – small text-only helpers (no torch / transformers).
   - `backends.py` – local HF backend and Azure backend abstraction.
+- `utils/task_registry.py` – defines system prompts and dataset specs for named tasks and gateway scripts.
 
-- **Entry points and runners**
-  - `inference.py` – simple batch inference script for a Qwen-style model using the `OPENR1` prompt.
-  - `math_deepseek_azure.py`, `math_openrouter_deepseek.py`, `math_portkey.py` – single-pass “gateway” runners for math.
-  - `math_llama_core.py` – DeepSpeed ZeRO-3 backed math runner that reuses `math_core` logic.
-  - `unified_math_runner.py`, `unified_carpark_runner.py`, `unified_crossword_runner.py` – thin CLIs that route into the core task loops with a unified interface.
+- **Entry points and runners** (`src/inference/runners` + `src/inference/cli`)
+  - `openr1_math_runner.py` – simple batch inference script for a Qwen-style model using the `OPENR1` prompt.
+  - `carpark_inference_runner.py` – legacy Rush Hour CLI wrapper.
+  - `cli/unified_math.py`, `cli/unified_carpark.py`, `cli/unified_crossword.py` – thin CLIs that route into the core task loops with a unified interface.
   - `unified_runner_base.py` – shared argument parsing and wiring used by the unified runners.
+  - `summarize_inference_runner.py` – CLI wrapper around `summarize_inference_core.py`.
 
-- **Task configuration / registry**
-  - `task_registry.py` – defines system prompts and dataset specs for named tasks and gateway scripts.
-
-- **Summaries and analysis**
-  - `summarize_inference_core.py`, `summarize_inference.py` – helpers to aggregate JSONL outputs into CSV/summary stats.
+- **Gateway runners** (`src/inference/gateways`)
+  - `providers/{azure,openrouter,portkey}.py` – single-pass “gateway” runners for math (legacy module aliases remain under `src/inference/gateways/math_*_gateway.py`).
 
 ---
 
@@ -77,7 +76,7 @@ Key pieces:
   - `build_math_inference_config_kwargs(...)` and `build_math_inference_config_kwargs_from_args(...)` – pack standard math-style inference settings into a config kwargs dict.
   - `require_torch(caller)`, `require_transformers(caller)` – import-and-validate helpers that raise user-friendly errors if dependencies are missing.
 
-`common.py` also **re-exports** a number of helpers from the more specific modules so callers can just depend on `src.inference.common`:
+`common.py` also **re-exports** a number of helpers from the more specific modules so callers can just depend on `src.inference.utils.common`:
 
 - From `gateway_utils.py`:
   - Dataset / JSONL helpers (`require_datasets`, `load_local_json_dataset`, `iter_jsonl_objects`, `append_jsonl_row`, `scan_existing_pass1_results`, `scan_existing_problem_samples`).
@@ -89,13 +88,13 @@ Key pieces:
   - Per-pass result builders (`build_math_pass_meta`, `pack_math_pass_result`, `build_entropy_pass_base`, `add_token_and_tag_fields`, `finite_mean`).
   - Reconsideration patterns (`RECONSIDER_PATTERNS`) used by math and crossword inference.
 
-In most new code you should import from `src.inference.common` where possible; only reach directly into `gateway_utils` / `math_pass_utils` if you need something very specific that isn’t re-exported.
+In most new code you should import from `src.inference.utils.common` where possible; only reach directly into `gateway_utils` / `math_pass_utils` if you need something very specific that isn’t re-exported.
 
 ---
 
-## Math inference core (`math_core.py`)
+## Math domain pipeline (`domains/math/math_core.py`)
 
-`math_core.py` implements the two-pass math inference loop for HF models.
+`src/inference/domains/math/math_core.py` implements the two-pass math inference loop for HF models.
 The second pass now supports **multiple independent reconsideration cues**
 per sample (e.g. three different “rethink” instructions off the same pass‑1
 reasoning).
@@ -145,45 +144,51 @@ When you write new math-style runners, prefer to call `MathInferenceConfig` + `r
 
 ---
 
-## Carpark (Rush Hour) inference (`carpark_core.py`, `carpark_rush_utils.py`)
+## Carpark (Rush Hour) inference (`domains/carpark/*.py`, `carpark_solver.py`, `carpark_board.py`, `carpark_data.py`, `carpark_rush_utils.py`)
 
 The car-park (Rush Hour) pipeline mirrors the math pipeline but with different
-canonicalization and scoring:
+canonicalization and scoring. The implementation is split across a few modules:
 
-- **`carpark_rush_utils.py`**
+- **`carpark_rush_utils.py`** (in `src.inference.utils`)
   - Implements Rush Hour move canonicalization and a soft-match reward:
     - `_canon_rush_generic`, `_canon_rush_gold` – normalize predicted and gold sequences.
     - `_toklist`, `_lcs_len`, `_multiset_overlap_ratio` – token-level utilities used for scoring.
     - `_score_rush_pair(...)` – metrics for prefix, positional exact matches, LCS, bag overlap, piece/direction match, and step closeness.
     - `rush_soft_match_reward(pred_answer_text, gold_answer_any, ...)` – returns a score in `[0,1]` plus a breakdown of components and chosen gold sequence.
 
+- **`carpark_board.py`**
+  - Thin wrapper around the Rush Hour board and move primitives from `carpark_rush_utils`.
+  - Exposes canonicalization and validation helpers such as `_canon_rush_generic`, `_canon_rush_gold`, and `_is_valid_rush`, without any dataset or LLM-specific logic.
+
+- **`carpark_data.py`**
+  - Handles dataset loading and record normalization for car-park runs:
+    - `SYSTEM_PROMPT` – Rush Hour system prompt mirrored from the task registry.
+    - `norm_fields(...)` – normalize raw dataset rows into `(messages, solution)`.
+    - `load_existing_example_index(...)` – scan an existing JSONL file and map `example_id` to completed `sample_idx` values.
+    - `build_batch_items_for_range(...)` – construct `batch_items` respecting resume/fill behavior.
+    - `load_rush_dataset(...)` – load a Rush Hour dataset via `datasets` and validate required columns.
+
+- **`carpark_solver.py`**
+  - Hosts the core two-pass HF inference loop:
+    - `CarparkInferenceConfig` – I/O + column names + `GenerationLimits` + sampling config + second-pass settings.
+    - `InferenceContext` – bundles tokenizer, model, and config (parallel to `MathInferenceContext`).
+    - `_gen_batch(...)` – wraps `run_generate_batch` with the car-park config.
+    - `_pack_pass_result(...)` – uses `build_entropy_pass_base`, `add_token_and_tag_fields`, and Rush Hour correctness metrics.
+    - `_compute_second_pass_outputs_for_carpark(...)` – handles optional multi-cue reconsideration passes.
+    - `run_inference_on_split(...)` – runs the full two-pass loop over a dataset and writes JSONL outputs with resume/fill semantics.
+
 - **`carpark_core.py`**
-  - Defines `CarparkInferenceConfig` (I/O + column names + `GenerationLimits` + sampling config + second-pass settings).
-  - `InferenceContext` – parallel to `MathInferenceContext`, bundling tokenizer, model, config.
-  - `_gen_batch(...)` – wraps `run_generate_batch` with the car-park config.
-  - `run_inference_on_split(...)` – two-pass Rush Hour loop with optional multi-cue reconsideration:
-    - Pass 1: generate `<think>` and `<answer>` blocks for each example/sample.
-    - Pass 2 (optional): one or more reconsideration passes using the chosen
-      sample from pass 1.
-      - If `second_pass_phrase` contains **multiple cues** separated by `|||`,
-        the core runs one reconsideration pass per cue, always starting from the
-        same pass‑1 reasoning.
-      - The JSONL rows expose:
-        - `pass1` – baseline pass.
-        - `pass2a`, `pass2b`, `pass2c` – per‑cue reconsideration passes when
-          three cues are provided.
-        - `pass2` – set equal to the last reconsideration pass (e.g. `pass2c`)
-          for backwards compatibility with existing analysis code.
-  - `_pack_pass_result(...)` – uses `build_entropy_pass_base`, `add_token_and_tag_fields`, and Rush Hour correctness metrics.
-  - `run_carpark_main(...)` – the unified runner entry point (invoked from `unified_carpark_runner.py`).
+  - Thin compatibility shim:
+    - Re-exports `SYSTEM_PROMPT`, `CarparkInferenceConfig`, `InferenceContext`, `run_inference_on_split`, `load_rush_dataset`, `_canon_rush_generic`, and `_canon_rush_gold`.
+    - CLI entrypoint lives in :mod:`src.inference.cli.unified_carpark`, which wires `run_carpark_main(...)` to the standard HF backend.
 
 If you need to add a new Rush Hour runner that uses a different backend, you can usually reuse `run_carpark_main` and just change how the backend is created.
 
 ---
 
-## Crossword inference (`crossword_core.py`)
+## Crossword inference (`domains/crossword/crossword_core.py`)
 
-`crossword_core.py` implements inference for cryptic crosswords, including
+`src/inference/domains/crossword/crossword_core.py` implements inference for cryptic crosswords, including
 optional multi-cue reconsideration in the second pass (similar to the math
 and carpark cores).
 
@@ -214,13 +219,13 @@ and carpark cores).
       - Result rows expose `pass1`, `pass2a`, `pass2b`, `pass2c` (per‑cue
         reconsiderations when three cues are used) and `pass2` (aliased to the
         last reconsideration pass).
-  - `unified_crossword_runner.py` / `run_crossword_main(...)` – CLI wrapper to run crossword inference with HF models, defined in `unified_runner_base.py`.
+  - `cli/unified_crossword.py` / `run_crossword_main(...)` – CLI wrapper to run crossword inference with HF models, defined in `unified_runner_base.py`.
 
 ---
 
 ## Gateway helpers and remote math runners
 
-`gateway_utils.py` hosts helpers shared by several “gateway” scripts that talk
+`utils/gateway_utils.py` hosts helpers shared by several “gateway” scripts that talk
 to remote APIs instead of local HF models:
 
 - **Datasets & JSONL**
@@ -246,9 +251,9 @@ to remote APIs instead of local HF models:
 
 These helpers are used by:
 
-- `math_deepseek_azure.py` – Azure DeepSeek-style math gateway.
-- `math_openrouter_deepseek.py` – OpenRouter DeepSeek-style math gateway.
-- `math_portkey.py` – Portkey-based math gateway.
+- `gateways/providers/azure.py` – Azure DeepSeek-style math gateway.
+- `gateways/providers/openrouter.py` – OpenRouter DeepSeek-style math gateway.
+- `gateways/providers/portkey.py` – Portkey-based math gateway.
 
 Each of these scripts:
 
@@ -259,16 +264,22 @@ Each of these scripts:
 
 ---
 
-## Unified runners
+## Unified runners (canonical CLIs)
 
-To keep the CLI surface small and consistent, the repository provides unified
-runners under `src/inference`:
+To keep the CLI surface small and consistent, the repository provides **unified
+runners** under `src/inference/runners`. These are the **canonical entry
+points** for each domain:
 
-- `unified_math_runner.py` – entry point for math HF inference.
-- `unified_carpark_runner.py` – entry point for carpark HF inference.
-- `unified_crossword_runner.py` – entry point for crossword HF inference.
+- `cli/unified_math.py` – entry point for math HF inference.
+- `cli/unified_carpark.py` – entry point for carpark HF inference.
+- `cli/unified_crossword.py` – entry point for crossword HF inference.
 
-All three use the helpers in `unified_runner_base.py`:
+Older or more specialized CLIs (for example, `openr1_math_runner.py`,
+`carpark_inference_runner.py`, and the `*_gateway.py` scripts) are kept for
+backwards compatibility and niche use cases, but new experiments should start
+from the unified runners.
+
+All three unified runners use the helpers in `runners/unified_runner_base.py`:
 
 - `parse_math_args`, `parse_carpark_args`, `parse_crossword_args` – construct and parse task-specific CLI arguments (dataset, model, sampling, budgets, output).
 - `run_math_main(backend_cls, argv=None)` – run math_core on a dataset using the provided backend class (usually `HFBackend`).
@@ -286,9 +297,9 @@ For most experiments you should prefer these unified runners over calling the lo
 
 ---
 
-## Backends (`backends.py`)
+## Backends (`src/inference/backends/`)
 
-`backends.py` wraps model plumbing so that task-specific scripts don’t need to
+`src/inference/backends/` wraps model plumbing so that task-specific scripts don’t need to
 know about the exact HF or Azure APIs:
 
 - `_load_torch_and_transformers()` – lazy import of `torch` and key `transformers` classes to avoid heavy import-time dependencies.
@@ -306,9 +317,9 @@ The gateway scripts typically rely on these helpers indirectly via `gateway_util
 
 ---
 
-## Task registry (`task_registry.py`)
+## Task registry (`utils/task_registry.py`)
 
-`task_registry.py` defines:
+`utils/task_registry.py` defines:
 
 - `DatasetSpec` – how to load a dataset for a task (loader path, default ID, columns, split).
 - `TaskSpec` – configuration for a logical task, including:
@@ -333,8 +344,8 @@ instances used by the gateway scripts.
 After running inference, you will typically have JSONL files (e.g. under
 `artifacts/` or a configured output directory). The summarization helpers:
 
-- `summarize_inference_core.py`
-- `summarize_inference.py`
+- `domains/summarize/summarize_inference_core.py`
+- `runners/summarize_inference_runner.py`
 
 provide utilities to:
 
@@ -343,7 +354,7 @@ provide utilities to:
 - Apply filters (per-problem / global caps on prompt variants).
 - Emit CSV summaries for plotting or downstream analysis.
 
-See `summarize_inference.py` for CLI options and usage examples.
+See `src/inference/runners/summarize_inference_runner.py` for CLI options and usage examples.
 
 ---
 
@@ -354,7 +365,7 @@ See `summarize_inference.py` for CLI options and usage examples.
 Run MATH-500 inference with a local HF checkpoint:
 
 ```bash
-python -m src.inference.unified_math_runner \\
+python -m src.inference.cli.unified_math \\
   --model_name_or_path path/to/qwen2.5-7b \\
   --output_dir artifacts/math_run \\
   --dataset_id MATH-500 \\
@@ -370,7 +381,7 @@ python -m src.inference.unified_math_runner \\
 ### 2. Unified carpark runner (HF model)
 
 ```bash
-python -m src.inference.unified_carpark_runner \\
+python -m src.inference.cli.unified_carpark \\
   --model_name_or_path path/to/model \\
   --output_dir artifacts/carpark_run \\
   --dataset_id od2961/rush4-5-6-balanced \\
@@ -381,7 +392,7 @@ python -m src.inference.unified_carpark_runner \\
 ### 3. Unified crossword runner
 
 ```bash
-python -m src.inference.unified_crossword_runner \\
+python -m src.inference.cli.unified_crossword \\
   --model_name_or_path path/to/model \\
   --output_dir artifacts/crossword_run \\
   --dataset_id CROSSWORD-LOCAL \\
@@ -400,9 +411,9 @@ Each gateway script has its own CLI, but the pattern is:
 
 For details, see:
 
-- `src/inference/math_deepseek_azure.py`
-- `src/inference/math_openrouter_deepseek.py`
-- `src/inference/math_portkey.py`
+- `src/inference/gateways/providers/azure.py`
+- `src/inference/gateways/providers/openrouter.py`
+- `src/inference/gateways/providers/portkey.py`
 
 ---
 
@@ -412,10 +423,10 @@ When adding new functionality, a few guidelines:
 
 - Prefer to reuse `common.py` helpers (`run_generate_batch`, `GenerationLimits`, `SamplingConfigBase`) rather than re-implementing generation loops.
 - For new tasks:
-  - Add a `TaskSpec` entry to `task_registry.py` if you need a new system prompt / dataset wiring.
-  - Factor out domain-specific scoring / canonicalization into a small utility module (similar to `math_pass_utils.py` or `carpark_rush_utils.py`).
+  - Add a `TaskSpec` entry to `utils/task_registry.py` if you need a new system prompt / dataset wiring.
+  - Factor out domain-specific scoring / canonicalization into a small utility module (similar to `utils/math_pass_utils.py` or `utils/carpark_rush_utils.py`).
 - For new backends:
-  - Consider adding a small wrapper to `backends.py` and reusing the same interface (`generate`, `HFBackend`-style).
-  - Use `gateway_utils` for JSONL and CLI plumbing instead of duplicating it.
+  - Consider adding a small wrapper to `src/inference/backends/` and reusing the same interface (`generate`, `HFBackend`-style).
+  - Use `utils/gateway_utils.py` for JSONL and CLI plumbing instead of duplicating it.
 
 This keeps most logic centralized and makes it easier to maintain the inference stack across different tasks and backends.

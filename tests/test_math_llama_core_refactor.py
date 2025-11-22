@@ -15,7 +15,7 @@ import json
 import pytest
 
 torch = pytest.importorskip("torch")
-math_llama_core = pytest.importorskip("src.inference.math_llama_core")
+math_llama_core = pytest.importorskip("src.inference.domains.math.math_llama_core")
 
 
 class FakeTokenizer:
@@ -25,6 +25,14 @@ class FakeTokenizer:
         self.pad_token_id = 0
         self.eos_token_id = 99
         self._decode_calls = 0
+
+    def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=False):
+        """Simple chat template to mirror HF chat tokenizers."""
+        parts = [m["content"] for m in messages if "content" in m]
+        text = " ".join(parts)
+        if add_generation_prompt:
+            text += " <GEN>"
+        return text
 
     def __call__(self, texts, return_tensors=None, padding=True, truncation=True, max_length=None):
         if isinstance(texts, str):

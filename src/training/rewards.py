@@ -23,10 +23,17 @@ def get_reward_funcs(
     tokenizer=None,  # kept for backwards-compatible signature
 ) -> List[Callable]:
     """
-    Build the list of reward functions requested via script_args.reward_funcs.
+    Build the list of reward functions requested via ``script_args.reward_funcs``.
 
-    The ref_model and tokenizer parameters are accepted for API compatibility
-    with older callers but are not used in the current implementation.
+    The ``ref_model`` and ``tokenizer`` parameters are accepted for API
+    compatibility with older callers but are not used in the current
+    implementation.
+
+    :param script_args: Object exposing a ``reward_funcs`` attribute (string or list).
+    :param ref_model: Legacy reference model argument (ignored).
+    :param tokenizer: Legacy tokenizer argument (ignored).
+    :returns: List of callable reward functions, in the order requested.
+    :raises KeyError: If an unknown reward name is requested.
     """
     # Mark legacy-only parameters as used to satisfy linters.
     _ = (ref_model, tokenizer)

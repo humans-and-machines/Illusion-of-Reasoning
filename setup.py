@@ -147,6 +147,12 @@ setup(
     extras_require=extras,
     python_requires=">=3.10.9",
     install_requires=install_requires,
+    entry_points={
+        "console_scripts": [
+            "annotate-shifts=src.annotate.cli.shift_cli:main",
+            "clean-shift-fallbacks=src.annotate.cli.clean_cli:main",
+        ],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

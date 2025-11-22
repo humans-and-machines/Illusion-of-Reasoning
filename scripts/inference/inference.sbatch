@@ -1,7 +1,7 @@
 #!/bin/bash
-# Legacy Math220k GRPO sweep script using src/inference/inference.py.
+# Legacy Math220k GRPO sweep script using src/inference/runners/openr1_math_runner.py.
 # Canonical unified math evaluation now lives in math-inference.slurm
-# via src/inference/unified_math_runner.py.
+# via src/inference/cli/unified_math.py.
 #SBATCH --job-name=infer_math_ckpts
 #SBATCH --output=logs/infer_ckpts_%A_%a.out
 #SBATCH --error=logs/infer_ckpts_%A_%a.err
@@ -121,7 +121,7 @@ CACHEROOT="$OUTPUT_ROOT/hf_cache"
 mkdir -p "$OUTPUT_ROOT" "$CACHEROOT"
 
 # Script location and per-revision output directory
-SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/inference.py}"
+SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/runners/openr1_math_runner.py}"
 OUTDIR="$OUTPUT_ROOT/$REV"
 mkdir -p "$OUTDIR"
 

@@ -16,7 +16,7 @@ from types import SimpleNamespace
 import pytest
 
 torch = pytest.importorskip("torch")
-carpark_core = pytest.importorskip("src.inference.carpark_core")
+carpark_core = pytest.importorskip("src.inference.domains.carpark.carpark_core")
 
 
 class FakeTokenizer:

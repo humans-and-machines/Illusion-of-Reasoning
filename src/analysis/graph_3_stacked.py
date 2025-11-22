@@ -23,167 +23,304 @@ python graph_3_stacked.py \
   --normalize
 """
 
-import argparse, json, os, re, sys
+import argparse
+import os
+import re
+import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-AHA_KEYS_CANON = ["change_way_of_thinking", "shift_in_reasoning_v1"]
-AHA_KEYS_BROAD = AHA_KEYS_CANON + ["shift_llm", "shift_gpt", "pivot_llm", "rechecked"]
+from src.analysis.io import iter_records_from_file
+from src.analysis.labels import aha_gpt
+from src.analysis.common.parser_helpers import add_binning_argument
+from src.analysis.utils import (
+    add_split_and_gpt_mode_args,
+    step_from_record_if_within_bounds,
+)
 
-def parse_args():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--root_crossword", type=str, default=None)
-    ap.add_argument("--root_math",      type=str, default=None)
-    ap.add_argument("--root_carpark",   type=str, default=None)
-    ap.add_argument("--split",          type=str, default="test")
-    ap.add_argument("--gpt_mode",       type=str, default="canonical", choices=["canonical","broad"])
 
-    ap.add_argument("--bins",     type=int, default=20)
-    ap.add_argument("--binning",  type=str, default="uniform", choices=["uniform","quantile"])
-    ap.add_argument("--min_step", type=int, default=0)
-    ap.add_argument("--max_step", type=int, default=1000)
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the stacked PASS1 entropy plot."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root_crossword", type=str, default=None)
+    parser.add_argument("--root_math", type=str, default=None)
+    parser.add_argument("--root_carpark", type=str, default=None)
+    add_split_and_gpt_mode_args(parser)
 
-    ap.add_argument("--outdir",      type=str, default="graphs")
-    ap.add_argument("--outfile_tag", type=str, default=None)
-    ap.add_argument("--title",       type=str, default="Counts by PASS1 Answer Entropy (Stacked No Aha vs Aha)")
-    ap.add_argument("--dpi",         type=int, default=300)
-    ap.add_argument("--width_in",    type=float, default=10.0)
-    ap.add_argument("--height_in",   type=float, default=5.5)
-    ap.add_argument("--normalize",   action="store_true", help="stack to proportions (each bin sums to 1)")
-    return ap.parse_args()
+    parser.add_argument("--bins", type=int, default=20)
+    add_binning_argument(parser)
+    parser.add_argument("--min_step", type=int, default=0)
+    parser.add_argument("--max_step", type=int, default=1000)
 
-def truthy(x):
-    if x is True: return True
-    if isinstance(x, (int, float)): return x != 0
-    if isinstance(x, str): return x.strip().lower() in {"1","true","yes","y"}
-    return False
+    parser.add_argument("--outdir", type=str, default="graphs")
+    parser.add_argument("--outfile_tag", type=str, default=None)
+    parser.add_argument(
+        "--title",
+        type=str,
+        default="Counts by PASS1 Answer Entropy (Stacked No Aha vs Aha)",
+    )
+    parser.add_argument("--dpi", type=int, default=300)
+    parser.add_argument("--width_in", type=float, default=10.0)
+    parser.add_argument("--height_in", type=float, default=5.5)
+    parser.add_argument(
+        "--normalize",
+        action="store_true",
+        help="stack to proportions (each bin sums to 1)",
+    )
+    return parser.parse_args()
+
 
 def detect_aha_pass1(rec: Dict[str, Any], mode: str) -> bool:
-    keys = AHA_KEYS_CANON if mode == "canonical" else AHA_KEYS_BROAD
-    p1 = rec.get("pass1", {})
-    if not isinstance(p1, dict): return False
-    return any(truthy(p1.get(k, False)) for k in keys)
+    """Detect a PASS1 Aha flag according to the configured mode."""
+    pass1_data = rec.get("pass1", {})
+    if not isinstance(pass1_data, dict):
+        return False
+    return bool(aha_gpt(pass1_data, rec, mode=mode, gate_by_words=False))
+
 
 def extract_step(rec: Dict[str, Any], src_path: str) -> int:
-    if isinstance(rec.get("step"), (int, float)): return int(rec["step"])
-    m = re.search(r"step[-_]?(\d{1,5})", src_path) or re.search(r"global_step[-_]?(\d{1,5})", src_path)
-    return int(m.group(1)) if m else 0
+    """Best-effort step extraction from record or filename."""
+    if isinstance(rec.get("step"), (int, float)):
+        return int(rec["step"])
+    match = re.search(r"step[-_]?(\d{1,5})", src_path)
+    if not match:
+        match = re.search(r"global_step[-_]?(\d{1,5})", src_path)
+    if match:
+        return int(match.group(1))
+    return 0
 
-def extract_entropy_pass1(rec: Dict[str, Any]) -> float | None:
-    p1 = rec.get("pass1", {})
-    if not isinstance(p1, dict): return None
-    for k in ("answer_entropy", "entropy_answer"):
-        v = p1.get(k, None)
-        if isinstance(v, (int, float)): return float(v)
-    tok = p1.get("answer_token_entropies") or p1.get("token_entropies") or p1.get("entropies")
-    if isinstance(tok, list) and tok:
+
+def extract_entropy_pass1(rec: Dict[str, Any]) -> Optional[float]:
+    """Extract a scalar PASS1 answer entropy from a record, if present."""
+    pass1_data = rec.get("pass1", {})
+    if not isinstance(pass1_data, dict):
+        return None
+    for key in ("answer_entropy", "entropy_answer"):
+        value = pass1_data.get(key, None)
+        if isinstance(value, (int, float)):
+            return float(value)
+    token_entropies = (
+        pass1_data.get("answer_token_entropies")
+        or pass1_data.get("token_entropies")
+        or pass1_data.get("entropies")
+    )
+    if isinstance(token_entropies, list) and token_entropies:
         try:
-            vals = [float(t) for t in tok]
-            if len(vals): return float(np.mean(vals))
-        except Exception:
+            values = [float(entry) for entry in token_entropies]
+            if values:
+                return float(np.mean(values))
+        except (TypeError, ValueError):
             pass
     return None
 
+
 def iter_jsonl_files(root: str) -> Iterable[str]:
-    if not root: return []
-    p = Path(root)
-    if not p.exists(): return []
-    return (str(f) for f in p.rglob("*.jsonl"))
+    """Yield JSONL file paths under ``root`` (recursing into subdirectories)."""
+    if not root:
+        return []
+    root_path = Path(root)
+    if not root_path.exists():
+        return []
+    generator = (str(path) for path in root_path.rglob("*.jsonl"))
+    return generator
 
-def load_pass1_entropy_and_aha(root: str, split: str, min_step: int, max_step: int, gpt_mode: str) -> List[tuple]:
-    out: List[tuple] = []
-    if not root: return out
-    for fp in iter_jsonl_files(root):
-        try:
-            with open(fp, "r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line: continue
-                    try:
-                        rec = json.loads(line)
-                    except Exception:
-                        continue
-                    if split and rec.get("split") and str(rec["split"]) != split:
-                        continue
-                    step = extract_step(rec, fp)
-                    if step < min_step or step > max_step:
-                        continue
-                    ent = extract_entropy_pass1(rec)
-                    if ent is None: 
-                        continue  # pass1-only
-                    aha = 1 if detect_aha_pass1(rec, gpt_mode) else 0
-                    out.append((float(ent), aha))
-        except Exception:
+
+def load_pass1_entropy_and_aha(
+    root: str,
+    split: str,
+    min_step: int,
+    max_step: int,
+    gpt_mode: str,
+) -> List[tuple]:
+    """
+    Load PASS1 answer entropy and Aha flags from JSONL logs under ``root``.
+
+    Returns a list of ``(entropy, aha_flag)`` tuples.
+    """
+    outputs: List[tuple] = []
+    if not root:
+        return outputs
+    for file_path in iter_jsonl_files(root):
+        for rec in iter_records_from_file(file_path):
+            step = step_from_record_if_within_bounds(
+                rec,
+                file_path,
+                split_value=split,
+                min_step=min_step,
+                max_step=max_step,
+            )
+            if step is None:
+                continue
+            entropy_value = extract_entropy_pass1(rec)
+            if entropy_value is None:
+                continue
+            aha = 1 if detect_aha_pass1(rec, gpt_mode) else 0
+            outputs.append((float(entropy_value), aha))
+    return outputs
+
+
+def _rows_to_arrays(rows: List[tuple]) -> tuple[np.ndarray, np.ndarray]:
+    """Convert raw (entropy, aha_flag) tuples into NumPy arrays."""
+    entropies = np.array([row[0] for row in rows], dtype=float)
+    aha_flags = np.array([row[1] for row in rows], dtype=int)
+    return entropies, aha_flags
+
+
+def _compute_binned_counts(
+    entropies: np.ndarray,
+    aha_flags: np.ndarray,
+    *,
+    num_bins: int,
+    binning: str,
+    normalize: bool,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, str]:
+    """
+    Compute per-bin No-Aha/Aha counts plus bin centers and width.
+    """
+    if binning == "quantile":
+        edges = np.unique(
+            np.quantile(entropies, np.linspace(0.0, 1.0, num_bins + 1)),
+        )
+        if len(edges) < 3:
+            edges = np.linspace(entropies.min(), entropies.max(), num_bins + 1)
+    else:
+        edges = np.linspace(entropies.min(), entropies.max(), num_bins + 1)
+
+    bin_indices = np.digitize(entropies, edges) - 1
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    bin_width = centers[1] - centers[0] if len(centers) > 1 else 0.1
+
+    counts_no_aha = np.zeros(len(edges) - 1, dtype=float)
+    counts_aha = np.zeros(len(edges) - 1, dtype=float)
+    for bin_index in range(len(edges) - 1):
+        mask = bin_indices == bin_index
+        if not mask.any():
             continue
-    return out
+        counts_aha[bin_index] = float((aha_flags[mask] == 1).sum())
+        counts_no_aha[bin_index] = float((aha_flags[mask] == 0).sum())
 
-def main():
+    if normalize:
+        totals = counts_no_aha + counts_aha
+        totals[totals == 0] = 1.0
+        counts_no_aha = counts_no_aha / totals
+        counts_aha = counts_aha / totals
+        ylabel = "Proportion (per bin)"
+    else:
+        ylabel = "Count"
+
+    return centers, counts_no_aha, counts_aha, bin_width, ylabel
+
+
+@dataclass
+class BinnedHistogram:
+    """Container for binned entropy histogram data."""
+
+    centers: np.ndarray
+    counts_no_aha: np.ndarray
+    counts_aha: np.ndarray
+    bin_width: float
+    ylabel: str
+
+
+def _compute_binned_from_rows(
+    rows: List[tuple],
+    args: argparse.Namespace,
+) -> BinnedHistogram:
+    """Helper to go from raw rows and CLI args to binned histogram stats."""
+    entropies, aha_flags = _rows_to_arrays(rows)
+    centers, counts_no_aha, counts_aha, bin_width, ylabel = _compute_binned_counts(
+        entropies,
+        aha_flags,
+        num_bins=args.bins,
+        binning=args.binning,
+        normalize=args.normalize,
+    )
+    return BinnedHistogram(
+        centers=centers,
+        counts_no_aha=counts_no_aha,
+        counts_aha=counts_aha,
+        bin_width=bin_width,
+        ylabel=ylabel,
+    )
+
+
+def _plot_stacked_histogram(
+    args: argparse.Namespace,
+    histogram: BinnedHistogram,
+) -> None:
+    """Render and save the stacked PASS1 entropy histogram."""
+    _, axes = plt.subplots(
+        figsize=(args.width_in, args.height_in),
+        constrained_layout=True,
+    )
+    axes.bar(
+        histogram.centers,
+        histogram.counts_no_aha,
+        width=histogram.bin_width * 0.9,
+        label="No Aha",
+    )
+    axes.bar(
+        histogram.centers,
+        histogram.counts_aha,
+        width=histogram.bin_width * 0.9,
+        bottom=histogram.counts_no_aha,
+        label="Aha",
+    )
+    axes.set_xlabel("PASS1 answer entropy (binned)")
+    axes.set_ylabel(histogram.ylabel)
+    axes.set_title(args.title)
+    if args.normalize:
+        axes.set_ylim(0, 1.0)
+    axes.legend(loc="best")
+    axes.grid(True, linestyle="--", alpha=0.3)
+
+    out_path = os.path.join(
+        args.outdir,
+        f"graph_3_pass1_stacked_{args.outfile_tag or 'combined'}"
+        f"{'_normalized' if args.normalize else ''}.png",
+    )
+    plt.savefig(out_path, dpi=args.dpi)
+    print(f"[ok] wrote {out_path}")
+
+
+def main() -> None:
+    """Entry point: build and save the stacked PASS1 entropy histogram."""
     args = parse_args()
     Path(args.outdir).mkdir(parents=True, exist_ok=True)
 
     rows: List[tuple] = []
-    rows += load_pass1_entropy_and_aha(args.root_carpark,   args.split, args.min_step, args.max_step, args.gpt_mode)
-    rows += load_pass1_entropy_and_aha(args.root_crossword, args.split, args.min_step, args.max_step, args.gpt_mode)
-    rows += load_pass1_entropy_and_aha(args.root_math,      args.split, args.min_step, args.max_step, args.gpt_mode)
+    rows += load_pass1_entropy_and_aha(
+        args.root_carpark,
+        args.split,
+        args.min_step,
+        args.max_step,
+        args.gpt_mode,
+    )
+    rows += load_pass1_entropy_and_aha(
+        args.root_crossword,
+        args.split,
+        args.min_step,
+        args.max_step,
+        args.gpt_mode,
+    )
+    rows += load_pass1_entropy_and_aha(
+        args.root_math,
+        args.split,
+        args.min_step,
+        args.max_step,
+        args.gpt_mode,
+    )
 
     if not rows:
         print("[error] No PASS1 records with answer entropy found.", file=sys.stderr)
         sys.exit(1)
 
-    ent = np.array([r[0] for r in rows], dtype=float)
-    aha = np.array([r[1] for r in rows], dtype=int)
-
-    # binning
-    if args.binning == "quantile":
-        qs = np.linspace(0.0, 1.0, args.bins+1)
-        edges = np.unique(np.quantile(ent, qs))
-        if len(edges) < 3:
-            edges = np.linspace(ent.min(), ent.max(), args.bins+1)
-    else:
-        edges = np.linspace(ent.min(), ent.max(), args.bins+1)
-
-    nb = len(edges)-1
-    bin_idx = np.digitize(ent, edges) - 1
-    centers = 0.5*(edges[:-1] + edges[1:])
-    w = (centers[1]-centers[0]) if len(centers)>1 else 0.1
-
-    counts_no = np.zeros(nb, dtype=float)
-    counts_yes= np.zeros(nb, dtype=float)
-    for b in range(nb):
-        m = (bin_idx == b)
-        if not m.any(): 
-            continue
-        counts_yes[b] = float((aha[m] == 1).sum())
-        counts_no[b]  = float((aha[m] == 0).sum())
-
-    if args.normalize:
-        totals = counts_no + counts_yes
-        totals[totals == 0] = 1.0
-        counts_no  = counts_no / totals
-        counts_yes = counts_yes / totals
-        ylab = "Proportion (per bin)"
-    else:
-        ylab = "Count"
-
-    fig, ax = plt.subplots(figsize=(args.width_in, args.height_in), constrained_layout=True)
-    ax.bar(centers, counts_no,  width=w*0.9, label="No Aha")
-    ax.bar(centers, counts_yes, width=w*0.9, bottom=counts_no, label="Aha")
-    ax.set_xlabel("PASS1 answer entropy (binned)")
-    ax.set_ylabel(ylab)
-    ax.set_title(args.title)
-    if args.normalize:
-        ax.set_ylim(0, 1.0)
-    ax.legend(loc="best")
-    ax.grid(True, linestyle="--", alpha=0.3)
-
-    tag = args.outfile_tag or "combined"
-    outname = f"graph_3_pass1_stacked_{tag}" + ("_normalized" if args.normalize else "")
-    out = os.path.join(args.outdir, f"{outname}.png")
-    plt.savefig(out, dpi=args.dpi)
-    print(f"[ok] wrote {out}")
+    histogram = _compute_binned_from_rows(rows, args)
+    _plot_stacked_histogram(args, histogram)
 
 if __name__ == "__main__":
     main()

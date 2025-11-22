@@ -11,7 +11,7 @@ entrypoint.
 
 It does **not** reimplement the heavy GLM logic; instead it:
 
-- calls ``h1-analysis.py`` to fit the Binomial GLMs
+- calls the H1 GLM script (``h1_analysis.py``) to fit the Binomial GLMs
   (``correct ~ C(problem) + step_std + aha``) and write:
     * ``h1_glm_ame_summary.csv``
     * ``h1_group_accuracy.csv``
@@ -51,6 +51,7 @@ import sys
 from typing import List
 
 from src.analysis import h1_analysis, shift_summary
+from src.analysis.utils import add_results_root_and_split_args, build_results_root_argv
 
 
 def _run_module_main_with_argv(module_main, argv: List[str]) -> None:
@@ -81,9 +82,7 @@ def _run_h1_glm(
     h1_out = os.path.join(out_dir, "h1_glm")
     os.makedirs(h1_out, exist_ok=True)
 
-    argv: List[str] = [results_root]
-    if split:
-        argv += ["--split", split]
+    argv: List[str] = build_results_root_argv(results_root, split)
     argv += [
         "--out_dir",
         h1_out,
@@ -108,21 +107,16 @@ def _run_shift_summary(
 
 
 def build_argparser() -> argparse.ArgumentParser:
+    """
+    Build and return the argument parser for the RQ1 analysis CLI.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "RQ1: Do reasoning shifts raise model accuracy? "
             "Runs the H1 GLM pipeline and, optionally, the simple shift summary."
         ),
     )
-    parser.add_argument(
-        "results_root",
-        help="Root directory containing step*/.../*.jsonl (e.g., artifacts/results/GRPO-1.5B-math-temp-0.05-3).",
-    )
-    parser.add_argument(
-        "--split",
-        default=None,
-        help="Optional substring filter on filenames (e.g., 'test').",
-    )
+    add_results_root_and_split_args(parser)
     parser.add_argument(
         "--out_dir",
         default=None,
@@ -161,6 +155,9 @@ def build_argparser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """
+    Run the RQ1 analysis pipeline based on command-line arguments.
+    """
     parser = build_argparser()
     args = parser.parse_args()
 

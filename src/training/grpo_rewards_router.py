@@ -112,7 +112,7 @@ def _task_from_script_args(script_args) -> Optional[str]:
         return "RUSH"
     if any(
         token in joined for token in ("pure_accuracy_reward_math", "pure_accuracy_math")
-    ) or ("math" in joined and "reward" in joined):
+    ) or "math" in joined:
         return "MATH"
     if any(token in joined for token in ("pure_accuracy_reward", "cross", "crypt")):
         return "CROSSWORD"
@@ -291,14 +291,21 @@ def _rush_scores(
     num_samples = len(completion_texts)
 
     scores: list[float] = []
-    for index, (prompt_value, completion_text, gold_answer) in enumerate(
-        zip(prompt_list, completion_texts, gold_answers),
+    for index, (prompt_value, completion_text) in enumerate(
+        zip(prompt_list, completion_texts),
     ):
+        if gold_answers:
+            if index < len(gold_answers):
+                gold_value = gold_answers[index]
+            else:
+                gold_value = gold_answers[0]
+        else:
+            gold_value = ""
         scores.append(
             rush_solution_shaped(
                 prompts=prompt_value,
                 completions=[completion_text],
-                gold=[gold_answer],
+                gold=[gold_value],
                 gold_moves=_ith(gold_moves, index, num_samples),
                 board_str=_ith(board_string, index, num_samples),
                 N=_ith(board_size, index, num_samples),
@@ -313,10 +320,27 @@ def _rush_scores(
 
 def reward_router(*, prompts=None, completions=None, tasks=None, proc=None, **kwargs):
     """
-    Task-aware reward router.
-    For RUSH: per-sample rush_solution_shaped with optional board/moves hints.
-    For MATH: pure_accuracy_reward_math.
-    Default: crossword pure_accuracy_reward (with shaping).
+    Route completion rewards to the appropriate task-specific scorer.
+
+    - For ``RUSH`` tasks, uses :func:`rush_solution_shaped` with optional
+      board-size and move-sequence hints.
+    - For ``MATH`` tasks, uses :func:`pure_accuracy_reward_math`.
+    - Otherwise, defaults to crossword-style :func:`pure_accuracy_reward` with shaping.
+
+    Nested B×K completions are handled transparently via the helpers in this module.
+
+    :param prompts: Prompt text or list of prompts corresponding to completions.
+    :param completions: Single completion, list of completions, or nested list
+        of completions per example.
+    :param tasks: Optional explicit task label(s); when omitted, task is inferred
+        from script arguments or prompts.
+    :param proc: Optional tokenizer/processor exposing a ``decode`` method for
+        converting token IDs to strings.
+    :param kwargs: Additional keyword arguments, including optional
+        ``script_args``, ``gold``/``answers``/``labels`` and Rush Hour hints
+        such as ``gold_moves``, ``board_str``, and ``N``.
+    :returns: List of per-sample reward scores (flat or nested, matching the
+        completion structure).
     """
     completions_flat, _nested_factor = _flatten_nested(completions)
     completion_texts = _to_text_list(completions_flat, proc=proc)

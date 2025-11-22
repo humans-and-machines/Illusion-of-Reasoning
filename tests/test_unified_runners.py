@@ -3,9 +3,13 @@ import sys
 from types import SimpleNamespace
 
 import pytest
-import torch
 
-from src.inference.unified_math_runner import MathTestConfig, run_math_inference
+torch = pytest.importorskip("torch")
+
+from src.inference.cli import unified_carpark as carpark_cli
+from src.inference.cli import unified_crossword as crossword_cli
+from src.inference.runners.unified_math_runner import run_math_inference
+from src.inference.runners.unified_runner_base import MathTestConfig
 
 
 class FakeTokenizer:
@@ -87,8 +91,6 @@ def test_run_math_inference_smoke(tmp_path):
 
 
 def test_unified_carpark_runner_invokes_inference(monkeypatch, tmp_path):
-    import src.inference.unified_carpark_runner as runner
-
     called = {}
 
     class DummyCarparkModule:
@@ -104,8 +106,8 @@ def test_unified_carpark_runner_invokes_inference(monkeypatch, tmp_path):
             self.tokenizer = SimpleNamespace(eos_token_id=1, pad_token_id=0, convert_tokens_to_ids=lambda x: 2)
             self.model = "dummy-model"
 
-    monkeypatch.setattr(runner, "_load_carpark_module", lambda: DummyCarparkModule())
-    monkeypatch.setattr(runner, "HFBackend", SimpleNamespace(from_pretrained=lambda **_: DummyBackend()))
+    monkeypatch.setattr(carpark_cli, "_load_carpark_module", lambda: DummyCarparkModule())
+    monkeypatch.setattr(carpark_cli, "HFBackend", SimpleNamespace(from_pretrained=lambda **_: DummyBackend()))
 
     argv = [
         "prog",
@@ -133,15 +135,13 @@ def test_unified_carpark_runner_invokes_inference(monkeypatch, tmp_path):
     monkeypatch.setenv("WANDB_MODE", "disabled")
     # Invoke main with patched argv
     monkeypatch.setattr(sys, "argv", argv)
-    runner.main()
+    carpark_cli.main()
 
     assert "load_kwargs" in called
     assert "run_kwargs" in called
 
 
 def test_unified_crossword_runner_invokes_inference(monkeypatch, tmp_path):
-    import src.inference.unified_crossword_runner as runner
-
     called = {}
 
     class DummyCrosswordModule:
@@ -157,8 +157,8 @@ def test_unified_crossword_runner_invokes_inference(monkeypatch, tmp_path):
             self.tokenizer = SimpleNamespace(eos_token_id=1, pad_token_id=0, convert_tokens_to_ids=lambda x: 2)
             self.model = "dummy-model"
 
-    monkeypatch.setattr(runner, "_load_crossword_module", lambda: DummyCrosswordModule())
-    monkeypatch.setattr(runner, "HFBackend", SimpleNamespace(from_pretrained=lambda **_: DummyBackend()))
+    monkeypatch.setattr(crossword_cli, "_load_crossword_module", lambda: DummyCrosswordModule())
+    monkeypatch.setattr(crossword_cli, "HFBackend", SimpleNamespace(from_pretrained=lambda **_: DummyBackend()))
 
     dataset_path = tmp_path / "cw.jsonl"
     dataset_path.write_text('{"clue":"C1","answer":"A1"}\n')
@@ -174,7 +174,7 @@ def test_unified_crossword_runner_invokes_inference(monkeypatch, tmp_path):
         str(dataset_path),
     ]
     monkeypatch.setattr(sys, "argv", argv)
-    runner.main()
+    crossword_cli.main()
 
     assert called["run_kwargs"]["split_name"] == "test"
     assert called["run_kwargs"]["batch_size"] == 8

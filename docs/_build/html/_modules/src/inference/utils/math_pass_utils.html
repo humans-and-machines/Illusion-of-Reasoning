@@ -1,0 +1,1094 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.inference.utils.math_pass_utils - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.inference.utils.math_pass_utils</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Math-specific result packaging, canonicalization, and tag/entropy helpers.</span>
+
+<span class="sd">These utilities were originally defined in ``inference.common`` and are split</span>
+<span class="sd">out to keep that module smaller and more focused on torch/transformers glue</span>
+<span class="sd">code. Public functions are still re-exported from ``inference.common`` for</span>
+<span class="sd">backwards compatibility.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.text_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_markers_and_context</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Text + tag helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="n">RE_THINK</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?si)&lt;think&gt;(.*?)&lt;/think&gt;&quot;</span><span class="p">)</span>
+<span class="n">RE_ANSWER</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?si)&lt;answer&gt;(.*?)&lt;/answer&gt;&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="extract_blocks">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.extract_blocks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_blocks</span><span class="p">(</span><span class="n">txt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract ``&lt;think&gt;`` and ``&lt;answer&gt;`` contents from a model output.</span>
+
+<span class="sd">    :param txt: Full text containing ``&lt;think&gt;…&lt;/think&gt;`` and ``&lt;answer&gt;…&lt;/answer&gt;`` blocks.</span>
+<span class="sd">    :returns: Tuple ``(think_text, answer_text)`` with surrounding whitespace stripped,</span>
+<span class="sd">        or ``(None, None)`` if blocks are not found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">think</span> <span class="o">=</span> <span class="n">ans</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">think_match</span> <span class="o">=</span> <span class="n">RE_THINK</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">txt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">think_match</span><span class="p">:</span>
+        <span class="n">think</span> <span class="o">=</span> <span class="n">think_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">answer_match</span> <span class="o">=</span> <span class="n">RE_ANSWER</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">txt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">answer_match</span><span class="p">:</span>
+        <span class="n">ans</span> <span class="o">=</span> <span class="n">answer_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">think</span><span class="p">,</span> <span class="n">ans</span></div>
+
+
+
+<div class="viewcode-block" id="valid_tag_structure">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.valid_tag_structure">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">valid_tag_structure</span><span class="p">(</span><span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that exactly one ``&lt;think&gt;…&lt;/think&gt;`` appears before ``&lt;answer&gt;…&lt;/answer&gt;``.</span>
+
+<span class="sd">    :param full_text: Full text produced by the model.</span>
+<span class="sd">    :returns: ``True`` if the tag structure is valid, otherwise ``False``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">opens_think</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;think&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">))</span>
+    <span class="n">closes_think</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;/think&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">))</span>
+    <span class="n">opens_ans</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;answer&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">))</span>
+    <span class="n">closes_ans</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;/answer&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">opens_think</span> <span class="o">==</span> <span class="n">closes_think</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">opens_ans</span> <span class="o">==</span> <span class="n">closes_ans</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">think_open_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;think&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">think_open_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">think_close_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;/think&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">think_close_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">answer_open_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;answer&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">answer_open_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">answer_close_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?i)&lt;/answer&gt;&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">answer_close_match</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="n">think_open_pos</span> <span class="o">=</span> <span class="n">think_open_match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">think_close_pos</span> <span class="o">=</span> <span class="n">think_close_match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">answer_open_pos</span> <span class="o">=</span> <span class="n">answer_open_match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">answer_close_pos</span> <span class="o">=</span> <span class="n">answer_close_match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">think_open_pos</span> <span class="o">&lt;</span> <span class="n">think_close_pos</span> <span class="o">&lt;</span> <span class="n">answer_open_pos</span> <span class="o">&lt;</span> <span class="n">answer_close_pos</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Canonicalization</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="n">RE_LATEX_FRAC</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">frac\s*\{\s*([^</span><span class="si">{}</span><span class="s2">]+?)\s*\}\s*\{\s*([^</span><span class="si">{}</span><span class="s2">]+?)\s*\}&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">RE_LATEX_CMDS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">(left|right|,|;|!|:)&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+<span class="n">RE_SPACES</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">)</span>
+<span class="n">RE_BRACES</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[</span><span class="si">{}</span><span class="s2">]&quot;</span><span class="p">)</span>
+<span class="n">RE_PARENS_COMMAs</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[()\[\],]&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="canon_math">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.canon_math">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">canon_math</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Permissive canonicalizer for math answers. Lowercases, removes spacing/punctuation,</span>
+<span class="sd">    simplifies common LaTeX forms, and normalizes pi.</span>
+
+<span class="sd">    :param value: Raw answer text to canonicalize.</span>
+<span class="sd">    :returns: Canonicalized string, or ``None`` if ``value`` is ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">canonical</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;–&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;—&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;−&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;π&quot;</span><span class="p">,</span> <span class="s2">&quot;pi&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">pi&quot;</span><span class="p">,</span> <span class="s2">&quot;pi&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">RE_LATEX_CMDS</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">RE_LATEX_FRAC</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\1/\2&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">RE_BRACES</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">RE_SPACES</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">RE_PARENS_COMMAs</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">canonical</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">boxed&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;$&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">canonical</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/{2,}&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\+{2,}&quot;</span><span class="p">,</span> <span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="n">canonical</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;-{2,}&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">canonical</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">canonical</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">):</span>
+        <span class="n">canonical</span> <span class="o">=</span> <span class="n">canonical</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">canonical</span></div>
+
+
+
+<div class="viewcode-block" id="contains_canon">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.contains_canon">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">contains_canon</span><span class="p">(</span><span class="n">hay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">needle</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Substring check after both sides are canonicalized.</span>
+
+<span class="sd">    :param hay: Canonicalized haystack string.</span>
+<span class="sd">    :param needle: Canonicalized needle string.</span>
+<span class="sd">    :returns: ``True`` if ``needle`` is a substring of ``hay``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hay</span> <span class="ow">and</span> <span class="n">needle</span> <span class="ow">and</span> <span class="p">(</span><span class="n">needle</span> <span class="ow">in</span> <span class="n">hay</span><span class="p">))</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Torch-agnostic utilities</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="finite_mean">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.finite_mean">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">finite_mean</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the mean of finite values, ignoring NaNs and infinities.</span>
+
+<span class="sd">    :param values: Iterable of numeric values.</span>
+<span class="sd">    :returns: Mean of finite values, or ``None`` if no finite values are present.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">finite_values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">))]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">finite_values</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">finite_values</span><span class="p">))</span> <span class="k">if</span> <span class="n">finite_values</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="build_entropy_pass_base">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.build_entropy_pass_base">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_entropy_pass_base</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prev_output</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pred_answer_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pred_canon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">entropy_summary</span><span class="p">:</span> <span class="s2">&quot;MathEntropySummary&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Common core for per-pass result dicts with entropy stats and prediction fields.</span>
+
+<span class="sd">    :param prev_output: Previous pass output text, if any.</span>
+<span class="sd">    :param full_text: Full model output including tags.</span>
+<span class="sd">    :param pred_answer_text: Extracted answer text for this pass.</span>
+<span class="sd">    :param pred_canon: Canonicalized predicted answer.</span>
+<span class="sd">    :param entropy_summary: Aggregated entropy statistics for this pass.</span>
+<span class="sd">    :returns: Dictionary containing core prediction and entropy fields.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;prev_output&quot;</span><span class="p">:</span> <span class="n">prev_output</span><span class="p">,</span>
+        <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="n">full_text</span><span class="p">,</span>
+        <span class="s2">&quot;pred_answer&quot;</span><span class="p">:</span> <span class="n">pred_answer_text</span><span class="p">,</span>
+        <span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">:</span> <span class="n">pred_canon</span><span class="p">,</span>
+        <span class="s2">&quot;entropy&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="o">.</span><span class="n">overall</span><span class="p">,</span>
+        <span class="s2">&quot;entropy_think&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="o">.</span><span class="n">think</span><span class="p">,</span>
+        <span class="s2">&quot;entropy_answer&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="o">.</span><span class="n">answer</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="add_token_and_tag_fields">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.add_token_and_tag_fields">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_token_and_tag_fields</span><span class="p">(</span>
+    <span class="n">base</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">tokens_total</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tokens_think</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tokens_answer</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared token-count and tag-structure fields to a per-pass result dict.</span>
+
+<span class="sd">    :param base: Base result dictionary to update.</span>
+<span class="sd">    :param tokens_total: Total number of tokens across think and answer.</span>
+<span class="sd">    :param tokens_think: Number of tokens in the think segment.</span>
+<span class="sd">    :param tokens_answer: Number of tokens in the answer segment.</span>
+<span class="sd">    :param full_text: Full model output including tags for structure checks.</span>
+<span class="sd">    :returns: The updated result dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;tokens_total&quot;</span><span class="p">:</span> <span class="n">tokens_total</span><span class="p">,</span>
+            <span class="s2">&quot;tokens_end_think&quot;</span><span class="p">:</span> <span class="n">tokens_think</span><span class="p">,</span>
+            <span class="s2">&quot;tokens_think&quot;</span><span class="p">:</span> <span class="n">tokens_think</span><span class="p">,</span>
+            <span class="s2">&quot;tokens_answer&quot;</span><span class="p">:</span> <span class="n">tokens_answer</span><span class="p">,</span>
+            <span class="s2">&quot;valid_tag_structure&quot;</span><span class="p">:</span> <span class="n">valid_tag_structure</span><span class="p">(</span><span class="n">full_text</span><span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">base</span></div>
+
+
+
+<div class="viewcode-block" id="finalize_pass_fields">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.finalize_pass_fields">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">finalize_pass_fields</span><span class="p">(</span>
+    <span class="n">base</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">reconsideration_fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">token_stats</span><span class="p">:</span> <span class="n">MathTokenStats</span><span class="p">,</span>
+    <span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Merge reconsideration data and token/tag metadata into a pass result dict.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">reconsideration_fields</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">add_token_and_tag_fields</span><span class="p">(</span>
+        <span class="n">base</span><span class="p">,</span>
+        <span class="n">tokens_total</span><span class="o">=</span><span class="n">token_stats</span><span class="o">.</span><span class="n">tokens_total</span><span class="p">,</span>
+        <span class="n">tokens_think</span><span class="o">=</span><span class="n">token_stats</span><span class="o">.</span><span class="n">tokens_think</span><span class="p">,</span>
+        <span class="n">tokens_answer</span><span class="o">=</span><span class="n">token_stats</span><span class="o">.</span><span class="n">tokens_answer</span><span class="p">,</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">full_text</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Reconsideration patterns / default cues</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="n">DEFAULT_SECOND_PASS_PHRASE</span> <span class="o">=</span> <span class="s2">&quot; ||| &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;Hold on, this reasoning might be wrong. Let&#39;s go back and check each step carefully.&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;Actually, this approach doesn&#39;t look correct. &quot;</span>
+            <span class="s2">&quot;Let&#39;s restart and work through the solution more systematically.&quot;</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;Wait, we need to reconsider. Let&#39;s think this through step by step.&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="build_second_pass_cue_strings">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.build_second_pass_cue_strings">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_second_pass_cue_strings</span><span class="p">(</span><span class="n">phrase</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a configurable second-pass phrase into a list of cue strings.</span>
+
+<span class="sd">    Accepts a raw phrase where multiple cues are separated by ``\&quot;|||\&quot;``.</span>
+<span class="sd">    Returns each cue with a trailing space, matching the behaviour used by the</span>
+<span class="sd">    inference loops.</span>
+
+<span class="sd">    :param phrase: Raw configuration string for second-pass cues.</span>
+<span class="sd">    :returns: List of cue strings with trailing spaces.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">raw_phrase</span> <span class="o">=</span> <span class="n">phrase</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;|||&quot;</span> <span class="ow">in</span> <span class="n">raw_phrase</span><span class="p">:</span>
+        <span class="n">cue_phrases</span> <span class="o">=</span> <span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">raw_phrase</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|||&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cue_phrases</span> <span class="o">=</span> <span class="p">[</span><span class="n">raw_phrase</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span> <span class="k">if</span> <span class="n">raw_phrase</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">cue</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="k">for</span> <span class="n">cue</span> <span class="ow">in</span> <span class="n">cue_phrases</span><span class="p">]</span></div>
+
+
+
+<span class="n">RECONSIDER_PATTERNS</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;wait_line&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?im)^\s*wait[,\.\-–—… ]&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;wait_reconsider&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bwait\b.*\breconsider\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;reconsider_exact&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bwait[,!\.\s]*let me reconsider\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;step_by_step&quot;</span><span class="p">,</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\blet&#39;?s take (this|it) step[-\s]?by[-\s]?step\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;step_by_step_alt&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bstep[-\s]?by[-\s]?step\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;recheck&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bre[-\s]?check(ing)?\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;hold_on_reasoning_wrong&quot;</span><span class="p">,</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bhold on\b.*\breasoning\b.*\bwrong\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;approach_not_correct&quot;</span><span class="p">,</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;\bactually\b.*\bapproach\b.*(doesn[&#39;’]?t|does not)\s+look\s+correct&quot;</span><span class="p">,</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Math pass metadata and packing</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="MathPassMeta">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.MathPassMeta">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MathPassMeta</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Metadata required to pack a single math pass result.</span>
+
+<span class="sd">    :param problem: Normalized problem text.</span>
+<span class="sd">    :param canon_gold: Canonicalized gold answer, if available.</span>
+<span class="sd">    :param injected_cue: Whether a reconsideration cue was injected.</span>
+<span class="sd">    :param prev_output: Previous pass output shown to the model.</span>
+<span class="sd">    :param cue_prefix_str: Cue prefix string added before reconsideration text.</span>
+<span class="sd">    :param stop_reason_think: Stop reason for the think phase.</span>
+<span class="sd">    :param stop_reason_answer: Stop reason for the answer phase.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">problem</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">canon_gold</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">injected_cue</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">prev_output</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">cue_prefix_str</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">stop_reason_think</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">stop_reason_answer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="MathTokenStats">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.MathTokenStats">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MathTokenStats</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Token-count summary for a single math pass.</span>
+
+<span class="sd">    :param tokens_think: Number of tokens in the think segment.</span>
+<span class="sd">    :param tokens_answer: Number of tokens in the answer segment.</span>
+<span class="sd">    :param tokens_total: Total number of tokens across think and answer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tokens_think</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">tokens_answer</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">tokens_total</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="MathEntropySummary">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.MathEntropySummary">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MathEntropySummary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Entropy statistics for a single math pass.</span>
+
+<span class="sd">    :param overall: Overall token-level entropy.</span>
+<span class="sd">    :param think: Entropy restricted to the think segment.</span>
+<span class="sd">    :param answer: Entropy restricted to the answer segment.</span>
+<span class="sd">    :param pre_cue: Entropy before any reconsideration cue, if applicable.</span>
+<span class="sd">    :param reconsider_think: Entropy over reconsideration tokens in think.</span>
+<span class="sd">    :param reconsider_full: Entropy over reconsideration tokens in think+answer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">overall</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">think</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">answer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">pre_cue</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">reconsider_think</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">reconsider_full</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="MathReconsiderationInfo">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.MathReconsiderationInfo">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MathReconsiderationInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reconsideration markers and positions for a math pass.</span>
+
+<span class="sd">    :param markers: List of reconsideration marker labels.</span>
+<span class="sd">    :param pos_in_think: Character offset of the first reconsideration marker.</span>
+<span class="sd">    :param context: Surrounding context string for the marker.</span>
+<span class="sd">    :param excerpt: Short excerpt around the marker.</span>
+<span class="sd">    :param t_cue: Token index at which reconsideration begins, if known.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">markers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">pos_in_think</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">excerpt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">t_cue</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_math_token_stats</span><span class="p">(</span>
+    <span class="n">ent_think</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">ent_answer</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">MathTokenStats</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute combined entropy series and basic token counts.</span>
+
+<span class="sd">    :param ent_think: Entropy values for tokens in the think segment.</span>
+<span class="sd">    :param ent_answer: Entropy values for tokens in the answer segment.</span>
+<span class="sd">    :returns: Tuple ``(tok_ents_all, stats)`` with concatenated entropies and</span>
+<span class="sd">        a :class:`MathTokenStats` summary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tok_ents_all</span> <span class="o">=</span> <span class="p">(</span><span class="n">ent_think</span> <span class="ow">or</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">(</span><span class="n">ent_answer</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="n">tokens_think</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ent_think</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="n">tokens_answer</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ent_answer</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="n">tokens_total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tok_ents_all</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tok_ents_all</span><span class="p">,</span> <span class="n">MathTokenStats</span><span class="p">(</span>
+        <span class="n">tokens_think</span><span class="o">=</span><span class="n">tokens_think</span><span class="p">,</span>
+        <span class="n">tokens_answer</span><span class="o">=</span><span class="n">tokens_answer</span><span class="p">,</span>
+        <span class="n">tokens_total</span><span class="o">=</span><span class="n">tokens_total</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_math_reconsideration_info</span><span class="p">(</span>
+    <span class="n">think_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">MathPassMeta</span><span class="p">,</span>
+    <span class="n">tokens_think</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MathReconsiderationInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Derive reconsideration markers, context, and cue index from metadata.</span>
+
+<span class="sd">    :param think_text: Text inside the ``&lt;think&gt;`` block.</span>
+<span class="sd">    :param meta: Pass metadata describing cues and problem text.</span>
+<span class="sd">    :param tokens_think: Number of think tokens used for cue indexing.</span>
+<span class="sd">    :returns: :class:`MathReconsiderationInfo` with markers and positions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">skip_chars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">meta</span><span class="o">.</span><span class="n">cue_prefix_str</span><span class="p">)</span> <span class="k">if</span> <span class="n">meta</span><span class="o">.</span><span class="n">injected_cue</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="n">markers</span><span class="p">,</span> <span class="n">pos_in_think</span><span class="p">,</span> <span class="n">reconsider_context</span><span class="p">,</span> <span class="n">reconsider_excerpt</span> <span class="o">=</span> <span class="n">find_markers_and_context</span><span class="p">(</span>
+        <span class="n">think_text</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Problem: </span><span class="si">{</span><span class="n">meta</span><span class="o">.</span><span class="n">problem</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">RECONSIDER_PATTERNS</span><span class="p">,</span>
+        <span class="n">skip_prefix_chars</span><span class="o">=</span><span class="n">skip_chars</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">meta</span><span class="o">.</span><span class="n">injected_cue</span><span class="p">:</span>
+        <span class="n">markers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;injected_cue&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">markers</span> <span class="ow">or</span> <span class="p">[])</span>
+
+    <span class="n">t_cue</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">meta</span><span class="o">.</span><span class="n">injected_cue</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">meta</span><span class="o">.</span><span class="n">injected_cue</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">pos_in_think</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">t_cue</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">pos_in_think</span><span class="p">,</span> <span class="n">tokens_think</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">MathReconsiderationInfo</span><span class="p">(</span>
+        <span class="n">markers</span><span class="o">=</span><span class="n">markers</span> <span class="ow">or</span> <span class="p">[],</span>
+        <span class="n">pos_in_think</span><span class="o">=</span><span class="n">pos_in_think</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">=</span><span class="n">reconsider_context</span><span class="p">,</span>
+        <span class="n">excerpt</span><span class="o">=</span><span class="n">reconsider_excerpt</span><span class="p">,</span>
+        <span class="n">t_cue</span><span class="o">=</span><span class="n">t_cue</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_summarize_math_entropies</span><span class="p">(</span>
+    <span class="n">tok_ents_all</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">ent_think</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">ent_answer</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">stats</span><span class="p">:</span> <span class="n">MathTokenStats</span><span class="p">,</span>
+    <span class="n">t_cue</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MathEntropySummary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute overall and segment-wise entropy summaries for a math pass.</span>
+
+<span class="sd">    :param tok_ents_all: Entropy values for all tokens.</span>
+<span class="sd">    :param ent_think: Entropy values for tokens in the think segment.</span>
+<span class="sd">    :param ent_answer: Entropy values for tokens in the answer segment.</span>
+<span class="sd">    :param stats: Token-count summary for the pass.</span>
+<span class="sd">    :param t_cue: Token index from which reconsideration begins, if any.</span>
+<span class="sd">    :returns: :class:`MathEntropySummary` with aggregated statistics.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tokens_think</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">tokens_think</span>
+    <span class="n">tokens_total</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">tokens_total</span>
+    <span class="n">entropy_overall</span> <span class="o">=</span> <span class="n">finite_mean</span><span class="p">(</span><span class="n">tok_ents_all</span><span class="p">)</span> <span class="k">if</span> <span class="n">tok_ents_all</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">entropy_think</span> <span class="o">=</span> <span class="n">finite_mean</span><span class="p">(</span><span class="n">ent_think</span><span class="p">)</span> <span class="k">if</span> <span class="n">ent_think</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">entropy_answer</span> <span class="o">=</span> <span class="n">finite_mean</span><span class="p">(</span><span class="n">ent_answer</span><span class="p">)</span> <span class="k">if</span> <span class="n">ent_answer</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">entropy_pre_cue</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">entropy_reconsider_think</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">entropy_reconsider_full</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">t_cue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tokens_total</span> <span class="o">&gt;</span> <span class="n">t_cue</span><span class="p">:</span>
+            <span class="n">entropy_reconsider_full</span> <span class="o">=</span> <span class="n">finite_mean</span><span class="p">(</span><span class="n">tok_ents_all</span><span class="p">[</span><span class="n">t_cue</span><span class="p">:])</span>
+        <span class="k">if</span> <span class="n">tokens_think</span> <span class="o">&gt;</span> <span class="n">t_cue</span><span class="p">:</span>
+            <span class="n">entropy_reconsider_think</span> <span class="o">=</span> <span class="n">finite_mean</span><span class="p">(</span><span class="n">tok_ents_all</span><span class="p">[</span><span class="n">t_cue</span><span class="p">:</span><span class="n">tokens_think</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">MathEntropySummary</span><span class="p">(</span>
+        <span class="n">overall</span><span class="o">=</span><span class="n">entropy_overall</span><span class="p">,</span>
+        <span class="n">think</span><span class="o">=</span><span class="n">entropy_think</span><span class="p">,</span>
+        <span class="n">answer</span><span class="o">=</span><span class="n">entropy_answer</span><span class="p">,</span>
+        <span class="n">pre_cue</span><span class="o">=</span><span class="n">entropy_pre_cue</span><span class="p">,</span>
+        <span class="n">reconsider_think</span><span class="o">=</span><span class="n">entropy_reconsider_think</span><span class="p">,</span>
+        <span class="n">reconsider_full</span><span class="o">=</span><span class="n">entropy_reconsider_full</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="build_reconsideration_fields">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.build_reconsideration_fields">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_reconsideration_fields</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">stop_reasons</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+    <span class="n">reconsideration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">is_correct_pred</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">entropy_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MathEntropySummary</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">enumeration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assemble reconsideration-related fields shared by math and crossword passes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reconsideration</span> <span class="o">=</span> <span class="n">reconsideration</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">markers_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">reconsideration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;markers&quot;</span><span class="p">,</span> <span class="p">[]))</span> <span class="k">if</span> <span class="n">reconsideration</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="n">reconsider_context</span> <span class="o">=</span> <span class="n">reconsideration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">&quot;reconsider_context&quot;</span><span class="p">,</span>
+        <span class="n">reconsideration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;context&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">reconsider_excerpt</span> <span class="o">=</span> <span class="n">reconsideration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">&quot;reconsider_excerpt&quot;</span><span class="p">,</span>
+        <span class="n">reconsideration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;excerpt&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">:</span> <span class="n">stop_reasons</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">:</span> <span class="n">stop_reasons</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;has_reconsider_cue&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">markers_list</span><span class="p">),</span>
+        <span class="s2">&quot;reconsider_markers&quot;</span><span class="p">:</span> <span class="n">markers_list</span><span class="p">,</span>
+        <span class="s2">&quot;reconsider_pos&quot;</span><span class="p">:</span> <span class="n">reconsideration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pos_in_think&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;reconsider_context&quot;</span><span class="p">:</span> <span class="n">reconsider_context</span><span class="p">,</span>
+        <span class="s2">&quot;reconsider_excerpt&quot;</span><span class="p">:</span> <span class="n">reconsider_excerpt</span><span class="p">,</span>
+        <span class="s2">&quot;is_correct_pred&quot;</span><span class="p">:</span> <span class="n">is_correct_pred</span><span class="p">,</span>
+        <span class="s2">&quot;is_correct_after_reconsideration&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">markers_list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">is_correct_pred</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">enumeration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fields</span><span class="p">[</span><span class="s2">&quot;enumeration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">enumeration</span>
+    <span class="k">if</span> <span class="n">entropy_summary</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fields</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;entropy_pre_cue&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="o">.</span><span class="n">pre_cue</span><span class="p">,</span>
+                <span class="s2">&quot;entropy_reconsider_think&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="o">.</span><span class="n">reconsider_think</span><span class="p">,</span>
+                <span class="s2">&quot;entropy_reconsider_full&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="o">.</span><span class="n">reconsider_full</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">fields</span></div>
+
+
+
+<div class="viewcode-block" id="build_reconsideration_base_kwargs">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.build_reconsideration_base_kwargs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_reconsideration_base_kwargs</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prev_output</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pred_answer_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pred_canon</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">entropy_summary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MathEntropySummary</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Common kwargs used when assembling reconsideration-aware pass results.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;prev_output&quot;</span><span class="p">:</span> <span class="n">prev_output</span><span class="p">,</span>
+        <span class="s2">&quot;full_text&quot;</span><span class="p">:</span> <span class="n">full_text</span><span class="p">,</span>
+        <span class="s2">&quot;pred_answer_text&quot;</span><span class="p">:</span> <span class="n">pred_answer_text</span><span class="p">,</span>
+        <span class="s2">&quot;pred_canon&quot;</span><span class="p">:</span> <span class="n">pred_canon</span><span class="p">,</span>
+        <span class="s2">&quot;entropy_summary&quot;</span><span class="p">:</span> <span class="n">entropy_summary</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="build_stop_reasons">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.build_stop_reasons">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_stop_reasons</span><span class="p">(</span>
+    <span class="n">stop_think</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">stop_answer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper to normalize stop reasons into a consistent mapping.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;think&quot;</span><span class="p">:</span> <span class="n">stop_think</span><span class="p">,</span>
+        <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">stop_answer</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="ReconsiderationInputs">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.ReconsiderationInputs">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReconsiderationInputs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalized inputs used to package reconsideration-aware pass results.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">base_fields</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">stop_reasons</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="n">reconsideration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">is_correct_pred</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">token_stats</span><span class="p">:</span> <span class="n">MathTokenStats</span>
+    <span class="n">enumeration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="assemble_reconsideration_pass_result">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.assemble_reconsideration_pass_result">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">assemble_reconsideration_pass_result</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="n">ReconsiderationInputs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shared helper to package entropy/reconsideration fields into a pass result.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">build_entropy_pass_base</span><span class="p">(</span>
+        <span class="n">prev_output</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prev_output&quot;</span><span class="p">),</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="p">[</span><span class="s2">&quot;full_text&quot;</span><span class="p">],</span>
+        <span class="n">pred_answer_text</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="p">[</span><span class="s2">&quot;pred_answer_text&quot;</span><span class="p">],</span>
+        <span class="n">pred_canon</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="p">[</span><span class="s2">&quot;pred_canon&quot;</span><span class="p">],</span>
+        <span class="n">entropy_summary</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_summary&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">reconsideration_fields</span> <span class="o">=</span> <span class="n">build_reconsideration_fields</span><span class="p">(</span>
+        <span class="n">stop_reasons</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">stop_reasons</span><span class="p">,</span>
+        <span class="n">reconsideration</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">reconsideration</span><span class="p">,</span>
+        <span class="n">is_correct_pred</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">is_correct_pred</span><span class="p">,</span>
+        <span class="n">entropy_summary</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_summary&quot;</span><span class="p">),</span>
+        <span class="n">enumeration</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">enumeration</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">finalize_pass_fields</span><span class="p">(</span>
+        <span class="n">base</span><span class="p">,</span>
+        <span class="n">reconsideration_fields</span><span class="p">,</span>
+        <span class="n">token_stats</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">token_stats</span><span class="p">,</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">inputs</span><span class="o">.</span><span class="n">base_fields</span><span class="p">[</span><span class="s2">&quot;full_text&quot;</span><span class="p">],</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_math_pass_meta_kwonly</span><span class="p">(</span><span class="n">meta_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MathPassMeta</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Internal helper that constructs :class:`MathPassMeta` from keyword-only args.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">required_keys</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;problem&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;canon_gold&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;injected_cue&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prev_output&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;cue_prefix_str&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="n">required_keys</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">meta_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="n">missing_list</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;build_math_pass_meta() missing required keyword arguments: </span><span class="si">{</span><span class="n">missing_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">unexpected</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">meta_kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">required_keys</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unexpected</span><span class="p">:</span>
+        <span class="n">unexpected_list</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unexpected</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;build_math_pass_meta() got unexpected keyword arguments: </span><span class="si">{</span><span class="n">unexpected_list</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">MathPassMeta</span><span class="p">(</span><span class="o">**</span><span class="n">meta_kwargs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="build_math_pass_meta">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.build_math_pass_meta">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_math_pass_meta</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MathPassMeta</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper to construct :class:`MathPassMeta` consistently across math inference cores.</span>
+
+<span class="sd">    This function supports both the newer keyword-only style::</span>
+
+<span class="sd">        build_math_pass_meta(</span>
+<span class="sd">            problem=problem,</span>
+<span class="sd">            canon_gold=canon_gold,</span>
+<span class="sd">            injected_cue=injected_cue,</span>
+<span class="sd">            prev_output=prev_output,</span>
+<span class="sd">            cue_prefix_str=cue_prefix_str,</span>
+<span class="sd">            stop_reason_think=stop_reason_think,</span>
+<span class="sd">            stop_reason_answer=stop_reason_answer,</span>
+<span class="sd">        )</span>
+
+<span class="sd">    and the older positional style used in legacy call sites::</span>
+
+<span class="sd">        build_math_pass_meta(</span>
+<span class="sd">            problem,</span>
+<span class="sd">            canon_gold,</span>
+<span class="sd">            injected_cue,</span>
+<span class="sd">            prev_output,</span>
+<span class="sd">            cue_prefix_str,</span>
+<span class="sd">            stop_reason_think,</span>
+<span class="sd">            stop_reason_answer,</span>
+<span class="sd">        )</span>
+
+<span class="sd">    :param args: Optional positional arguments following the legacy ordering.</span>
+<span class="sd">    :param kwargs: Keyword arguments for the keyword-only interface.</span>
+<span class="sd">    :returns: Constructed :class:`MathPassMeta` instance.</span>
+<span class="sd">    :raises TypeError: If both positional and keyword arguments are mixed or an</span>
+<span class="sd">        unexpected number of positional arguments is provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;build_math_pass_meta() cannot mix positional and keyword arguments&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">7</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;build_math_pass_meta() expected 7 positional arguments, got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">problem</span><span class="p">,</span>
+            <span class="n">canon_gold</span><span class="p">,</span>
+            <span class="n">injected_cue</span><span class="p">,</span>
+            <span class="n">prev_output</span><span class="p">,</span>
+            <span class="n">cue_prefix_str</span><span class="p">,</span>
+            <span class="n">stop_reason_think</span><span class="p">,</span>
+            <span class="n">stop_reason_answer</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;problem&quot;</span><span class="p">:</span> <span class="n">problem</span><span class="p">,</span>
+            <span class="s2">&quot;canon_gold&quot;</span><span class="p">:</span> <span class="n">canon_gold</span><span class="p">,</span>
+            <span class="s2">&quot;injected_cue&quot;</span><span class="p">:</span> <span class="n">injected_cue</span><span class="p">,</span>
+            <span class="s2">&quot;prev_output&quot;</span><span class="p">:</span> <span class="n">prev_output</span><span class="p">,</span>
+            <span class="s2">&quot;cue_prefix_str&quot;</span><span class="p">:</span> <span class="n">cue_prefix_str</span><span class="p">,</span>
+            <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">:</span> <span class="n">stop_reason_think</span><span class="p">,</span>
+            <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">:</span> <span class="n">stop_reason_answer</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">_build_math_pass_meta_kwonly</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="pack_math_pass_result">
+<a class="viewcode-back" href="../../../../api/src.inference.utils.html#src.inference.utils.common.pack_math_pass_result">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pack_math_pass_result</span><span class="p">(</span>
+    <span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ent_think</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">ent_answer</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">MathPassMeta</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assemble per-pass math result dict with entropy, reconsideration markers,</span>
+<span class="sd">    and token/tag statistics.</span>
+
+<span class="sd">    :param full_text: Full model output including tags.</span>
+<span class="sd">    :param ent_think: Entropy values for tokens in the think segment.</span>
+<span class="sd">    :param ent_answer: Entropy values for tokens in the answer segment.</span>
+<span class="sd">    :param meta: Pass metadata describing the problem and cue configuration.</span>
+<span class="sd">    :returns: Dictionary representing a single math pass result.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tok_ents_all</span><span class="p">,</span> <span class="n">token_stats</span> <span class="o">=</span> <span class="n">_compute_math_token_stats</span><span class="p">(</span><span class="n">ent_think</span><span class="p">,</span> <span class="n">ent_answer</span><span class="p">)</span>
+    <span class="n">think_text</span><span class="p">,</span> <span class="n">pred_answer_text</span> <span class="o">=</span> <span class="p">(</span><span class="n">segment</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">extract_blocks</span><span class="p">(</span><span class="n">full_text</span><span class="p">))</span>
+
+    <span class="n">reconsider_info</span> <span class="o">=</span> <span class="n">_compute_math_reconsideration_info</span><span class="p">(</span>
+        <span class="n">think_text</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">,</span>
+        <span class="n">token_stats</span><span class="o">.</span><span class="n">tokens_think</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">entropy_summary</span> <span class="o">=</span> <span class="n">_summarize_math_entropies</span><span class="p">(</span>
+        <span class="n">tok_ents_all</span><span class="o">=</span><span class="n">tok_ents_all</span><span class="p">,</span>
+        <span class="n">ent_think</span><span class="o">=</span><span class="n">ent_think</span><span class="p">,</span>
+        <span class="n">ent_answer</span><span class="o">=</span><span class="n">ent_answer</span><span class="p">,</span>
+        <span class="n">stats</span><span class="o">=</span><span class="n">token_stats</span><span class="p">,</span>
+        <span class="n">t_cue</span><span class="o">=</span><span class="n">reconsider_info</span><span class="o">.</span><span class="n">t_cue</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pred_canon</span> <span class="o">=</span> <span class="n">canon_math</span><span class="p">(</span><span class="n">pred_answer_text</span><span class="p">)</span>
+    <span class="n">is_correct_pred</span> <span class="o">=</span> <span class="n">contains_canon</span><span class="p">(</span><span class="n">pred_canon</span><span class="p">,</span> <span class="n">meta</span><span class="o">.</span><span class="n">canon_gold</span><span class="p">)</span>
+
+    <span class="n">base_fields</span> <span class="o">=</span> <span class="n">build_reconsideration_base_kwargs</span><span class="p">(</span>
+        <span class="n">prev_output</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">prev_output</span><span class="p">,</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">full_text</span><span class="p">,</span>
+        <span class="n">pred_answer_text</span><span class="o">=</span><span class="n">pred_answer_text</span><span class="p">,</span>
+        <span class="n">pred_canon</span><span class="o">=</span><span class="n">pred_canon</span><span class="p">,</span>
+        <span class="n">entropy_summary</span><span class="o">=</span><span class="n">entropy_summary</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">ReconsiderationInputs</span><span class="p">(</span>
+        <span class="n">base_fields</span><span class="o">=</span><span class="n">base_fields</span><span class="p">,</span>
+        <span class="n">stop_reasons</span><span class="o">=</span><span class="n">build_stop_reasons</span><span class="p">(</span>
+            <span class="n">meta</span><span class="o">.</span><span class="n">stop_reason_think</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">.</span><span class="n">stop_reason_answer</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">reconsideration</span><span class="o">=</span><span class="nb">vars</span><span class="p">(</span><span class="n">reconsider_info</span><span class="p">),</span>
+        <span class="n">is_correct_pred</span><span class="o">=</span><span class="n">is_correct_pred</span><span class="p">,</span>
+        <span class="n">token_stats</span><span class="o">=</span><span class="n">token_stats</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">assemble_reconsideration_pass_result</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span></div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

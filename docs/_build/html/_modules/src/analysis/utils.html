@@ -1,0 +1,1487 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.analysis.utils - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.analysis.utils</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># pylint: disable=too-many-lines</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Shared low-level helpers for analysis scripts.</span>
+
+<span class="sd">This module intentionally keeps dependencies light and behavior conservative so</span>
+<span class="sd">it can be safely imported from many one-off scripts.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">import_module</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<span class="c1"># Allow references like ``src.analysis.utils.utils`` in environments that expect</span>
+<span class="c1"># module-name aliases to be present on the module object.</span>
+<span class="n">utils</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="vm">__name__</span><span class="p">]</span>
+<span class="n">_UNCERTAINTY_MODULE</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_uncertainty_module</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lazy-load the uncertainty helpers to avoid mandatory heavy deps at import time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_UNCERTAINTY_MODULE</span>  <span class="c1"># pylint: disable=global-statement</span>
+    <span class="k">if</span> <span class="n">_UNCERTAINTY_MODULE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_UNCERTAINTY_MODULE</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;src.analysis.common.uncertainty&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_UNCERTAINTY_MODULE</span>
+
+
+<div class="viewcode-block" id="standardize_uncertainty">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.standardize_uncertainty">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">standardize_uncertainty</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">source_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;uncertainty&quot;</span><span class="p">,</span>
+    <span class="n">dest_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;uncertainty_std&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Proxy to :func:`src.analysis.common.uncertainty.standardize_uncertainty`.</span>
+
+<span class="sd">    Imported lazily to avoid mandatory pandas dependency at module import time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_load_uncertainty_module</span><span class="p">()</span><span class="o">.</span><span class="n">standardize_uncertainty</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">source_col</span><span class="o">=</span><span class="n">source_col</span><span class="p">,</span>
+        <span class="n">dest_col</span><span class="o">=</span><span class="n">dest_col</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="standardize_uncertainty_with_stats">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.standardize_uncertainty_with_stats">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">standardize_uncertainty_with_stats</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">source_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;uncertainty&quot;</span><span class="p">,</span>
+    <span class="n">dest_col</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;uncertainty_std&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Proxy to :func:`src.analysis.common.uncertainty.standardize_uncertainty_with_stats`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_load_uncertainty_module</span><span class="p">()</span><span class="o">.</span><span class="n">standardize_uncertainty_with_stats</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">source_col</span><span class="o">=</span><span class="n">source_col</span><span class="p">,</span>
+        <span class="n">dest_col</span><span class="o">=</span><span class="n">dest_col</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Path / naming helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="c1"># Flexible step patterns used across scripts (dir names, file names, substrings)</span>
+<span class="n">STEP_PATS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;step\s*[-_]?(?P&lt;step&gt;\d+)&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;global[_-]?step\s*[-_]?(?P&lt;step&gt;\d+)&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;checkpoint\s*[-_]?(?P&lt;step&gt;\d+)&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+    <span class="c1"># bare numeric subdirs at the end of the path (e.g., &quot;.../01234/&quot;)</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/(?P&lt;step&gt;\d{2,5})(?=/|$)&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="c1"># Common temperature tokens in directory names</span>
+<span class="n">TEMP_PATS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?:^|[-_])temp[-_](?P&lt;t&gt;low|[0-9]+(?:\.[0-9]+)?)$&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?:^|[-_])(?P&lt;t&gt;low|[0-9]+(?:\.[0-9]+)?)[-_]temp$&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?:^|[-_])low[-_]temp$&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">),</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="nat_step_from_path">
+<a class="viewcode-back" href="../../../api/src.analysis.core.html#src.analysis.h2_analysis_loader.nat_step_from_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nat_step_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Try to infer an integer training step from a path or filename.</span>
+
+<span class="sd">    Uses a collection of regexes that cover the various conventions used in</span>
+<span class="sd">    analysis scripts (step123, global_step-123, checkpoint_123, ...).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">STEP_PATS</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">path_str</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">step_str</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">step_str</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Fall through to try other patterns</span>
+            <span class="k">continue</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="step_from_rec_or_path">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.step_from_rec_or_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">step_from_rec_or_path</span><span class="p">(</span><span class="n">rec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract an integer training step from a record, falling back to the file</span>
+<span class="sd">    path via :func:`nat_step_from_path` when needed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;global_step&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;training_step&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">nat_step_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="k">if</span> <span class="n">step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+
+
+<div class="viewcode-block" id="add_domain_root_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_domain_root_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_domain_root_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Register the standard ``--roots_*`` arguments used by many analysis CLIs.</span>
+
+<span class="sd">    The helper returns ``parser`` to support fluent-style setup.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--roots_crossword&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Paths or globs to Crossword results&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--roots_math&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Paths or globs to Math results&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--roots_carpark&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[],</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Paths or globs to Carpark results&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="parse_temp_from_dir">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.parse_temp_from_dir">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_temp_from_dir</span><span class="p">(</span><span class="n">dirname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">low_alias</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Infer temperature from a directory name.</span>
+
+<span class="sd">    Supports tokens like:</span>
+<span class="sd">      temp-0.7, 0.7-temp, temp-low, low-temp</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dirname_lower</span> <span class="o">=</span> <span class="n">dirname</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">TEMP_PATS</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">dirname_lower</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="o">==</span> <span class="s2">&quot;low&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">low_alias</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Generic coercion / text helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="slugify">
+<a class="viewcode-back" href="../../../api/src.analysis.core.html#src.analysis.h2_analysis_loader.slugify">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">slugify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert an arbitrary string into a filesystem-friendly slug.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[^A-Za-z0-9._-]+&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="coerce_bool">
+<a class="viewcode-back" href="../../../api/src.analysis.core.html#src.analysis.h2_analysis_loader.coerce_bool">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">coerce_bool</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Best-effort conversion to {0,1}.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      1/0 for recognized truthy/falsey values, or None if there is no</span>
+<span class="sd">      reasonable interpretation (e.g., complex structures).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">string_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">string_value</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">}:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">string_value</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span> <span class="s2">&quot;f&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">}:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="truthy_flag">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.truthy_flag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">truthy_flag</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return True for common \&quot;truthy\&quot; encodings (booleans, ints, strings).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">value</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span> <span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">}</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="coerce_float">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.coerce_float">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">coerce_float</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Best-effort conversion to float, returning None on failure instead of</span>
+<span class="sd">    raising.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="both_get">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.both_get">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">both_get</span><span class="p">(</span>
+    <span class="n">pass1_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Best-effort getter that prefers ``pass1_data[key]`` but falls back to the</span>
+<span class="sd">    top-level record when missing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">pass1_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="lighten_hex">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.lighten_hex">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">lighten_hex</span><span class="p">(</span><span class="n">hex_color</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.65</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Lighten a hex color by interpolating towards white.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hex_color</span> <span class="o">=</span> <span class="n">hex_color</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+    <span class="n">red</span><span class="p">,</span> <span class="n">green</span><span class="p">,</span> <span class="n">blue</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">hex_color</span><span class="p">[</span><span class="n">index</span> <span class="p">:</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span> <span class="o">/</span> <span class="mf">255.0</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">red</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">red</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span>
+    <span class="n">green</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">green</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span>
+    <span class="n">blue</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">blue</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">red</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">255</span><span class="p">)</span><span class="si">:</span><span class="s2">02x</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">green</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">255</span><span class="p">)</span><span class="si">:</span><span class="s2">02x</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">blue</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">255</span><span class="p">)</span><span class="si">:</span><span class="s2">02x</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="combined_entropy_from_pass1">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.combined_entropy_from_pass1">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">combined_entropy_from_pass1</span><span class="p">(</span><span class="n">pass1</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prefer combined &#39;entropy&#39; if present; else average of think/answer when</span>
+<span class="sd">    both are available, else the first available of (think, answer).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">entropy_overall</span> <span class="o">=</span> <span class="n">coerce_float</span><span class="p">(</span><span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy&quot;</span><span class="p">))</span>
+    <span class="n">entropy_think</span> <span class="o">=</span> <span class="n">coerce_float</span><span class="p">(</span><span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_think&quot;</span><span class="p">))</span>
+    <span class="n">entropy_answer</span> <span class="o">=</span> <span class="n">coerce_float</span><span class="p">(</span><span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_answer&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">entropy_overall</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">entropy_overall</span>
+    <span class="k">if</span> <span class="n">entropy_think</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">entropy_answer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">entropy_think</span> <span class="o">+</span> <span class="n">entropy_answer</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">entropy_think</span> <span class="k">if</span> <span class="n">entropy_think</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">entropy_answer</span></div>
+
+
+
+<div class="viewcode-block" id="entropy_from_pass1">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.entropy_from_pass1">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">entropy_from_pass1</span><span class="p">(</span>
+    <span class="n">pass1</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sum&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute a pass-1 entropy summary under a chosen mode.</span>
+
+<span class="sd">    Modes:</span>
+<span class="sd">      - ``\&quot;sum\&quot;``      : ``entropy_think + entropy_answer`` when available,</span>
+<span class="sd">                           otherwise fall back to ``entropy``.</span>
+<span class="sd">      - ``\&quot;think\&quot;``    : ``entropy_think`` with fallback to ``entropy``.</span>
+<span class="sd">      - ``\&quot;answer\&quot;``   : ``entropy_answer`` with fallback to ``entropy``.</span>
+<span class="sd">      - ``\&quot;combined\&quot;`` : use :func:`combined_entropy_from_pass1`.</span>
+<span class="sd">      - anything else    : fall back to the raw ``entropy`` field.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ent_think</span> <span class="o">=</span> <span class="n">coerce_float</span><span class="p">(</span><span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_think&quot;</span><span class="p">))</span>
+    <span class="n">ent_answer</span> <span class="o">=</span> <span class="n">coerce_float</span><span class="p">(</span><span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_answer&quot;</span><span class="p">))</span>
+    <span class="n">ent_overall</span> <span class="o">=</span> <span class="n">coerce_float</span><span class="p">(</span><span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy&quot;</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;sum&quot;</span><span class="p">:</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">value</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ent_think</span><span class="p">,</span> <span class="n">ent_answer</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">parts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">parts</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ent_overall</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;think&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ent_think</span> <span class="k">if</span> <span class="n">ent_think</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ent_overall</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;answer&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ent_answer</span> <span class="k">if</span> <span class="n">ent_answer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ent_overall</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;combined&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">combined_entropy_from_pass1</span><span class="p">(</span><span class="n">pass1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ent_overall</span></div>
+
+
+
+<div class="viewcode-block" id="choose_uncertainty">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.choose_uncertainty">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">choose_uncertainty</span><span class="p">(</span>
+    <span class="n">pass1</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">pref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;answer&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pick an entropy-style uncertainty value from a PASS-1 dict.</span>
+
+<span class="sd">    The ``pref`` argument controls the priority order among</span>
+<span class="sd">    ``entropy_answer``, ``entropy`` and ``entropy_think`` while treating</span>
+<span class="sd">    valid zeros as meaningful (unlike ``or``-chaining).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pref</span> <span class="o">==</span> <span class="s2">&quot;answer&quot;</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_answer&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_think&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">pref</span> <span class="o">==</span> <span class="s2">&quot;overall&quot;</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_answer&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_think&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">pref</span> <span class="o">==</span> <span class="s2">&quot;think&quot;</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_think&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">pass1</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_answer&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="extract_pass1_and_step">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.extract_pass1_and_step">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_pass1_and_step</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">step_from_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract a robust PASS-1 object and integer step from a record.</span>
+
+<span class="sd">    Returns (pass1_dict, step_int); if either is unavailable or invalid,</span>
+<span class="sd">    returns ({}, None).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pass1_data</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;p1&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;first_pass&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pass1_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">pass1_data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pass1_data</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{},</span> <span class="kc">None</span>
+
+    <span class="n">step_raw</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">&quot;step&quot;</span><span class="p">,</span>
+        <span class="n">step_from_name</span> <span class="k">if</span> <span class="n">step_from_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">step_raw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{},</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">step_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">step_raw</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{},</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">pass1_data</span><span class="p">,</span> <span class="n">step_int</span></div>
+
+
+
+<div class="viewcode-block" id="FormalThresholds">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.FormalThresholds">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FormalThresholds</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Threshold configuration used by Formal Aha helpers.</span>
+
+<span class="sd">    ``delta1`` and ``delta2`` control prior failure/stability; ``min_prior_steps``</span>
+<span class="sd">    is the minimum number of previous steps required; ``delta3`` is an optional</span>
+<span class="sd">    gain threshold used only by :func:`formal_flags_with_gain`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">delta1</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">delta2</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">min_prior_steps</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">delta3</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="formal_prior_ok">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.formal_prior_ok">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">formal_prior_ok</span><span class="p">(</span>
+    <span class="n">freq</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">rate</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">thresholds</span><span class="p">:</span> <span class="n">FormalThresholds</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shared check for Formal Aha marking:</span>
+<span class="sd">      - require at least ``min_prior_steps`` previous steps; and</span>
+<span class="sd">      - prior failure: max(freq[:index]) &lt; delta1; and</span>
+<span class="sd">      - prior stability: max(rate[:index]) &lt; delta2.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">thresholds</span><span class="o">.</span><span class="n">min_prior_steps</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">prior_fail</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">freq</span><span class="p">[:</span><span class="n">index</span><span class="p">]))</span> <span class="o">&lt;</span> <span class="n">thresholds</span><span class="o">.</span><span class="n">delta1</span>
+    <span class="n">prior_stable</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rate</span><span class="p">[:</span><span class="n">index</span><span class="p">]))</span> <span class="o">&lt;</span> <span class="n">thresholds</span><span class="o">.</span><span class="n">delta2</span>
+    <span class="k">return</span> <span class="n">prior_fail</span> <span class="ow">and</span> <span class="n">prior_stable</span></div>
+
+
+
+<div class="viewcode-block" id="formal_flags_from_series">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.formal_flags_from_series">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">formal_flags_from_series</span><span class="p">(</span>
+    <span class="n">freq</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">rate</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">shift</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">thresholds</span><span class="p">:</span> <span class="n">FormalThresholds</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute Formal Aha flags for a single (problem, step) series.</span>
+
+<span class="sd">    Returns an ``int`` array of the same length as ``freq`` / ``rate`` /</span>
+<span class="sd">    ``shift`` with 1 where the Formal criteria are satisfied and 0 otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_steps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_steps</span><span class="p">):</span>
+        <span class="n">prior_ok</span> <span class="o">=</span> <span class="n">formal_prior_ok</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+        <span class="n">flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">prior_ok</span> <span class="ow">and</span> <span class="p">(</span><span class="n">shift</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">flags</span></div>
+
+
+
+<div class="viewcode-block" id="formal_flags_with_gain">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.formal_flags_with_gain">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">formal_flags_with_gain</span><span class="p">(</span>
+    <span class="n">freq</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">rate</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">shift</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">p_plus</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">thresholds</span><span class="p">:</span> <span class="n">FormalThresholds</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Formal flags that additionally enforce a minimum gain over prior accuracy.</span>
+
+<span class="sd">    When ``delta3`` is None, this reduces to the standard Formal Aha criteria;</span>
+<span class="sd">    otherwise it also requires ``p_correct_given_shift - freq_correct &gt; delta3``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_steps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_steps</span><span class="p">):</span>
+        <span class="n">prior_ok</span> <span class="o">=</span> <span class="n">formal_prior_ok</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">prior_ok</span> <span class="ow">and</span> <span class="p">(</span><span class="n">shift</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)):</span>
+            <span class="n">flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">elif</span> <span class="n">thresholds</span><span class="o">.</span><span class="n">delta3</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">p_plus</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="ow">and</span> <span class="p">((</span><span class="n">p_plus</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">-</span> <span class="n">freq</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">thresholds</span><span class="o">.</span><span class="n">delta3</span><span class="p">),</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">flags</span></div>
+
+
+
+<div class="viewcode-block" id="apply_formal_marking">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.apply_formal_marking">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_formal_marking</span><span class="p">(</span>
+    <span class="n">problem_step_df</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">delta1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">delta2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_prior_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">mark_formal_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience wrapper to apply Formal Aha thresholds with a module-specific</span>
+<span class="sd">    ``mark_formal`` implementation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">mark_formal_fn</span><span class="p">(</span>
+        <span class="n">problem_step_df</span><span class="p">,</span>
+        <span class="n">delta1</span><span class="o">=</span><span class="n">delta1</span><span class="p">,</span>
+        <span class="n">delta2</span><span class="o">=</span><span class="n">delta2</span><span class="p">,</span>
+        <span class="n">min_prior_steps</span><span class="o">=</span><span class="n">min_prior_steps</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="gpt_keys_for_mode">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.gpt_keys_for_mode">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gpt_keys_for_mode</span><span class="p">(</span><span class="n">gpt_mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Standard GPT shift label keys for a given mode.</span>
+
+<span class="sd">    ``gpt_mode`` should be ``&quot;canonical&quot;`` or ``&quot;broad&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;change_way_of_thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;shift_in_reasoning_v1&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">gpt_mode</span> <span class="o">==</span> <span class="s2">&quot;canonical&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">base</span>
+    <span class="k">return</span> <span class="n">base</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;shift_llm&quot;</span><span class="p">,</span> <span class="s2">&quot;shift_gpt&quot;</span><span class="p">,</span> <span class="s2">&quot;pivot_llm&quot;</span><span class="p">,</span> <span class="s2">&quot;rechecked&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_aha_gpt_flag">
+<a class="viewcode-back" href="../../../api/src.analysis.core.html#src.analysis.h2_analysis_loader.get_aha_gpt_flag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_aha_gpt_flag</span><span class="p">(</span>
+    <span class="n">pass1_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the first truthy GPT/LLM shift flag available on ``pass1`` or root.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pass1_dict</span> <span class="o">=</span> <span class="n">pass1_dict</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">record</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">,</span> <span class="s2">&quot;shift_in_reasoning_v1&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">,</span> <span class="s2">&quot;shift_llm&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">,</span> <span class="s2">&quot;shift_gpt&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">,</span> <span class="s2">&quot;pivot_llm&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">,</span> <span class="s2">&quot;rechecked&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="s2">&quot;rechecked&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;pass1&quot;</span><span class="p">,</span> <span class="s2">&quot;change_way_of_thinking&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="s2">&quot;change_way_of_thinking&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">location</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">location</span> <span class="o">==</span> <span class="s2">&quot;pass1&quot;</span><span class="p">:</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">pass1_dict</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">record</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">coerce_bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parsed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="build_roots_by_temp_from_templates">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.build_roots_by_temp_from_templates">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_roots_by_temp_from_templates</span><span class="p">(</span>
+    <span class="n">temps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">template_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper used by temp_graph / temperature_effects to turn a list of</span>
+<span class="sd">    temperatures + directory templates into a mapping:</span>
+
+<span class="sd">      { T_float: {domain_name -&gt; existing_path, ...}, ... }</span>
+
+<span class="sd">    Only keeps entries where the formatted path exists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">crossword_tpl</span> <span class="o">=</span> <span class="n">template_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;crossword_tpl&quot;</span><span class="p">)</span>
+    <span class="n">math_tpl</span> <span class="o">=</span> <span class="n">template_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;math_tpl&quot;</span><span class="p">)</span>
+    <span class="n">math2_tpl</span> <span class="o">=</span> <span class="n">template_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;math2_tpl&quot;</span><span class="p">)</span>
+    <span class="n">math3_tpl</span> <span class="o">=</span> <span class="n">template_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;math3_tpl&quot;</span><span class="p">)</span>
+    <span class="n">carpark_tpl</span> <span class="o">=</span> <span class="n">template_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;carpark_tpl&quot;</span><span class="p">)</span>
+
+    <span class="n">roots_by_temp</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">temp_value</span> <span class="ow">in</span> <span class="n">temps</span><span class="p">:</span>
+        <span class="n">domain_paths</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">crossword_tpl</span><span class="p">:</span>
+            <span class="n">crossword_path</span> <span class="o">=</span> <span class="n">crossword_tpl</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">temp_value</span><span class="p">)</span>
+            <span class="n">domain_paths</span><span class="p">[</span><span class="s2">&quot;Crossword&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crossword_path</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">crossword_path</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">math_tpl</span><span class="p">:</span>
+            <span class="n">math_path</span> <span class="o">=</span> <span class="n">math_tpl</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">temp_value</span><span class="p">)</span>
+            <span class="n">domain_paths</span><span class="p">[</span><span class="s2">&quot;Math&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math_path</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">math_path</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">math2_tpl</span><span class="p">:</span>
+            <span class="n">math2_path</span> <span class="o">=</span> <span class="n">math2_tpl</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">temp_value</span><span class="p">)</span>
+            <span class="n">domain_paths</span><span class="p">[</span><span class="s2">&quot;Math2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math2_path</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">math2_path</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">math3_tpl</span><span class="p">:</span>
+            <span class="n">math3_path</span> <span class="o">=</span> <span class="n">math3_tpl</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">temp_value</span><span class="p">)</span>
+            <span class="n">domain_paths</span><span class="p">[</span><span class="s2">&quot;Math3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">math3_path</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">math3_path</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">carpark_tpl</span><span class="p">:</span>
+            <span class="n">carpark_path</span> <span class="o">=</span> <span class="n">carpark_tpl</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">temp_value</span><span class="p">)</span>
+            <span class="n">domain_paths</span><span class="p">[</span><span class="s2">&quot;Carpark&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">carpark_path</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">carpark_path</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">roots_by_temp</span><span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">temp_value</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">domain_name</span><span class="p">:</span> <span class="n">domain_path</span> <span class="k">for</span> <span class="n">domain_name</span><span class="p">,</span> <span class="n">domain_path</span> <span class="ow">in</span> <span class="n">domain_paths</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">domain_path</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">roots_by_temp</span></div>
+
+
+
+<div class="viewcode-block" id="add_results_root_and_split_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_results_root_and_split_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_results_root_and_split_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add the common ``results_root`` positional and optional ``--split`` flag.</span>
+
+<span class="sd">    Used by several RQ entrypoints to keep CLI surfaces consistent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;results_root&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Root directory containing step*/.../*.jsonl (e.g., artifacts/results/GRPO-1.5B-math-temp-0.05-3).&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--split&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Optional substring filter on filenames (e.g., &#39;test&#39;).&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_optional_results_root_and_split_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_optional_results_root_and_split_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_optional_results_root_and_split_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add an optional ``results_root`` positional and ``--split`` flag.</span>
+
+<span class="sd">    This matches the looser CLI used by some plotting scripts where</span>
+<span class="sd">    ``results_root`` can be omitted in favor of explicit per-domain roots.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;results_root&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--split&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Optional substring filter on filenames (e.g., &#39;test&#39;).&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_results_root_split_and_output_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_results_root_split_and_output_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_results_root_split_and_output_args</span><span class="p">(</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dataset_default</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">model_default</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">results_root_optional</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a ``results_root`` positional (required or optional), ``--split``,</span>
+<span class="sd">    and basic output metadata flags used by multiple RQ-style scripts.</span>
+
+<span class="sd">    This combines :func:`add_results_root_and_split_args` /</span>
+<span class="sd">    :func:`add_optional_results_root_and_split_args` with shared</span>
+<span class="sd">    ``--out_dir``, ``--dataset_name`` and ``--model_name`` arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">results_root_optional</span><span class="p">:</span>
+        <span class="n">add_optional_results_root_and_split_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">add_results_root_and_split_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--out_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--dataset_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">dataset_default</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">model_default</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_split_and_out_dir_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_split_and_out_dir_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_split_and_out_dir_args</span><span class="p">(</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span>
+    <span class="n">out_dir_help</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared ``--split`` and ``--out_dir`` arguments used by RQ-style drivers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--split&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Optional substring filter on filenames (e.g., &#39;test&#39;).&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--out_dir&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="n">out_dir_help</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_standard_domain_root_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_standard_domain_root_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_standard_domain_root_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared ``--root_*`` domain root arguments plus an optional</span>
+<span class="sd">    ``results_root`` fallback used by several histogram/conditional scripts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--root_crossword&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--root_math&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--root_math2&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Optional second Math model folder.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--root_carpark&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;results_root&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Fallback single root if domain-specific roots are not provided.&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_mixed_results_root_and_domain_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_mixed_results_root_and_domain_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_mixed_results_root_and_domain_args</span><span class="p">(</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dataset_default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;MIXED&quot;</span><span class="p">,</span>
+    <span class="n">model_default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Qwen2.5-1.5B&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared domain root arguments plus optional ``results_root``, ``--split``,</span>
+<span class="sd">    and basic output metadata for mixed-domain plots.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">add_standard_domain_root_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--split&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Optional substring filter on filenames (e.g., &#39;test&#39;).&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--out_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--dataset_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">dataset_default</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">model_default</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build_mixed_root_arg_parser">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.build_mixed_root_arg_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_mixed_root_arg_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a base ArgumentParser with mixed-domain root and output args.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">add_mixed_results_root_and_domain_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="add_gpt_mode_arg">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_gpt_mode_arg">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_gpt_mode_arg</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add the shared ``--gpt_mode`` argument used across analysis scripts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--gpt_mode&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;canonical&quot;</span><span class="p">,</span> <span class="s2">&quot;broad&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;canonical&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_split_arg">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_split_arg">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_split_arg</span><span class="p">(</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">default</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span>
+    <span class="n">help_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Dataset split substring to filter filenames (e.g., &#39;test&#39;).&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add a ``--split`` argument with a configurable default and help text.</span>
+
+<span class="sd">    Most ad-hoc analysis scripts need the same ``--split`` flag; centralizing</span>
+<span class="sd">    it avoids repeating the literal ``add_argument`` block everywhere.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--split&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">help_text</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_split_and_gpt_mode_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_split_and_gpt_mode_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_split_and_gpt_mode_args</span><span class="p">(</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">split_default</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience helper that adds both ``--split`` and ``--gpt_mode`` arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">add_split_arg</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">split_default</span><span class="p">)</span>
+    <span class="n">add_gpt_mode_arg</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_carpark_threshold_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_carpark_threshold_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_carpark_threshold_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared Carpark soft-reward threshold arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--carpark_success_op&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;gt&quot;</span><span class="p">,</span> <span class="s2">&quot;ge&quot;</span><span class="p">,</span> <span class="s2">&quot;eq&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;gt&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--carpark_soft_threshold&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_gpt_step_and_carpark_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_gpt_step_and_carpark_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_gpt_step_and_carpark_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared GPT / step-range / Carpark threshold arguments used by</span>
+<span class="sd">    multiple plotting scripts (graph_1, temp_graph).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">add_gpt_mode_arg</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--no_gpt_subset_native&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_step&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--max_step&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">add_carpark_threshold_args</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_gpt_label_policy_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_gpt_label_policy_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_gpt_label_policy_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared GPT label policy arguments used by H1/H3-style analyses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">add_gpt_mode_arg</span><span class="p">(</span><span class="n">parser</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--no_gate_gpt_by_words&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;If set, GPT shifts are NOT restricted to samples that also have Words-cue.&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_run_rq2_flag">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_run_rq2_flag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_run_rq2_flag</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span> <span class="n">help_suffix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add the shared ``--run_rq2`` flag used by figure-style scripts that can</span>
+<span class="sd">    optionally invoke the RQ2 analysis first.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--run_rq2&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Also run the RQ2 training-stage analysis (src.analysis.rq2_analysis) &quot;</span> <span class="o">+</span> <span class="n">help_suffix</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_formal_threshold_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_formal_threshold_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_formal_threshold_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared formal-aha threshold arguments (δ1, δ2, min_prior_steps).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--delta1&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.13</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--delta2&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.13</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_prior_steps&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_uncertainty_field_arg">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_uncertainty_field_arg">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_uncertainty_field_arg</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add the shared ``--unc_field`` argument used by uncertainty plots.</span>
+
+<span class="sd">    The field controls which entropy-style quantity to treat as the primary</span>
+<span class="sd">    uncertainty measure: answer, overall, or think.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--unc_field&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;overall&quot;</span><span class="p">,</span> <span class="s2">&quot;think&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_common_plot_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_common_plot_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_common_plot_args</span><span class="p">(</span><span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared output/figure arguments used by multiple analysis scripts.</span>
+
+<span class="sd">    These are:</span>
+<span class="sd">      --out_dir, --dataset_name, --model_name, --dpi, --make_plot</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--out_dir&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--dataset_name&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;MIXED&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model_name&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;MODEL&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--dpi&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--make_plot&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_temp_scan_args">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.add_temp_scan_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_temp_scan_args</span><span class="p">(</span>
+    <span class="n">parser</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">,</span>
+    <span class="n">include_math3</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add shared temperature / template CLI arguments used by temp_graph and</span>
+<span class="sd">    temperature_effects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--temps&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--scan_root&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Template inputs (optional)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--crossword_tpl&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--math_tpl&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--math2_tpl&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_math3</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--math3_tpl&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--carpark_tpl&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build_results_root_argv">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.build_results_root_argv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_results_root_argv</span><span class="p">(</span><span class="n">results_root</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">split</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper to build a standard [results_root, --split ...] argv list for</span>
+<span class="sd">    delegating into H1/H3-style scripts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">results_root</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">split</span><span class="p">:</span>
+        <span class="n">argv</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;--split&quot;</span><span class="p">,</span> <span class="n">split</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">argv</span></div>
+
+
+
+<div class="viewcode-block" id="run_module_main_with_argv">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.run_module_main_with_argv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_module_main_with_argv</span><span class="p">(</span><span class="n">module_main</span><span class="p">,</span> <span class="n">argv</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">prog</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Invoke a module-style ``main`` with a synthetic ``sys.argv``, preserving</span>
+<span class="sd">    the caller&#39;s arguments.</span>
+
+<span class="sd">    Shared by RQ-style orchestration modules so they do not need to reimplement</span>
+<span class="sd">    the same wrapper.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">old_argv</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">argv</span> <span class="o">=</span> <span class="p">[</span><span class="n">prog</span><span class="p">]</span> <span class="o">+</span> <span class="n">argv</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">module_main</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">argv</span> <span class="o">=</span> <span class="n">old_argv</span></div>
+
+
+
+<div class="viewcode-block" id="load_legacy_main_from_path">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.load_legacy_main_from_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_legacy_main_from_path</span><span class="p">(</span>
+    <span class="n">script_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">import_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shared helper for legacy wrappers (figure-*, math_plots, h4_analysis).</span>
+
+<span class="sd">    Loads a legacy script by path and returns its ``main`` callable, raising</span>
+<span class="sd">    ``SystemExit`` with a clear message if the script cannot be imported or</span>
+<span class="sd">    does not define ``main``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">script_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Legacy script not found: </span><span class="si">{</span><span class="n">script_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span><span class="n">import_name</span><span class="p">,</span> <span class="n">script_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not load spec for </span><span class="si">{</span><span class="n">script_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">spec</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">exec_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>  <span class="c1"># type: ignore[call-arg]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">script_path</span><span class="si">}</span><span class="s2"> does not define a main() function.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_passes_argument">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.parse_passes_argument">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_passes_argument</span><span class="p">(</span><span class="n">passes_arg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a comma-separated ``--passes`` argument into a non-empty list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">passes</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="p">(</span><span class="n">passes_arg</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">passes</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;Must specify at least one pass key via --passes.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">passes</span></div>
+
+
+
+<div class="viewcode-block" id="get_problem_id">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.get_problem_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_problem_id</span><span class="p">(</span><span class="n">rec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Heuristic problem identifier that works across math/xword/carpark.</span>
+
+<span class="sd">    Prefers explicit problem-like keys; falls back to sample index when</span>
+<span class="sd">    available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;problem_id&quot;</span><span class="p">,</span> <span class="s2">&quot;example_id&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;question&quot;</span><span class="p">,</span> <span class="s2">&quot;problem&quot;</span><span class="p">,</span> <span class="s2">&quot;clue&quot;</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;uid&quot;</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">sample_index</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sample_idx&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">sample_index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;sample_</span><span class="si">{</span><span class="n">sample_index</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="problem_key_from_record">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.problem_key_from_record">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">problem_key_from_record</span><span class="p">(</span><span class="n">rec</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">missing_default</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Robust problem key for math-style logs, matching the conventions used in</span>
+<span class="sd">    H1/H3 analyses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">problem_key</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;problem&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;clue&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;row_key&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">problem_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset_index</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_index&quot;</span><span class="p">)</span>
+        <span class="n">problem_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;idx:</span><span class="si">{</span><span class="n">dataset_index</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">dataset_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">missing_default</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">problem_key</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="step_within_bounds">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.step_within_bounds">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">step_within_bounds</span><span class="p">(</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">min_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">max_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return True if ``step`` lies within the optional [min_step, max_step] bounds.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">min_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="n">min_step</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">max_step</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="n">max_step</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="record_matches_split">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.record_matches_split">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">record_matches_split</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">split_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return True if a record is compatible with a requested ``split`` value.</span>
+
+<span class="sd">    When ``split_value`` is truthy, records that carry a non-empty ``split``</span>
+<span class="sd">    field must match it exactly; records without a split label are kept.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">split_value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">rec_split</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;split&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_split</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">rec_split</span><span class="p">)</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">split_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="step_from_record_if_within_bounds">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.step_from_record_if_within_bounds">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">step_from_record_if_within_bounds</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">split_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">min_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">max_step</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Combined split / step helper used by entropy-style scripts.</span>
+
+<span class="sd">    Returns an integer step inferred via :func:`step_from_rec_or_path`</span>
+<span class="sd">    when the record passes an optional ``split`` filter and lies within</span>
+<span class="sd">    the ``[min_step, max_step]`` bounds; otherwise returns ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">record_matches_split</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">split_value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="n">step_from_rec_or_path</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">step_within_bounds</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">min_step</span><span class="p">,</span> <span class="n">max_step</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">step</span></div>
+
+
+
+<div class="viewcode-block" id="first_nonempty_str">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.first_nonempty_str">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">first_nonempty_str</span><span class="p">(</span><span class="o">*</span><span class="n">xs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the first non-empty string among the arguments, or None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">xs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">stripped</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">stripped</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">stripped</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="canon_equal">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h2_analysis_loader.canon_equal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">canon_equal</span><span class="p">(</span><span class="n">pred_canon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">gold</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compare a canonical predicted answer to gold.</span>
+
+<span class="sd">    - If gold is a string, require exact match after stripping.</span>
+<span class="sd">    - If gold is a list/tuple/set of strings, treat it as a set.</span>
+<span class="sd">    - Otherwise, return None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pred_canon</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">gold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+        <span class="n">gold_set</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">gold</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="nb">str</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">pred_canon</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">in</span> <span class="n">gold_set</span><span class="p">)</span> <span class="k">if</span> <span class="n">gold_set</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">pred_canon</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="n">gold</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

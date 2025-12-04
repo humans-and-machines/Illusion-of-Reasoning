@@ -1,0 +1,1111 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.training.rush_rewards - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.training.rush_rewards</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">rush_rewards.py — Dense Rush Hour reward helpers for GRPO training.</span>
+
+<span class="sd">This module was factored out of rewards_core to keep that module within</span>
+<span class="sd">Pylint&#39;s size limits while preserving the public Rush rewards API:</span>
+
+<span class="sd">    - rush_solution_shaped</span>
+<span class="sd">    - rush_solution_exact</span>
+
+<span class="sd">The implementation mirrors the original rush section from rewards_core.py.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_RushRewardInputs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bundle Rush reward inputs to keep function signatures small.&quot;&quot;&quot;</span>
+
+    <span class="n">answer</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">gold</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">board_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">board_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">gold_moves</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_kwargs</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">overrides</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">base</span><span class="p">:</span> <span class="s2">&quot;_RushRewardInputs | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;_RushRewardInputs&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge overrides with an optional base inputs object.&quot;&quot;&quot;</span>
+        <span class="n">base_inputs</span> <span class="o">=</span> <span class="n">base</span> <span class="ow">or</span> <span class="bp">cls</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">answer</span><span class="o">=</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="n">base_inputs</span><span class="o">.</span><span class="n">answer</span><span class="p">),</span>
+            <span class="n">gold</span><span class="o">=</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">,</span> <span class="n">base_inputs</span><span class="o">.</span><span class="n">gold</span><span class="p">),</span>
+            <span class="n">board_str</span><span class="o">=</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;board_str&quot;</span><span class="p">,</span> <span class="n">base_inputs</span><span class="o">.</span><span class="n">board_str</span><span class="p">),</span>
+            <span class="n">board_size</span><span class="o">=</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;board_size&quot;</span><span class="p">,</span> <span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="n">base_inputs</span><span class="o">.</span><span class="n">board_size</span><span class="p">)),</span>
+            <span class="n">gold_moves</span><span class="o">=</span><span class="n">overrides</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gold_moves&quot;</span><span class="p">,</span> <span class="n">base_inputs</span><span class="o">.</span><span class="n">gold_moves</span><span class="p">),</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># ---------- Token utilities ----------</span>
+
+<span class="c1"># Directions allowed; accept uppercase &quot;V&quot; too.</span>
+<span class="n">_TOKEN_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[A-Z][&lt;&gt;^vV]\d+$&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_and_normalize_token</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse a single token (e.g., &quot;Bv3&quot;, &quot;A&gt;2&quot;, &quot;C^1&quot;) and normalize to:</span>
+<span class="sd">      (piece_upper, dir_norm, steps_int)</span>
+<span class="sd">    where dir_norm ∈ {&quot;&lt;&quot;, &quot;&gt;&quot;, &quot;^&quot;, &quot;v&quot;}.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_TOKEN_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">piece</span> <span class="o">=</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="n">direction_raw</span> <span class="o">=</span> <span class="n">token</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">direction</span> <span class="o">=</span> <span class="s2">&quot;v&quot;</span> <span class="k">if</span> <span class="n">direction_raw</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;v&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">direction_raw</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">token</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">steps</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_looks_like_token_list</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return True if text can be parsed as a comma-separated list of tokens.&quot;&quot;&quot;</span>
+    <span class="n">normalized</span> <span class="o">=</span> <span class="p">(</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">normalized</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">normalized</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">raw_token</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+        <span class="n">token_tuple</span> <span class="o">=</span> <span class="n">_parse_and_normalize_token</span><span class="p">(</span><span class="n">raw_token</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token_tuple</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_canon_seq</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Canonicalize a move sequence (string like &quot;Bv1,A&gt;1&quot; or list of tokens)</span>
+<span class="sd">    into a list of normalized tokens [&quot;Bv1&quot;, &quot;A&gt;1&quot;], merging consecutive</span>
+<span class="sd">    duplicates of the same (piece, dir) by summing steps.</span>
+
+<span class="sd">    Returns None if invalid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">seq_str</span> <span class="o">=</span> <span class="n">seq</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">seq_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">seq_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">raw_token</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">:</span>
+        <span class="n">token_tuple</span> <span class="o">=</span> <span class="n">_parse_and_normalize_token</span><span class="p">(</span><span class="n">raw_token</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token_tuple</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token_tuple</span><span class="p">)</span>
+
+    <span class="c1"># Merge consecutive same (piece, dir).</span>
+    <span class="n">merged</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">merged</span> <span class="ow">and</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">piece</span> <span class="ow">and</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">direction</span><span class="p">:</span>
+            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">piece</span><span class="si">}{</span><span class="n">direction</span><span class="si">}{</span><span class="n">steps</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="p">(</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span> <span class="ow">in</span> <span class="n">merged</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_answer_block</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prefer &lt;answer&gt;...&lt;/answer&gt;; otherwise find the first token list.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&lt;answer&gt;\s*(.*?)\s*&lt;/answer&gt;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">S</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="n">candidate</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">_looks_like_token_list</span><span class="p">(</span><span class="n">candidate</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">candidate</span>
+    <span class="c1"># Fallback: tolerant regex for tokens.</span>
+    <span class="n">match_tokens</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;([A-Za-z][&lt;&gt;^vV]\d+(?:\s*,\s*[A-Za-z][&lt;&gt;^vV]\d+)*)&quot;</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">match_tokens</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match_tokens</span> <span class="k">else</span> <span class="kc">None</span>
+
+
+<span class="c1"># Accept commas, whitespace, newlines, or semicolons between tokens.</span>
+<span class="n">_TOKEN_SCAN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;([A-Za-z])\s*([&gt;&lt;\^vVUDLR])\s*([0-9]+)&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_canon_seq_from_text</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract tokens anywhere in the prediction (favoring &lt;answer&gt;...&lt;/answer&gt; if present).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="n">raw_text</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raw_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Prefer the &lt;answer&gt; block if present.</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?is)&lt;answer&gt;\s*(.*?)\s*&lt;/answer&gt;&quot;</span><span class="p">,</span> <span class="n">raw_text</span><span class="p">)</span>
+    <span class="n">scan_text</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="n">raw_text</span>
+
+    <span class="n">moves</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">match_obj</span> <span class="ow">in</span> <span class="n">_TOKEN_SCAN</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">scan_text</span><span class="p">):</span>
+        <span class="n">piece</span> <span class="o">=</span> <span class="n">match_obj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">direction_raw</span> <span class="o">=</span> <span class="n">match_obj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># Map symbols as-is; map letters case-insensitively to canonical symbols.</span>
+        <span class="k">if</span> <span class="n">direction_raw</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;&lt;&quot;</span><span class="p">,</span> <span class="s2">&quot;&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;^&quot;</span><span class="p">,</span> <span class="s2">&quot;v&quot;</span><span class="p">):</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">direction_raw</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;U&quot;</span><span class="p">:</span> <span class="s2">&quot;^&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;v&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="s2">&quot;&gt;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;V&quot;</span><span class="p">:</span> <span class="s2">&quot;v&quot;</span><span class="p">,</span>
+            <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">direction_raw</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">direction_raw</span><span class="p">)</span>
+
+        <span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match_obj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">steps</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">moves</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">moves</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Merge consecutive same (piece, dir).</span>
+    <span class="n">merged_moves</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span> <span class="ow">in</span> <span class="n">moves</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">merged_moves</span> <span class="ow">and</span> <span class="n">merged_moves</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">piece</span> <span class="ow">and</span> <span class="n">merged_moves</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">direction</span><span class="p">:</span>
+            <span class="n">merged_moves</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">piece</span><span class="p">,</span>
+                <span class="n">direction</span><span class="p">,</span>
+                <span class="n">merged_moves</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">steps</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">merged_moves</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">piece</span><span class="si">}{</span><span class="n">direction</span><span class="si">}{</span><span class="n">steps</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="p">(</span><span class="n">piece</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span> <span class="ow">in</span> <span class="n">merged_moves</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_len_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mi">0</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">tokens</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+
+
+<span class="c1"># ---------- Prompt extraction ----------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_stringify_prompt</span><span class="p">(</span><span class="n">prompts</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Robustly produce a single string from common prompt representations:</span>
+<span class="sd">    - str</span>
+<span class="sd">    - list[str]</span>
+<span class="sd">    - list[dict] with &quot;content&quot; fields</span>
+<span class="sd">    - dict with &quot;prompt&quot; / &quot;content&quot; fields</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">prompts</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">prompts</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompts</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">prompts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="n">chunks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="c1"># OpenAI-style chat message: {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;...&quot;}.</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="c1"># Some SDKs split content into parts.</span>
+                    <span class="n">chunks</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">val</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_puzzle_from_prompt</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract (board_string, size, gold_moves) from a natural-language prompt.&quot;&quot;&quot;</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">match_size</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;Board\s*size\s*:\s*(\d+)\s*[xX×]\s*(\d+)&quot;</span><span class="p">,</span> <span class="n">prompt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match_size</span><span class="p">:</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match_size</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match_size</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="o">==</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">rows</span>
+
+    <span class="c1"># Accept board on next line; allow whitespace inside, then strip it.</span>
+    <span class="n">match_board</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?is)Board\s*:\s*([A-Za-zx\s]+)&quot;</span><span class="p">,</span> <span class="n">prompt</span><span class="p">)</span>
+    <span class="n">board</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">match_board</span><span class="p">:</span>
+        <span class="n">board_raw</span> <span class="o">=</span> <span class="n">match_board</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">board</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">board_raw</span><span class="p">)</span>
+
+    <span class="c1"># If we know N and captured more than needed, crop to N*N.</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">board</span><span class="p">:</span>
+        <span class="n">need</span> <span class="o">=</span> <span class="n">size</span> <span class="o">*</span> <span class="n">size</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">board</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">need</span><span class="p">:</span>
+            <span class="n">board</span> <span class="o">=</span> <span class="n">board</span><span class="p">[:</span><span class="n">need</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Try to find a contiguous run of length N*N anywhere (fallback).</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rf</span><span class="s2">&quot;\b([A-Za-zx]</span><span class="se">{{</span><span class="si">{</span><span class="n">need</span><span class="si">}</span><span class="se">}}</span><span class="s2">)\b&quot;</span><span class="p">)</span>
+            <span class="n">match_contig</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match_contig</span><span class="p">:</span>
+                <span class="n">board</span> <span class="o">=</span> <span class="n">match_contig</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># If N unknown but board exists, infer from perfect square length.</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">board</span><span class="p">:</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">board</span><span class="p">))))</span>
+        <span class="k">if</span> <span class="n">root</span> <span class="o">*</span> <span class="n">root</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">board</span><span class="p">):</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">root</span>
+
+    <span class="n">match_moves</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+        <span class="sa">r</span><span class="s2">&quot;(?:Minimal|Optimal)\s+(?:length\s*\(moves\)|moves?)\s*:\s*(\d+)&quot;</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">,</span>
+        <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">gold_moves</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match_moves</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">match_moves</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">board</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">gold_moves</span>
+
+
+<span class="c1"># ---------- Board &amp; simulation ----------</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Board</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Rush Hour board:</span>
+<span class="sd">      - grid: NxN row-major string</span>
+<span class="sd">          &quot;o&quot; = empty, &quot;x&quot; = wall, &quot;A&quot;..&quot;Z&quot; = cars (length 2 or 3 typically)</span>
+<span class="sd">      - &quot;A&quot; is the target car (assumed horizontal); goal is A&#39;s rightmost cell at col N-1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise a board from a flat ``grid_str`` and side length.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="p">(</span><span class="n">grid_str</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span> <span class="o">!=</span> <span class="n">size</span> <span class="o">*</span> <span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Board string length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="si">}</span><span class="s2"> != N*N (</span><span class="si">{</span><span class="n">size</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">size</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="n">row</span> <span class="o">*</span> <span class="n">size</span> <span class="p">:</span> <span class="p">(</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">size</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_cars</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orient</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orientations</span><span class="p">()</span>  <span class="c1"># &quot;H&quot; or &quot;V&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Board&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a deep copy of this board.&quot;&quot;&quot;</span>
+        <span class="n">clone_board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">(</span><span class="s2">&quot;o&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">clone_board</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[:]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">]</span>
+        <span class="n">clone_board</span><span class="o">.</span><span class="n">cars</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span><span class="p">[:]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">clone_board</span><span class="o">.</span><span class="n">orient</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orient</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clone_board</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_index_cars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]:</span>
+        <span class="n">cars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">col_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                <span class="n">char</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">row_idx</span><span class="p">][</span><span class="n">col_idx</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">char</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">):</span>
+                    <span class="n">cars</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">row_idx</span><span class="p">,</span> <span class="n">col_idx</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">positions</span> <span class="ow">in</span> <span class="n">cars</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">positions</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cars</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_orientations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="n">orient</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">car</span><span class="p">,</span> <span class="n">cells</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">orient</span><span class="p">[</span><span class="n">car</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;H&quot;</span>  <span class="c1"># default for single-cells</span>
+                <span class="k">continue</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">}</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">}</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">orient</span><span class="p">[</span><span class="n">car</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;H&quot;</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">orient</span><span class="p">[</span><span class="n">car</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;V&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Malformed; pick H to avoid crashing.</span>
+                <span class="n">orient</span><span class="p">[</span><span class="n">car</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;H&quot;</span>
+        <span class="k">return</span> <span class="n">orient</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_solved</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return True if car &#39;A&#39; has reached the right edge.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;A&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">max_col</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">max_col</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">a_row_and_rightmost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return (row_index, rightmost_col) for car &#39;A&#39;, or (-1, -1).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;A&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rightmost</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="n">rightmost</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">blockers_and_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Heuristic components:</span>
+<span class="sd">          - blockers: count of cars/walls in A&#39;s row strictly to A&#39;s right</span>
+<span class="sd">          - distance: (N - 1 - rightmost_A)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">row</span><span class="p">,</span> <span class="n">rightmost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_row_and_rightmost</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">rightmost</span>
+        <span class="n">blockers</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rightmost</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="n">char</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">col</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+                <span class="n">blockers</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">char</span> <span class="o">!=</span> <span class="s2">&quot;o&quot;</span><span class="p">:</span>
+                <span class="n">blockers</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">blockers</span><span class="p">,</span> <span class="n">distance</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cells_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">car</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">car</span><span class="p">,</span> <span class="p">[])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cells</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;o&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_occupy_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">car</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cells</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">car</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cars</span><span class="p">[</span><span class="n">car</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_step_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">car</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Attempt to move ``car`` one cell in ``direction``.</span>
+
+<span class="sd">        Returns True if the move is legal and applied, otherwise False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cells_for</span><span class="p">(</span><span class="n">car</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cells</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">orientation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orient</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">car</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">direction</span> <span class="ow">in</span> <span class="s2">&quot;&lt;&gt;&quot;</span> <span class="ow">and</span> <span class="n">orientation</span> <span class="o">!=</span> <span class="s2">&quot;H&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">direction</span> <span class="ow">in</span> <span class="s2">&quot;^v&quot;</span> <span class="ow">and</span> <span class="n">orientation</span> <span class="o">!=</span> <span class="s2">&quot;V&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">blocked</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">new_cells</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>
+
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">:</span>
+            <span class="n">leftmost</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">next_col</span> <span class="o">=</span> <span class="n">leftmost</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">blocked</span> <span class="o">=</span> <span class="n">next_col</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">next_col</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;o&quot;</span>
+            <span class="n">new_cells</span> <span class="o">=</span> <span class="p">[(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;&gt;&quot;</span><span class="p">:</span>
+            <span class="n">rightmost</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">next_col</span> <span class="o">=</span> <span class="n">rightmost</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">blocked</span> <span class="o">=</span> <span class="n">next_col</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="n">next_col</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;o&quot;</span>
+            <span class="n">new_cells</span> <span class="o">=</span> <span class="p">[(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">direction</span> <span class="o">==</span> <span class="s2">&quot;^&quot;</span><span class="p">:</span>
+            <span class="n">top</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">row</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">)</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">next_row</span> <span class="o">=</span> <span class="n">top</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">blocked</span> <span class="o">=</span> <span class="n">next_row</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">next_row</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;o&quot;</span>
+            <span class="n">new_cells</span> <span class="o">=</span> <span class="p">[(</span><span class="n">row</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># &quot;v&quot;</span>
+            <span class="n">bottom</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">row</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">)</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">next_row</span> <span class="o">=</span> <span class="n">bottom</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">blocked</span> <span class="o">=</span> <span class="n">next_row</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">next_row</span><span class="p">][</span><span class="n">col</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;o&quot;</span>
+            <span class="n">new_cells</span> <span class="o">=</span> <span class="p">[(</span><span class="n">row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">blocked</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_cells</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_occupy_cells</span><span class="p">(</span><span class="n">car</span><span class="p">,</span> <span class="n">new_cells</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply a compact move token like ``A&gt;2`` to the board.</span>
+
+<span class="sd">        Returns True if all steps are legal and applied, otherwise False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">car</span> <span class="o">=</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="n">token</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">token</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step_move</span><span class="p">(</span><span class="n">car</span><span class="p">,</span> <span class="n">direction</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_simulate_prefix</span><span class="p">(</span><span class="n">board</span><span class="p">:</span> <span class="n">Board</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">Board</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply tokens in order until one fails or goal is reached.</span>
+
+<span class="sd">    Returns (valid_prefix_len, solved, final_board_state).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">board_copy</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+        <span class="n">token_ok</span> <span class="o">=</span> <span class="n">board_copy</span><span class="o">.</span><span class="n">apply_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">token_ok</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">valid</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">board_copy</span>
+        <span class="n">valid</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">board_copy</span><span class="o">.</span><span class="n">is_solved</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">valid</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">board_copy</span>
+    <span class="k">return</span> <span class="n">valid</span><span class="p">,</span> <span class="n">board_copy</span><span class="o">.</span><span class="n">is_solved</span><span class="p">(),</span> <span class="n">board_copy</span>
+
+
+<span class="c1"># ---------- Gold handling ----------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_canon_gold_candidates</span><span class="p">(</span><span class="n">gold</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">if</span> <span class="n">gold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="c1"># Unwrap [&quot;A&gt;2,Bv5&quot;] → &quot;A&gt;2,Bv5&quot;.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">gold</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">gold</span> <span class="o">=</span> <span class="n">gold</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">gold</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">))):</span>
+        <span class="n">seq</span> <span class="o">=</span> <span class="n">_canon_seq</span><span class="p">(</span><span class="n">gold</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">seq</span><span class="p">]</span> <span class="k">if</span> <span class="n">seq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+
+    <span class="n">candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">gold_entry</span> <span class="ow">in</span> <span class="n">gold</span><span class="p">:</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="n">_canon_seq</span><span class="p">(</span><span class="n">gold_entry</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">seq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">candidates</span>
+
+
+<span class="c1"># ---------- Rewards ----------</span>
+
+<span class="c1"># --- Think-length helpers (bonus for longer reasoning) ---</span>
+<span class="n">_THINK_BLOCK</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?is)&lt;think&gt;\s*(.*?)\s*&lt;/think&gt;&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_count_think_tokens</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">_THINK_BLOCK</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="c1"># Whitespace-delimited proxy for token count (keeps it fast &amp; robust).</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\S+&quot;</span><span class="p">,</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rush_formatting_bonus</span><span class="p">(</span>
+    <span class="n">pred_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">think_min_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">think_full_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">think_bonus_cap</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tiny formatting bonus when we spot token patterns and sufficient thinking.&quot;&quot;&quot;</span>
+    <span class="n">fmt_bonus</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">think_bonus</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">num_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">_TOKEN_SCAN</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">pred_text</span><span class="p">)))</span>
+    <span class="k">except</span> <span class="n">re</span><span class="o">.</span><span class="n">error</span><span class="p">:</span>
+        <span class="n">num_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">num_tokens</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">fmt_bonus</span> <span class="o">=</span> <span class="mf">0.01</span>
+
+    <span class="n">num_think_tokens</span> <span class="o">=</span> <span class="n">_count_think_tokens</span><span class="p">(</span><span class="n">pred_text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_think_tokens</span> <span class="o">&gt;</span> <span class="n">think_min_tokens</span><span class="p">:</span>
+        <span class="n">ramp</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_think_tokens</span> <span class="o">-</span> <span class="n">think_min_tokens</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="mi">1</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">think_full_tokens</span> <span class="o">-</span> <span class="n">think_min_tokens</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">think_bonus</span> <span class="o">=</span> <span class="n">think_bonus_cap</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ramp</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">fmt_bonus</span> <span class="o">+</span> <span class="n">think_bonus</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rush_build_board_and_moves</span><span class="p">(</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">board_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Board</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct a Board from explicit params or from the prompt, plus gold moves.&quot;&quot;&quot;</span>
+    <span class="n">board</span><span class="p">:</span> <span class="n">Board</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">gold_moves_from_prompt</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">board_str</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">(</span><span class="n">board_str</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">board</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">board</span><span class="p">,</span> <span class="n">gold_moves_from_prompt</span>
+
+    <span class="n">prompt_text</span> <span class="o">=</span> <span class="n">_stringify_prompt</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span>
+    <span class="n">prompt_board_str</span><span class="p">,</span> <span class="n">prompt_size</span><span class="p">,</span> <span class="n">gold_moves_from_prompt</span> <span class="o">=</span> <span class="n">_extract_puzzle_from_prompt</span><span class="p">(</span>
+        <span class="n">prompt_text</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">prompt_board_str</span> <span class="ow">and</span> <span class="n">prompt_size</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">board</span> <span class="o">=</span> <span class="n">Board</span><span class="p">(</span><span class="n">prompt_board_str</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">prompt_size</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">board</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">board</span><span class="p">,</span> <span class="n">gold_moves_from_prompt</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rush_prefix_credit</span><span class="p">(</span><span class="n">pred_can</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">gold_cands</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fractional credit based on longest common prefix against any gold sequence.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gold_cands</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">pred_can</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="n">best_lcp</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">denom</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">gold_candidate</span> <span class="ow">in</span> <span class="n">gold_cands</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">gold_candidate</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">lcp</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">pred_token</span><span class="p">,</span> <span class="n">gold_token</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pred_can</span><span class="p">,</span> <span class="n">gold_candidate</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">pred_token</span> <span class="o">!=</span> <span class="n">gold_token</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">lcp</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">best_lcp</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">best_lcp</span><span class="p">,</span> <span class="n">lcp</span><span class="p">)</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">denom</span><span class="p">,</span> <span class="n">_len_tokens</span><span class="p">(</span><span class="n">gold_candidate</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">best_lcp</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">denom</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_solve_term_for_target</span><span class="p">(</span><span class="n">sequence_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shaping term that prefers shorter sequences up to a target length.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sequence_len</span> <span class="o">&lt;=</span> <span class="n">target</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">1.0</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">sequence_len</span> <span class="o">-</span> <span class="n">target</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_phi_progress</span><span class="p">(</span><span class="n">board</span><span class="p">:</span> <span class="n">Board</span><span class="p">,</span> <span class="n">final_board</span><span class="p">:</span> <span class="n">Board</span><span class="p">,</span> <span class="n">solved</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Heuristic Φ term based on change in blockers + distance.&quot;&quot;&quot;</span>
+    <span class="n">blockers_start</span><span class="p">,</span> <span class="n">dist_start</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">blockers_and_distance</span><span class="p">()</span>
+    <span class="n">blockers_end</span><span class="p">,</span> <span class="n">dist_end</span> <span class="o">=</span> <span class="n">final_board</span><span class="o">.</span><span class="n">blockers_and_distance</span><span class="p">()</span>
+    <span class="n">heuristic_start</span> <span class="o">=</span> <span class="n">blockers_start</span> <span class="o">+</span> <span class="n">dist_start</span>
+    <span class="n">heuristic_end</span> <span class="o">=</span> <span class="n">blockers_end</span> <span class="o">+</span> <span class="n">dist_end</span>
+    <span class="k">if</span> <span class="n">heuristic_start</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">heuristic_start</span> <span class="o">-</span> <span class="n">heuristic_end</span><span class="p">)</span> <span class="o">/</span> <span class="n">heuristic_start</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">solved</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rush_solve_terms</span><span class="p">(</span>
+    <span class="n">pred_can</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">board</span><span class="p">:</span> <span class="n">Board</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_moves</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute (prefix_fraction, solve_term, phi_term) for a predicted sequence.</span>
+
+<span class="sd">    prefix_fraction is the legal-prefix fraction if a board is available, else 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prefix_fraction</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">solve_term</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">phi_term</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">if</span> <span class="n">board</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">target_moves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sequence_len</span> <span class="o">=</span> <span class="n">_len_tokens</span><span class="p">(</span><span class="n">pred_can</span><span class="p">)</span>
+            <span class="n">solve_term</span> <span class="o">=</span> <span class="n">_solve_term_for_target</span><span class="p">(</span><span class="n">sequence_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">target_moves</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">prefix_fraction</span><span class="p">,</span> <span class="n">solve_term</span><span class="p">,</span> <span class="n">phi_term</span>
+
+    <span class="n">valid_steps</span><span class="p">,</span> <span class="n">solved</span><span class="p">,</span> <span class="n">final_board</span> <span class="o">=</span> <span class="n">_simulate_prefix</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">pred_can</span><span class="p">)</span>
+    <span class="n">prefix_fraction</span> <span class="o">=</span> <span class="n">valid_steps</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">_len_tokens</span><span class="p">(</span><span class="n">pred_can</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">solved</span><span class="p">:</span>
+        <span class="n">sequence_len</span> <span class="o">=</span> <span class="n">_len_tokens</span><span class="p">(</span><span class="n">pred_can</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">target_moves</span> <span class="k">if</span> <span class="n">target_moves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sequence_len</span>
+        <span class="n">solve_term</span> <span class="o">=</span> <span class="n">_solve_term_for_target</span><span class="p">(</span><span class="n">sequence_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
+
+    <span class="n">phi_term</span> <span class="o">=</span> <span class="n">_phi_progress</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">final_board</span><span class="p">,</span> <span class="n">solved</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">prefix_fraction</span><span class="p">,</span> <span class="n">solve_term</span><span class="p">,</span> <span class="n">phi_term</span>
+
+
+<div class="viewcode-block" id="rush_solution_shaped">
+<a class="viewcode-back" href="../../../api/src.training.html#src.training.rewards_core.rush_solution_shaped">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rush_solution_shaped</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prompts</span><span class="p">,</span>
+    <span class="n">completions</span><span class="p">,</span>
+    <span class="n">reward_inputs</span><span class="p">:</span> <span class="n">_RushRewardInputs</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dense, shaped reward in ``[0, 1]`` for Rush Hour that works with or without a board.</span>
+
+<span class="sd">    When a board is provided (``board_str`` + ``N``), legality and Φ-progress are used.</span>
+<span class="sd">    When no board is provided, the reward still gives:</span>
+
+<span class="sd">    - exact match against gold candidate sequences</span>
+<span class="sd">    - prefix / longest-common-prefix credit vs gold</span>
+<span class="sd">    - gold-only &quot;solve optimality&quot;: shorter sequences are better based on ``gold_moves``</span>
+
+<span class="sd">    ``reward_inputs`` can pre-bundle gold/board hints; explicit keyword overrides like</span>
+<span class="sd">    ``gold_moves`` or ``board_str`` still take precedence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">_RushRewardInputs</span><span class="o">.</span><span class="n">from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">reward_inputs</span><span class="p">)</span>
+    <span class="n">ctx</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;exact&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;w_exact&quot;</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">)),</span>
+        <span class="s2">&quot;solve&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;w_solve&quot;</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">)),</span>
+        <span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;w_prefix&quot;</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">)),</span>
+        <span class="s2">&quot;phi&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;w_phi&quot;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)),</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span><span class="n">completions</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">completions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">completions</span><span class="p">)</span>
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;completions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">completions</span>
+
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;gold_cands&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_canon_gold_candidates</span><span class="p">(</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">gold</span> <span class="ow">or</span> <span class="n">inputs</span><span class="o">.</span><span class="n">answer</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answers&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gold_answers&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;board&quot;</span><span class="p">],</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;board_target_moves&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_rush_build_board_and_moves</span><span class="p">(</span>
+        <span class="n">prompts</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">board_str</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="o">.</span><span class="n">board_size</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">inputs</span><span class="o">.</span><span class="n">gold_moves</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;target_moves&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">gold_moves</span>
+    <span class="k">elif</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;board_target_moves&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;target_moves&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;board_target_moves&quot;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;target_moves&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">_len_tokens</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;gold_cands&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">candidate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;think_min_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_min_tokens&quot;</span><span class="p">,</span> <span class="mi">25</span><span class="p">))</span>
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;think_full_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_full_tokens&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;think_bonus_cap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_bonus_cap&quot;</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">))</span>
+
+    <span class="n">out_scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">:</span>
+        <span class="n">pred_can</span> <span class="o">=</span> <span class="n">_canon_seq_from_text</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pred</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+        <span class="c1"># 0) Formatting bonus when we see at least one valid token but parser fails.</span>
+        <span class="k">if</span> <span class="n">pred_can</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">_rush_formatting_bonus</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">pred</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;think_min_tokens&quot;</span><span class="p">],</span>
+                    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;think_full_tokens&quot;</span><span class="p">],</span>
+                    <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;think_bonus_cap&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">solve_terms</span> <span class="o">=</span> <span class="n">_rush_solve_terms</span><span class="p">(</span>
+            <span class="n">pred_can</span><span class="p">,</span>
+            <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;board&quot;</span><span class="p">],</span>
+            <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;target_moves&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="n">out_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span>
+                <span class="nb">max</span><span class="p">(</span>
+                    <span class="mf">0.0</span><span class="p">,</span>
+                    <span class="nb">min</span><span class="p">(</span>
+                        <span class="mf">1.0</span><span class="p">,</span>
+                        <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">][</span><span class="s2">&quot;exact&quot;</span><span class="p">]</span>
+                        <span class="o">*</span> <span class="p">(</span>
+                            <span class="mf">1.0</span>
+                            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">pred_can</span> <span class="o">==</span> <span class="n">candidate</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;gold_cands&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">candidate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+                            <span class="k">else</span> <span class="mf">0.0</span>
+                        <span class="p">)</span>
+                        <span class="o">+</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">][</span><span class="s2">&quot;solve&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">solve_terms</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="o">+</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">][</span><span class="s2">&quot;prefix&quot;</span><span class="p">]</span>
+                        <span class="o">*</span> <span class="nb">max</span><span class="p">(</span>
+                            <span class="n">_rush_prefix_credit</span><span class="p">(</span><span class="n">pred_can</span><span class="p">,</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;gold_cands&quot;</span><span class="p">]),</span>
+                            <span class="n">solve_terms</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="p">)</span>
+                        <span class="o">+</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;weights&quot;</span><span class="p">][</span><span class="s2">&quot;phi&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">solve_terms</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out_scores</span></div>
+
+
+
+<div class="viewcode-block" id="rush_solution_exact">
+<a class="viewcode-back" href="../../../api/src.training.html#src.training.rewards_core.rush_solution_exact">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rush_solution_exact</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prompts</span><span class="p">,</span>
+    <span class="n">completions</span><span class="p">,</span>
+    <span class="n">answer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">gold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Exact-match Rush Hour reward with a small formatting bonus.</span>
+
+<span class="sd">    Returns 1.0 for canonical sequence matches, otherwise 0.0, with a tiny bonus</span>
+<span class="sd">    when the parser fails but the format shows some valid token structure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># prompts accepted for API parity; not used directly in this reward.</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">prompts</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">completions</span> <span class="o">=</span> <span class="p">[</span><span class="n">completions</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">completions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">completions</span><span class="p">)</span>
+
+    <span class="n">gold_cands</span> <span class="o">=</span> <span class="n">_canon_gold_candidates</span><span class="p">(</span>
+        <span class="n">gold</span> <span class="ow">or</span> <span class="n">answer</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answers&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gold_answers&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">think_min_tokens</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_min_tokens&quot;</span><span class="p">,</span> <span class="mi">25</span><span class="p">))</span>
+    <span class="n">think_full_tokens</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_full_tokens&quot;</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="n">think_bonus_cap</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_bonus_cap&quot;</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">))</span>
+
+    <span class="n">scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">completions</span><span class="p">:</span>
+        <span class="n">pred_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">pred</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">pred_can</span> <span class="o">=</span> <span class="n">_canon_seq_from_text</span><span class="p">(</span><span class="n">pred_text</span><span class="p">)</span>
+
+        <span class="c1"># 0) Formatting bonus when we see at least one valid token but parser fails.</span>
+        <span class="k">if</span> <span class="n">pred_can</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">bonus</span> <span class="o">=</span> <span class="n">_rush_formatting_bonus</span><span class="p">(</span>
+                <span class="n">pred_text</span><span class="p">,</span>
+                <span class="n">think_min_tokens</span><span class="p">,</span>
+                <span class="n">think_full_tokens</span><span class="p">,</span>
+                <span class="n">think_bonus_cap</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bonus</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">exact_match</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">pred_can</span> <span class="o">==</span> <span class="n">candidate</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">gold_cands</span> <span class="k">if</span> <span class="n">candidate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">exact_match</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">scores</span></div>
+
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;rush_solution_shaped&quot;</span><span class="p">,</span> <span class="s2">&quot;rush_solution_exact&quot;</span><span class="p">]</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

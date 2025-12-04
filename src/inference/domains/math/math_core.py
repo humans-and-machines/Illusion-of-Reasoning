@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Two-pass batch inference for Qwen2.5-style chat LMs that produce:
-  <think> ... </think><answer> ... </answer>
+Two-pass batch inference for Qwen2.5-style chat LMs that produce
+``<think> ... </think><answer> ... </answer>`` blocks.
 
-Now with resume/fill:
-- If a results file exists (step####_<split>.jsonl), the script checks how many
-  samples exist per problem and ONLY generates the missing ones up to
-  --num_samples (e.g., 8). It preserves prior rows and appends the new ones.
+Resume / fill behaviour
+-----------------------
 
-Other features (unchanged)
---------------------------
-- Uses your system prompt for BOTH passes (first message in the chat).
+- If a results file exists (``step####_<split>.jsonl``), the script checks how
+  many samples exist per problem and only generates the missing ones up to
+  ``--num_samples`` (for example, 8). It preserves prior rows and appends the
+  new ones.
+
+Other features
+--------------
+
+- Uses your system prompt for both passes (first message in the chat).
 - Two-phase generation per pass (think → answer) with explicit stops.
-- Per-pass hard caps: think <= 750, answer <= 50 new tokens.
-- Pass 2: shows Pass-1 output as an assistant turn, user supplies a cue,
-  and the new <think> starts with the cue (we prefill the cue inside <think>).
-- Correctness: gold counted correct if it appears ANYWHERE inside <answer>
+- Per-pass hard caps: think ``<= 750``, answer ``<= 50`` new tokens.
+- Pass 2: shows Pass-1 output as an assistant turn, user supplies a cue, and
+  the new ``<think>`` starts with the cue (we prefill the cue inside
+  ``<think>``).
+- Correctness: gold counted correct if it appears anywhere inside ``<answer>``
   after canonicalization (substring check).
-- Cue-robust analytics: injected cue at the start of pass-2 <think> does NOT
-  trigger “reconsider” detection.
-- EOS includes <|im_end|> and <|endoftext|>.
+- Cue-robust analytics: injected cue at the start of pass-2 ``<think>`` does
+  not trigger “reconsider” detection.
+- EOS includes ``<|im_end|>`` and ``<|endoftext|>``.
 - NaN-safe token entropy; optional "reconsider" slicing.
 """
 

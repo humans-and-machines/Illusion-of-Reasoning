@@ -1,0 +1,1285 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.analysis.forced_aha_plotting - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.analysis.forced_aha_plotting</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Plotting utilities shared by the forced Aha! effect CLI.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.forced_aha_shared</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize_cluster_any</span><span class="p">,</span> <span class="n">summarize_cluster_mean</span><span class="p">,</span> <span class="n">summarize_sample_level</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.plotting_styles</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_COLORS</span><span class="p">,</span> <span class="n">METRIC_LABELS</span><span class="p">,</span> <span class="n">cmap_colors</span><span class="p">,</span> <span class="n">darken_colors</span>
+
+
+<span class="n">BAR_SEED_OFFSETS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;cluster_any&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;cluster_mean&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="n">BAR_METRICS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster_any&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="savefig">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.savefig">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">savefig</span><span class="p">(</span><span class="n">figure</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="n">out_base</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save a Matplotlib figure to ``out_base`` as both PNG and PDF, creating</span>
+<span class="sd">    parent directories as needed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">out_base</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">figure</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">out_base</span> <span class="o">+</span> <span class="s2">&quot;.png&quot;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="n">figure</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">out_base</span> <span class="o">+</span> <span class="s2">&quot;.pdf&quot;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">figure</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SeriesPlotConfig">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.SeriesPlotConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SeriesPlotConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shared configuration for uncertainty/stepwise plots.&quot;&quot;&quot;</span>
+
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">n_boot</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">palette_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Pastel1&quot;</span>
+    <span class="n">darken</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.80</span></div>
+
+
+
+<div class="viewcode-block" id="BucketSeries">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.BucketSeries">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BucketSeries</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bootstrap summary for entropy buckets.&quot;&quot;&quot;</span>
+
+    <span class="n">delta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">lower</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">upper</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span></div>
+
+
+
+<div class="viewcode-block" id="StepwiseSeries">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.StepwiseSeries">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">StepwiseSeries</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Series data for plotting stepwise deltas.&quot;&quot;&quot;</span>
+
+    <span class="n">steps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">delta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">lower</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">upper</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span></div>
+
+
+
+<div class="viewcode-block" id="StepwiseColors">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.StepwiseColors">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">StepwiseColors</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Color palette for sample/mean/any series.&quot;&quot;&quot;</span>
+
+    <span class="n">sample</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mean</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">any_correct</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="OverallDeltaInputs">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.OverallDeltaInputs">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OverallDeltaInputs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aggregated summary rows and source DataFrames for overview bars.&quot;&quot;&quot;</span>
+
+    <span class="n">summary_rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span></div>
+
+
+
+<div class="viewcode-block" id="OverallDeltaConfig">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.OverallDeltaConfig">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OverallDeltaConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reusable bootstrap/palette configuration for delta overview plots.&quot;&quot;&quot;</span>
+
+    <span class="n">n_boot</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">palette</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="OverallDeltaBar">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.OverallDeltaBar">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OverallDeltaBar</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepared bar metadata with bootstrap errors and optional p-values.&quot;&quot;&quot;</span>
+
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">height</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">error_lower</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">error_upper</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">p_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="ConversionSegment">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.ConversionSegment">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConversionSegment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Waterfall segment describing a transition bucket.&quot;&quot;&quot;</span>
+
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_confidence_interval_for_metric</span><span class="p">(</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="n">OverallDeltaInputs</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">OverallDeltaConfig</span><span class="p">,</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return bootstrap CIs for the requested metric.&quot;&quot;&quot;</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pairs_df</span> <span class="k">if</span> <span class="n">metric_name</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span> <span class="k">else</span> <span class="n">inputs</span><span class="o">.</span><span class="n">clusters_df</span>
+    <span class="n">seed_offset</span> <span class="o">=</span> <span class="n">BAR_SEED_OFFSETS</span><span class="p">[</span><span class="n">metric_name</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">_bootstrap_delta</span><span class="p">(</span>
+        <span class="n">frame</span><span class="p">,</span>
+        <span class="n">metric_name</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">seed</span> <span class="o">+</span> <span class="n">seed_offset</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_metric_p_value</span><span class="p">(</span><span class="n">metric_row</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the correct p-value column for the given metric.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="s2">&quot;cluster_any&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">metric_row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;p_mcnemar&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">metric_row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;p_ttest&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_overall_delta_bars</span><span class="p">(</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="n">OverallDeltaInputs</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">OverallDeltaConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">OverallDeltaBar</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct bar specifications for the overall delta plot.&quot;&quot;&quot;</span>
+    <span class="n">by_metric</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;metric&quot;</span><span class="p">]:</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">summary_rows</span><span class="p">}</span>
+    <span class="n">color_cycle</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;bar_primary&quot;</span><span class="p">],</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;bar_secondary&quot;</span><span class="p">],</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;bar_tertiary&quot;</span><span class="p">],</span>
+    <span class="p">]</span>
+    <span class="n">bars</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">OverallDeltaBar</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">BAR_METRICS</span><span class="p">):</span>
+        <span class="n">metric_row</span> <span class="o">=</span> <span class="n">by_metric</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">metric_row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">ci_low</span><span class="p">,</span> <span class="n">ci_high</span> <span class="o">=</span> <span class="n">_confidence_interval_for_metric</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">metric_name</span><span class="p">)</span>
+        <span class="n">delta_pp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">metric_row</span><span class="p">[</span><span class="s2">&quot;delta_pp&quot;</span><span class="p">])</span>
+        <span class="n">bars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">OverallDeltaBar</span><span class="p">(</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">METRIC_LABELS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric_name</span><span class="p">,</span> <span class="n">metric_name</span><span class="p">),</span>
+                <span class="n">height</span><span class="o">=</span><span class="n">delta_pp</span><span class="p">,</span>
+                <span class="n">error_lower</span><span class="o">=</span><span class="n">delta_pp</span> <span class="o">-</span> <span class="n">ci_low</span><span class="p">,</span>
+                <span class="n">error_upper</span><span class="o">=</span><span class="n">ci_high</span> <span class="o">-</span> <span class="n">delta_pp</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">color_cycle</span><span class="p">[</span><span class="n">idx</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">color_cycle</span><span class="p">)],</span>
+                <span class="n">p_value</span><span class="o">=</span><span class="n">_metric_p_value</span><span class="p">(</span><span class="n">metric_row</span><span class="p">,</span> <span class="n">metric_name</span><span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">bars</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_draw_overall_delta_bars</span><span class="p">(</span><span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bars</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">OverallDeltaBar</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Render and save the overall delta bar chart.&quot;&quot;&quot;</span>
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">7.0</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">))</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">,</span> <span class="mf">0.83</span><span class="p">,</span> <span class="mf">0.74</span><span class="p">])</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bars</span><span class="p">))</span>
+    <span class="n">error_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">error_lower</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">bars</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">error_upper</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">bars</span><span class="p">],</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
+        <span class="n">positions</span><span class="p">,</span>
+        <span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">height</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">bars</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">color</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">bars</span><span class="p">],</span>
+        <span class="n">yerr</span><span class="o">=</span><span class="n">error_array</span><span class="p">,</span>
+        <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#444&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">label</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">bars</span><span class="p">])</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Δ accuracy (pp)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Forced Aha — Overall Δ (95% bootstrap CI)&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bars</span><span class="p">):</span>
+        <span class="n">p_value</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">p_value</span>
+        <span class="k">if</span> <span class="n">p_value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">p_value</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">label_text</span> <span class="o">=</span> <span class="s2">&quot;p≈0&quot;</span> <span class="k">if</span> <span class="p">(</span><span class="n">p_value</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">p_value</span> <span class="o">&lt;</span> <span class="mf">1e-300</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;p=</span><span class="si">{</span><span class="n">p_value</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+            <span class="n">positions</span><span class="p">[</span><span class="n">pos</span><span class="p">],</span>
+            <span class="n">spec</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+            <span class="n">label_text</span><span class="p">,</span>
+            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;bottom&quot;</span><span class="p">,</span>
+            <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="n">figure</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;figures&quot;</span><span class="p">,</span> <span class="s2">&quot;overall_deltas&quot;</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="plot_overall_deltas">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_overall_deltas">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_overall_deltas</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="n">OverallDeltaInputs</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">OverallDeltaConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot per-metric second-pass delta accuracy with bootstrap confidence bars.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bars</span> <span class="o">=</span> <span class="n">_build_overall_delta_bars</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">bars</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">_draw_overall_delta_bars</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">bars</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_conversion_waterfall">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_conversion_waterfall">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_conversion_waterfall</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">palette</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a waterfall-style bar chart of any-correct conversions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">segments</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ConversionSegment</span><span class="p">(</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Incorrect → Correct&quot;</span><span class="p">,</span>
+            <span class="n">count</span><span class="o">=</span><span class="nb">int</span><span class="p">(((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;gain&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="n">ConversionSegment</span><span class="p">(</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Correct → Incorrect&quot;</span><span class="p">,</span>
+            <span class="n">count</span><span class="o">=</span><span class="nb">int</span><span class="p">(((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="n">ConversionSegment</span><span class="p">(</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Stayed Correct&quot;</span><span class="p">,</span>
+            <span class="n">count</span><span class="o">=</span><span class="nb">int</span><span class="p">(((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;stable_pos&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="n">ConversionSegment</span><span class="p">(</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Stayed Incorrect&quot;</span><span class="p">,</span>
+            <span class="n">count</span><span class="o">=</span><span class="nb">int</span><span class="p">(((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()),</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">[</span><span class="s2">&quot;stable_neg&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">count</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">))</span>
+
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">7.2</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">))</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.28</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">,</span> <span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.78</span><span class="p">])</span>
+    <span class="n">y_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">segments</span><span class="p">))</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">barh</span><span class="p">(</span>
+        <span class="n">y_positions</span><span class="p">,</span>
+        <span class="p">[</span><span class="n">segment</span><span class="o">.</span><span class="n">count</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="n">segment</span><span class="o">.</span><span class="n">color</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">y_positions</span><span class="p">,</span> <span class="p">[</span><span class="n">segment</span><span class="o">.</span><span class="n">label</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">])</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Count (problems × steps)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Any-correct conversions (overall)&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">segments</span><span class="p">):</span>
+        <span class="n">percent</span> <span class="o">=</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="n">segment</span><span class="o">.</span><span class="n">count</span> <span class="o">/</span> <span class="n">total</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+            <span class="n">segment</span><span class="o">.</span><span class="n">count</span><span class="p">,</span>
+            <span class="n">index</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">segment</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">percent</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%)&quot;</span><span class="p">,</span>
+            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="n">figure</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;figures&quot;</span><span class="p">,</span> <span class="s2">&quot;any_conversion_waterfall&quot;</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="plot_headroom_scatter">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_headroom_scatter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_headroom_scatter</span><span class="p">(</span><span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot Δ(any-correct) vs baseline any-correct per step (headroom plot).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">subset</span> <span class="o">=</span> <span class="n">step_df</span><span class="p">[</span><span class="n">step_df</span><span class="p">[</span><span class="s2">&quot;metric&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;cluster_any&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">)</span>
+    <span class="n">x_values</span> <span class="o">=</span> <span class="n">subset</span><span class="p">[</span><span class="s2">&quot;acc_pass1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">y_values</span> <span class="o">=</span> <span class="n">subset</span><span class="p">[</span><span class="s2">&quot;delta_pp&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">6.0</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">))</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.82</span><span class="p">,</span> <span class="mf">0.82</span><span class="p">])</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span> <span class="n">y_values</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_values</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x_values</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">y_values</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span> <span class="n">y_values</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">x_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">x_values</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">x_values</span><span class="p">),</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_line</span><span class="p">,</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">x_line</span> <span class="o">+</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Baseline any-correct (pass-1)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Δ any-correct (pp)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Headroom plot: Δ(any) vs baseline any (per step)&quot;</span><span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span><span class="n">figure</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;figures&quot;</span><span class="p">,</span> <span class="s2">&quot;any_headroom_scatter&quot;</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_select_series_colors</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">SeriesPlotConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepwiseColors</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return consistent colors for series plots.&quot;&quot;&quot;</span>
+    <span class="n">palette_colors</span> <span class="o">=</span> <span class="n">darken_colors</span><span class="p">(</span>
+        <span class="n">cmap_colors</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">palette_name</span><span class="p">),</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">darken</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">StepwiseColors</span><span class="p">(</span>
+        <span class="n">sample</span><span class="o">=</span><span class="n">palette_colors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">mean</span><span class="o">=</span><span class="n">palette_colors</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="n">any_correct</span><span class="o">=</span><span class="n">palette_colors</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_aggregate_sample_delta</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return delta accuracy (pp) for sample-level rows.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;correct2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;correct1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">*</span> <span class="mf">100.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_aggregate_mean_delta</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return delta accuracy (pp) for per-problem mean-of-8 rows.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;acc_p2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;acc_p1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">*</span> <span class="mf">100.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bootstrap_bucket_groups</span><span class="p">(</span>
+    <span class="n">groups</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">aggregate_fn</span><span class="p">,</span>
+    <span class="n">n_boot</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BucketSeries</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bootstrap delta distributions for each entropy bucket.&quot;&quot;&quot;</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">delta_values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lower_bounds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">upper_bounds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">group</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">delta_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">lower_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">upper_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">))</span>
+        <span class="n">bootstrap_stats</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_boot</span><span class="p">):</span>
+            <span class="n">sampled</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+            <span class="n">bootstrap_stats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aggregate_fn</span><span class="p">(</span><span class="n">sampled</span><span class="p">))</span>
+        <span class="n">lower_percentile</span><span class="p">,</span> <span class="n">upper_percentile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span>
+            <span class="n">bootstrap_stats</span><span class="p">,</span>
+            <span class="p">[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">97.5</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">delta_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">aggregate_fn</span><span class="p">(</span><span class="n">group</span><span class="p">))</span>
+        <span class="n">lower_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lower_percentile</span><span class="p">))</span>
+        <span class="n">upper_bounds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">upper_percentile</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">BucketSeries</span><span class="p">(</span>
+        <span class="n">delta</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">delta_values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="n">lower</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lower_bounds</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="n">upper</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">upper_bounds</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_uncertainty_bucket_data</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">n_boot</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute per-quintile delta-accuracy values and bootstrap CIs for entropy buckets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df_s</span> <span class="o">=</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;entropy_p1&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df_c</span> <span class="o">=</span> <span class="n">clusters_df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;entropy_p1_cluster&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">df_s</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">df_c</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">df_s</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">qcut</span><span class="p">(</span><span class="n">df_s</span><span class="p">[</span><span class="s2">&quot;entropy_p1&quot;</span><span class="p">],</span> <span class="n">q</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">df_c</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">qcut</span><span class="p">(</span><span class="n">df_c</span><span class="p">[</span><span class="s2">&quot;entropy_p1_cluster&quot;</span><span class="p">],</span> <span class="n">q</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">sample_groups</span> <span class="o">=</span> <span class="p">[</span><span class="n">df_s</span><span class="p">[</span><span class="n">df_s</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">bucket_index</span><span class="p">]</span> <span class="k">for</span> <span class="n">bucket_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+    <span class="n">cluster_groups</span> <span class="o">=</span> <span class="p">[</span><span class="n">df_c</span><span class="p">[</span><span class="n">df_c</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">bucket_index</span><span class="p">]</span> <span class="k">for</span> <span class="n">bucket_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span>
+        <span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="n">_bootstrap_bucket_groups</span><span class="p">(</span>
+            <span class="n">sample_groups</span><span class="p">,</span>
+            <span class="n">_aggregate_sample_delta</span><span class="p">,</span>
+            <span class="n">n_boot</span><span class="p">,</span>
+            <span class="n">seed</span> <span class="o">+</span> <span class="mi">20</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;cluster&quot;</span><span class="p">:</span> <span class="n">_bootstrap_bucket_groups</span><span class="p">(</span>
+            <span class="n">cluster_groups</span><span class="p">,</span>
+            <span class="n">_aggregate_mean_delta</span><span class="p">,</span>
+            <span class="n">n_boot</span><span class="p">,</span>
+            <span class="n">seed</span> <span class="o">+</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="plot_uncertainty_buckets">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_uncertainty_buckets">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_uncertainty_buckets</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">SeriesPlotConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot delta-accuracy vs entropy quintiles with bootstrap confidence intervals.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">_compute_uncertainty_bucket_data</span><span class="p">(</span>
+        <span class="n">pairs_df</span><span class="p">,</span>
+        <span class="n">clusters_df</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[warn] No entropy_p1 available; skipping uncertainty_buckets.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">7.2</span><span class="p">,</span> <span class="mf">4.6</span><span class="p">))</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.86</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">])</span>
+
+    <span class="n">_plot_uncertainty_bucket_panel</span><span class="p">(</span>
+        <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span>
+        <span class="n">bucket_data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">_select_series_colors</span><span class="p">(</span><span class="n">config</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span>
+        <span class="n">figure</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;figures&quot;</span><span class="p">,</span> <span class="s2">&quot;uncertainty_buckets&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_step_groups_for_boot</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+<span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build step-indexed DataFrame groups for bootstrapping.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="nb">set</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())),</span>
+    <span class="p">)</span>
+    <span class="n">sample_step</span> <span class="o">=</span> <span class="p">{</span><span class="n">step</span><span class="p">:</span> <span class="n">pairs_df</span><span class="p">[</span><span class="n">pairs_df</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">step</span><span class="p">]</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">}</span>
+    <span class="n">any_step</span> <span class="o">=</span> <span class="p">{</span><span class="n">step</span><span class="p">:</span> <span class="n">clusters_df</span><span class="p">[</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">step</span><span class="p">]</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">}</span>
+    <span class="n">mean_step</span> <span class="o">=</span> <span class="n">any_step</span>
+    <span class="k">return</span> <span class="n">steps</span><span class="p">,</span> <span class="n">sample_step</span><span class="p">,</span> <span class="n">any_step</span><span class="p">,</span> <span class="n">mean_step</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_stepwise_ci_by_metric</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">SeriesPlotConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return bootstrap confidence intervals for each metric/step.&quot;&quot;&quot;</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">sample_step</span><span class="p">,</span> <span class="n">any_step</span><span class="p">,</span> <span class="n">mean_step</span> <span class="o">=</span> <span class="n">_step_groups_for_boot</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">clusters_df</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="n">_bootstrap_delta_by_step</span><span class="p">(</span>
+            <span class="n">sample_step</span><span class="p">,</span>
+            <span class="s2">&quot;sample&quot;</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;cluster_any&quot;</span><span class="p">:</span> <span class="n">_bootstrap_delta_by_step</span><span class="p">(</span>
+            <span class="n">any_step</span><span class="p">,</span>
+            <span class="s2">&quot;cluster_any&quot;</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;cluster_mean&quot;</span><span class="p">:</span> <span class="n">_bootstrap_delta_by_step</span><span class="p">(</span>
+            <span class="n">mean_step</span><span class="p">,</span>
+            <span class="s2">&quot;cluster_mean&quot;</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">seed</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_stepwise_series</span><span class="p">(</span>
+    <span class="n">step_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">ci_by_metric</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepwiseSeries</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build step-wise (x, y, lower, upper) series for each metric.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_series_for</span><span class="p">(</span>
+        <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepwiseSeries</span><span class="p">:</span>
+        <span class="n">subset</span> <span class="o">=</span> <span class="n">step_df</span><span class="p">[</span><span class="n">step_df</span><span class="p">[</span><span class="s2">&quot;metric&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">metric</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;step&quot;</span><span class="p">)</span>
+        <span class="n">x_values</span> <span class="o">=</span> <span class="n">subset</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">y_values</span> <span class="o">=</span> <span class="n">subset</span><span class="p">[</span><span class="s2">&quot;delta_pp&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">intervals</span> <span class="o">=</span> <span class="p">[</span><span class="n">ci_by_metric</span><span class="p">[</span><span class="n">metric</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">step</span><span class="p">),</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">x_values</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">intervals</span><span class="p">:</span>
+            <span class="n">lower_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">intervals</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">upper_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">intervals</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lower_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">upper_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">StepwiseSeries</span><span class="p">(</span>
+            <span class="n">steps</span><span class="o">=</span><span class="n">x_values</span><span class="p">,</span>
+            <span class="n">delta</span><span class="o">=</span><span class="n">y_values</span><span class="p">,</span>
+            <span class="n">lower</span><span class="o">=</span><span class="n">lower_array</span><span class="p">,</span>
+            <span class="n">upper</span><span class="o">=</span><span class="n">upper_array</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="n">_series_for</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;sample&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;cluster_mean&quot;</span><span class="p">:</span> <span class="n">_series_for</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;cluster_mean&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;cluster_any&quot;</span><span class="p">:</span> <span class="n">_series_for</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="s2">&quot;cluster_any&quot;</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_stepwise_series</span><span class="p">(</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span>
+    <span class="n">series_by_metric</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepwiseSeries</span><span class="p">],</span>
+    <span class="n">colors</span><span class="p">:</span> <span class="n">StepwiseColors</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot sample/mean/any series with fills.&quot;&quot;&quot;</span>
+    <span class="n">style_specs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="s2">&quot;Per-draw (single completion)&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">sample</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="mf">0.22</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;cluster_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;Per-problem mean of 8 (avg of 8)&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="mf">0.22</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;cluster_any&quot;</span><span class="p">,</span> <span class="s2">&quot;Per-problem any-correct&quot;</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">any_correct</span><span class="p">,</span> <span class="s2">&quot;^&quot;</span><span class="p">,</span> <span class="mf">0.18</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">metric</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">marker</span><span class="p">,</span> <span class="n">alpha</span> <span class="ow">in</span> <span class="n">style_specs</span><span class="p">:</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">series_by_metric</span><span class="p">[</span><span class="n">metric</span><span class="p">]</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+            <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">upper</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+            <span class="n">linewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_uncertainty_bucket_panel</span><span class="p">(</span>
+    <span class="n">axis</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span>
+    <span class="n">bucket_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">colors</span><span class="p">:</span> <span class="n">StepwiseColors</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot entropy bucket deltas with confidence intervals.&quot;&quot;&quot;</span>
+    <span class="n">sample_series</span><span class="p">:</span> <span class="n">BucketSeries</span> <span class="o">=</span> <span class="n">bucket_data</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">]</span>
+    <span class="n">cluster_series</span><span class="p">:</span> <span class="n">BucketSeries</span> <span class="o">=</span> <span class="n">bucket_data</span><span class="p">[</span><span class="s2">&quot;cluster&quot;</span><span class="p">]</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+        <span class="n">bucket_data</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">sample_series</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+        <span class="n">yerr</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">sample_series</span><span class="o">.</span><span class="n">delta</span> <span class="o">-</span> <span class="n">sample_series</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span>
+            <span class="n">sample_series</span><span class="o">.</span><span class="n">upper</span> <span class="o">-</span> <span class="n">sample_series</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;o-&quot;</span><span class="p">,</span>
+        <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Per-draw (single completion)&quot;</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="o">.</span><span class="n">sample</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+        <span class="n">bucket_data</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">cluster_series</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+        <span class="n">yerr</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">cluster_series</span><span class="o">.</span><span class="n">delta</span> <span class="o">-</span> <span class="n">cluster_series</span><span class="o">.</span><span class="n">lower</span><span class="p">,</span>
+            <span class="n">cluster_series</span><span class="o">.</span><span class="n">upper</span> <span class="o">-</span> <span class="n">cluster_series</span><span class="o">.</span><span class="n">delta</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;s-&quot;</span><span class="p">,</span>
+        <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Per-problem mean of 8 (avg of 8 completions)&quot;</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">bucket_data</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">])</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;Q</span><span class="si">{</span><span class="n">bucket_index</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">bucket_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)])</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Baseline pass-1 answer entropy (quintiles)&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Delta Accuracy (pp) for second pass&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Uncertainty buckets: Forced Aha gains by entropy&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="plot_stepwise_overlay">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_stepwise_overlay">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_stepwise_overlay</span><span class="p">(</span>
+    <span class="n">step_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">SeriesPlotConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot step-wise delta accuracy for sample/cluster metrics with bootstrap CIs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ci_by_metric</span> <span class="o">=</span> <span class="n">_compute_stepwise_ci_by_metric</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">clusters_df</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="n">series_by_metric</span> <span class="o">=</span> <span class="n">_build_stepwise_series</span><span class="p">(</span><span class="n">step_df</span><span class="p">,</span> <span class="n">ci_by_metric</span><span class="p">)</span>
+
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">8.6</span><span class="p">,</span> <span class="mf">4.3</span><span class="p">))</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.86</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">])</span>
+
+    <span class="n">_plot_stepwise_series</span><span class="p">(</span>
+        <span class="n">axis</span><span class="p">,</span>
+        <span class="n">series_by_metric</span><span class="p">,</span>
+        <span class="n">colors</span><span class="o">=</span><span class="n">_select_series_colors</span><span class="p">(</span><span class="n">config</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">axis</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Training step&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Delta Accuracy (pp) for second pass&quot;</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+        <span class="s2">&quot;Stepwise Δ — overlay of per-draw / mean-of-8 / any-correct (95% bootstrap CIs)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">savefig</span><span class="p">(</span>
+        <span class="n">figure</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;figures&quot;</span><span class="p">,</span> <span class="s2">&quot;stepwise_overlay&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="plot_uncertainty_and_stepwise">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_uncertainty_and_stepwise">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_uncertainty_and_stepwise</span><span class="p">(</span>
+    <span class="n">step_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">SeriesPlotConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot combined figure with entropy buckets (left) and stepwise overlay (right).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">_compute_uncertainty_bucket_data</span><span class="p">(</span>
+        <span class="n">pairs_df</span><span class="p">,</span>
+        <span class="n">clusters_df</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;[warn] No entropy available; skipping combined uncertainty_and_stepwise.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">ci_by_metric</span> <span class="o">=</span> <span class="n">_compute_stepwise_ci_by_metric</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">clusters_df</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="n">series_by_metric</span> <span class="o">=</span> <span class="n">_build_stepwise_series</span><span class="p">(</span><span class="n">step_df</span><span class="p">,</span> <span class="n">ci_by_metric</span><span class="p">)</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="n">_select_series_colors</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">12.4</span><span class="p">,</span> <span class="mf">4.8</span><span class="p">))</span>
+    <span class="n">grid_spec</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span>
+        <span class="mi">1</span><span class="p">,</span>
+        <span class="mi">2</span><span class="p">,</span>
+        <span class="n">left</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span>
+        <span class="n">right</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span>
+        <span class="n">top</span><span class="o">=</span><span class="mf">0.92</span><span class="p">,</span>
+        <span class="n">bottom</span><span class="o">=</span><span class="mf">0.18</span><span class="p">,</span>
+        <span class="n">wspace</span><span class="o">=</span><span class="mf">0.26</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis_left</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">grid_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">axis_right</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">grid_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">_plot_uncertainty_bucket_panel</span><span class="p">(</span><span class="n">axis_left</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">colors</span><span class="p">)</span>
+    <span class="n">_plot_stepwise_series</span><span class="p">(</span><span class="n">axis_right</span><span class="p">,</span> <span class="n">series_by_metric</span><span class="p">,</span> <span class="n">colors</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Training step&quot;</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Delta Accuracy (pp) for second pass&quot;</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Stepwise Δ — overlay (95% bootstrap CIs)&quot;</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+    <span class="n">savefig</span><span class="p">(</span>
+        <span class="n">figure</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;figures&quot;</span><span class="p">,</span> <span class="s2">&quot;uncertainty_and_stepwise&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bar_specs_with_stats</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return ordered (metric_key, label, stats) tuples for overview bars.&quot;&quot;&quot;</span>
+    <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;cluster_mean&quot;</span><span class="p">,</span> <span class="s2">&quot;Per-problem</span><span class="se">\n</span><span class="s2">mean of 8&quot;</span><span class="p">,</span> <span class="n">summarize_cluster_mean</span><span class="p">(</span><span class="n">clusters_df</span><span class="p">)),</span>
+        <span class="p">(</span><span class="s2">&quot;cluster_any&quot;</span><span class="p">,</span> <span class="s2">&quot;Per-problem</span><span class="se">\n</span><span class="s2">any-correct&quot;</span><span class="p">,</span> <span class="n">summarize_cluster_any</span><span class="p">(</span><span class="n">clusters_df</span><span class="p">)),</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">specs</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="s2">&quot;Per-draw</span><span class="se">\n</span><span class="s2">accuracy&quot;</span><span class="p">,</span> <span class="n">summarize_sample_level</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">)),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">specs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_overview_bar_data</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">style</span><span class="p">:</span> <span class="n">SeriesPlotConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build labels, heights, confidence intervals, and colors for overview bars.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bar_specs</span> <span class="o">=</span> <span class="n">_bar_specs_with_stats</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">clusters_df</span><span class="p">)</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">label</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">bar_specs</span><span class="p">]</span>
+    <span class="n">heights</span> <span class="o">=</span> <span class="p">[</span><span class="n">stat</span><span class="p">[</span><span class="s2">&quot;delta_pp&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">bar_specs</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ci_offsets</span><span class="p">(</span><span class="n">metric_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">delta_point</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="n">data_source</span> <span class="o">=</span> <span class="n">pairs_df</span> <span class="k">if</span> <span class="n">metric_key</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span> <span class="k">else</span> <span class="n">clusters_df</span>
+        <span class="n">metric_name</span> <span class="o">=</span> <span class="s2">&quot;sample&quot;</span> <span class="k">if</span> <span class="n">metric_key</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span> <span class="k">else</span> <span class="n">metric_key</span>
+        <span class="n">seed_offset</span> <span class="o">=</span> <span class="n">BAR_SEED_OFFSETS</span><span class="p">[</span><span class="n">metric_key</span><span class="p">]</span>
+        <span class="n">lower_bound</span><span class="p">,</span> <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">_bootstrap_delta</span><span class="p">(</span>
+            <span class="n">data_source</span><span class="p">,</span>
+            <span class="n">metric_name</span><span class="p">,</span>
+            <span class="n">style</span><span class="o">.</span><span class="n">n_boot</span><span class="p">,</span>
+            <span class="n">style</span><span class="o">.</span><span class="n">seed</span> <span class="o">+</span> <span class="n">seed_offset</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">delta_point</span> <span class="o">-</span> <span class="n">lower_bound</span><span class="p">,</span> <span class="n">upper_bound</span> <span class="o">-</span> <span class="n">delta_point</span>
+
+    <span class="n">ci_pairs</span> <span class="o">=</span> <span class="p">[</span><span class="n">_ci_offsets</span><span class="p">(</span><span class="n">metric_key</span><span class="p">,</span> <span class="n">delta_value</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">metric_key</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">),</span> <span class="n">delta_value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bar_specs</span><span class="p">,</span> <span class="n">heights</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">ci_pairs</span><span class="p">:</span>
+        <span class="n">ci_lowers</span><span class="p">,</span> <span class="n">ci_uppers</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">ci_pairs</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ci_lowers</span><span class="p">,</span> <span class="n">ci_uppers</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+    <span class="n">palette_colors</span> <span class="o">=</span> <span class="n">darken_colors</span><span class="p">(</span>
+        <span class="n">cmap_colors</span><span class="p">(</span><span class="n">style</span><span class="o">.</span><span class="n">palette_name</span><span class="p">),</span>
+        <span class="n">style</span><span class="o">.</span><span class="n">darken</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">bar_colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">palette_colors</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">palette_colors</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)][:</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">labels</span><span class="p">,</span>
+        <span class="s2">&quot;heights&quot;</span><span class="p">:</span> <span class="n">heights</span><span class="p">,</span>
+        <span class="s2">&quot;ci_lowers&quot;</span><span class="p">:</span> <span class="n">ci_lowers</span><span class="p">,</span>
+        <span class="s2">&quot;ci_uppers&quot;</span><span class="p">:</span> <span class="n">ci_uppers</span><span class="p">,</span>
+        <span class="s2">&quot;colors&quot;</span><span class="p">:</span> <span class="n">bar_colors</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_waterfall_data</span><span class="p">(</span>
+    <span class="n">clusters_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute counts, labels, colors, and percentages for the waterfall plot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">num_incorrect_incorrect</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+        <span class="p">((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">num_incorrect_correct</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+        <span class="p">((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">num_correct_incorrect</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+        <span class="p">((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">num_correct_correct</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+        <span class="p">((</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">clusters_df</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+        <span class="n">num_incorrect_incorrect</span> <span class="o">+</span> <span class="n">num_incorrect_correct</span> <span class="o">+</span> <span class="n">num_correct_incorrect</span> <span class="o">+</span> <span class="n">num_correct_correct</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">waterfall_values</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">num_incorrect_correct</span><span class="p">,</span>
+        <span class="n">num_correct_incorrect</span><span class="p">,</span>
+        <span class="n">num_correct_correct</span><span class="p">,</span>
+        <span class="n">num_incorrect_incorrect</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">waterfall_labels</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Incorrect →</span><span class="se">\n</span><span class="s2">Correct&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Correct →</span><span class="se">\n</span><span class="s2">Incorrect&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Stayed</span><span class="se">\n</span><span class="s2">Correct&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Stayed</span><span class="se">\n</span><span class="s2">Incorrect&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">waterfall_colors</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">DEFAULT_COLORS</span><span class="p">[</span><span class="s2">&quot;gain&quot;</span><span class="p">],</span>
+        <span class="n">DEFAULT_COLORS</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">],</span>
+        <span class="n">DEFAULT_COLORS</span><span class="p">[</span><span class="s2">&quot;stable_pos&quot;</span><span class="p">],</span>
+        <span class="n">DEFAULT_COLORS</span><span class="p">[</span><span class="s2">&quot;stable_neg&quot;</span><span class="p">],</span>
+    <span class="p">]</span>
+    <span class="n">waterfall_percentages</span> <span class="o">=</span> <span class="p">[</span><span class="mf">100.0</span> <span class="o">*</span> <span class="n">value</span> <span class="o">/</span> <span class="n">total</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">waterfall_values</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">waterfall_values</span><span class="p">,</span>
+        <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">waterfall_labels</span><span class="p">,</span>
+        <span class="s2">&quot;colors&quot;</span><span class="p">:</span> <span class="n">waterfall_colors</span><span class="p">,</span>
+        <span class="s2">&quot;percentages&quot;</span><span class="p">:</span> <span class="n">waterfall_percentages</span><span class="p">,</span>
+        <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_create_overview_axes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">,</span> <span class="n">plt</span><span class="o">.</span><span class="n">Axes</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create figure and axes for the overview side-by-side layout.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">12.2</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">))</span>
+    <span class="n">grid_spec</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_gridspec</span><span class="p">(</span>
+        <span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">left</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span>
+        <span class="n">right</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
+        <span class="n">top</span><span class="o">=</span><span class="mf">0.92</span><span class="p">,</span>
+        <span class="n">bottom</span><span class="o">=</span><span class="mf">0.24</span><span class="p">,</span>
+        <span class="n">wspace</span><span class="o">=</span><span class="mf">0.28</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis_left</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">grid_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">axis_right</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">grid_spec</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">figure</span><span class="p">,</span> <span class="n">axis_left</span><span class="p">,</span> <span class="n">axis_right</span>
+
+
+<div class="viewcode-block" id="plot_overview_side_by_side">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.forced_aha_plotting.plot_overview_side_by_side">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_overview_side_by_side</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Side-by-side overview with the SAME inputs as plot_uncertainty_and_stepwise:</span>
+<span class="sd">      (left) Overall Δ bars (bootstrap CIs), no p-values shown.</span>
+<span class="sd">      (right) Any-correct conversions waterfall (Incorrect→Correct first).</span>
+<span class="sd">    Left bars use a darkened qualitative palette; right uses semantic colors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">style</span> <span class="o">=</span> <span class="n">SeriesPlotConfig</span><span class="p">(</span>
+        <span class="n">out_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;out_dir&quot;</span><span class="p">]),</span>
+        <span class="n">n_boot</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;n_boot&quot;</span><span class="p">]),</span>
+        <span class="n">seed</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;seed&quot;</span><span class="p">]),</span>
+        <span class="n">palette_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;palette_name&quot;</span><span class="p">,</span> <span class="s2">&quot;Pastel1&quot;</span><span class="p">)),</span>
+        <span class="n">darken</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;darken&quot;</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">)),</span>
+    <span class="p">)</span>
+    <span class="n">bar_data</span> <span class="o">=</span> <span class="n">_build_overview_bar_data</span><span class="p">(</span>
+        <span class="n">pairs_df</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;pairs_df&quot;</span><span class="p">],</span>
+        <span class="n">clusters_df</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;clusters_df&quot;</span><span class="p">],</span>
+        <span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">waterfall_data</span> <span class="o">=</span> <span class="n">_compute_waterfall_data</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;clusters_df&quot;</span><span class="p">])</span>
+
+    <span class="n">figure</span><span class="p">,</span> <span class="n">axis_left</span><span class="p">,</span> <span class="n">axis_right</span> <span class="o">=</span> <span class="n">_create_overview_axes</span><span class="p">()</span>
+
+    <span class="n">x_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bar_data</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]))</span>
+    <span class="n">axis_left</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span>
+        <span class="n">x_positions</span><span class="p">,</span>
+        <span class="n">bar_data</span><span class="p">[</span><span class="s2">&quot;heights&quot;</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">bar_data</span><span class="p">[</span><span class="s2">&quot;colors&quot;</span><span class="p">],</span>
+        <span class="n">yerr</span><span class="o">=</span><span class="p">[</span><span class="n">bar_data</span><span class="p">[</span><span class="s2">&quot;ci_lowers&quot;</span><span class="p">],</span> <span class="n">bar_data</span><span class="p">[</span><span class="s2">&quot;ci_uppers&quot;</span><span class="p">]],</span>
+        <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">axis_left</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#444444&quot;</span><span class="p">)</span>
+    <span class="n">axis_left</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">x_positions</span><span class="p">)</span>
+    <span class="n">axis_left</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">bar_data</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">])</span>
+    <span class="n">axis_left</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Δ accuracy (pp)</span><span class="se">\n</span><span class="s2">second pass (forced Aha)&quot;</span><span class="p">)</span>
+    <span class="n">axis_left</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Forced Aha — Overall Δ (95% bootstrap CI)&quot;</span><span class="p">)</span>
+
+    <span class="n">y_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">]))</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">barh</span><span class="p">(</span>
+        <span class="n">y_positions</span><span class="p">,</span>
+        <span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;colors&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">y_positions</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">])</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Count</span><span class="se">\n</span><span class="s2">(problems × steps)&quot;</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Any-correct conversions (overall)&quot;</span><span class="p">)</span>
+    <span class="n">axis_right</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.35</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">percentage</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+        <span class="nb">zip</span><span class="p">(</span><span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">],</span> <span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;percentages&quot;</span><span class="p">]),</span>
+    <span class="p">):</span>
+        <span class="n">axis_right</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+            <span class="n">value</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">waterfall_data</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.004</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+            <span class="n">index</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">percentage</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%)&quot;</span><span class="p">,</span>
+            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span>
+            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">savefig</span><span class="p">(</span>
+        <span class="n">figure</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;out_dir&quot;</span><span class="p">]),</span>
+            <span class="s2">&quot;figures&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;overview_deltas_and_waterfall&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># Helper functions that rely on bootstrap logic defined in the main CLI.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_bootstrap_delta</span><span class="p">(</span>
+    <span class="n">pass_pairs</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">n_boot</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bootstrap delta accuracy for the requested metric.&quot;&quot;&quot;</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">deltas</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pass_pairs</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;sample&quot;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_boot</span><span class="p">):</span>
+            <span class="n">bootstrap_sample</span> <span class="o">=</span> <span class="n">pass_pairs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+            <span class="n">deltas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">bootstrap_sample</span><span class="p">[</span><span class="s2">&quot;correct2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">bootstrap_sample</span><span class="p">[</span><span class="s2">&quot;correct1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">*</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;cluster_any&quot;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_boot</span><span class="p">):</span>
+            <span class="n">bootstrap_sample</span> <span class="o">=</span> <span class="n">pass_pairs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+            <span class="n">deltas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">bootstrap_sample</span><span class="p">[</span><span class="s2">&quot;any_p2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">bootstrap_sample</span><span class="p">[</span><span class="s2">&quot;any_p1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">*</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;cluster_mean&quot;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_boot</span><span class="p">):</span>
+            <span class="n">bootstrap_sample</span> <span class="o">=</span> <span class="n">pass_pairs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+            <span class="n">deltas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">bootstrap_sample</span><span class="p">[</span><span class="s2">&quot;acc_p2&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">bootstrap_sample</span><span class="p">[</span><span class="s2">&quot;acc_p1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">*</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">deltas</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">deltas</span><span class="p">,</span> <span class="p">[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">97.5</span><span class="p">])</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">low</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">high</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bootstrap_delta_by_step</span><span class="p">(</span>
+    <span class="n">step_to_frame</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">n_boot</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bootstrap delta accuracy per step for the requested metric.&quot;&quot;&quot;</span>
+    <span class="n">conf_intervals</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">step_value</span><span class="p">,</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">step_to_frame</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">conf_intervals</span><span class="p">[</span><span class="n">step_value</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="n">_bootstrap_delta</span><span class="p">(</span>
+            <span class="n">frame</span><span class="p">,</span>
+            <span class="n">metric</span><span class="p">,</span>
+            <span class="n">n_boot</span><span class="p">,</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">step_value</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">conf_intervals</span><span class="p">[</span><span class="n">step_value</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">conf_intervals</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

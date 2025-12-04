@@ -1,0 +1,1208 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="src.inference.domains.summarize package" href="src.inference.domains.summarize.html"><link rel="prev" title="src.inference.domains.crossword package" href="src.inference.domains.crossword.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.inference.domains.math package - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">src</a><input aria-label="Toggle navigation of src" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="src.html">src package</a><input aria-label="Toggle navigation of src package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.common.html">src.common package</a></li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 current has-children"><a class="reference internal" href="src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5 current current-page"><a class="current reference internal" href="#">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/src.inference.domains.math.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="src-inference-domains-math-package">
+<h1>src.inference.domains.math package<a class="headerlink" href="#src-inference-domains-math-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-src.inference.domains.math.math_core">
+<span id="src-inference-domains-math-math-core-module"></span><h2>src.inference.domains.math.math_core module<a class="headerlink" href="#module-src.inference.domains.math.math_core" title="Link to this heading">¶</a></h2>
+<p>Two-pass batch inference for Qwen2.5-style chat LMs that produce
+<code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span> <span class="pre">...</span> <span class="pre">&lt;/think&gt;&lt;answer&gt;</span> <span class="pre">...</span> <span class="pre">&lt;/answer&gt;</span></code> blocks.</p>
+<section id="resume-fill-behaviour">
+<h3>Resume / fill behaviour<a class="headerlink" href="#resume-fill-behaviour" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>If a results file exists (<code class="docutils literal notranslate"><span class="pre">step####_&lt;split&gt;.jsonl</span></code>), the script checks how
+many samples exist per problem and only generates the missing ones up to
+<code class="docutils literal notranslate"><span class="pre">--num_samples</span></code> (for example, 8). It preserves prior rows and appends the
+new ones.</p></li>
+</ul>
+</section>
+<section id="other-features">
+<h3>Other features<a class="headerlink" href="#other-features" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Uses your system prompt for both passes (first message in the chat).</p></li>
+<li><p>Two-phase generation per pass (think → answer) with explicit stops.</p></li>
+<li><p>Per-pass hard caps: think <code class="docutils literal notranslate"><span class="pre">&lt;=</span> <span class="pre">750</span></code>, answer <code class="docutils literal notranslate"><span class="pre">&lt;=</span> <span class="pre">50</span></code> new tokens.</p></li>
+<li><p>Pass 2: shows Pass-1 output as an assistant turn, user supplies a cue, and
+the new <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code> starts with the cue (we prefill the cue inside
+<code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code>).</p></li>
+<li><p>Correctness: gold counted correct if it appears anywhere inside <code class="docutils literal notranslate"><span class="pre">&lt;answer&gt;</span></code>
+after canonicalization (substring check).</p></li>
+<li><p>Cue-robust analytics: injected cue at the start of pass-2 <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code> does
+not trigger “reconsider” detection.</p></li>
+<li><p>EOS includes <code class="docutils literal notranslate"><span class="pre">&lt;|im_end|&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;|endoftext|&gt;</span></code>.</p></li>
+<li><p>NaN-safe token entropy; optional “reconsider” slicing.</p></li>
+</ul>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchLayout">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">BatchLayout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">work_items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_to_ex_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_target_sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#BatchLayout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.BatchLayout" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Mapping from generated rows back to original work items and samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>work_items</strong> – Per-example dictionaries containing normalized fields.</p></li>
+<li><p><strong>row_to_ex_idx</strong> – For each generated row, index of the source example.</p></li>
+<li><p><strong>row_target_sample_idx</strong> – For each row, target sample index for that example.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchLayout.row_target_sample_idx">
+<span class="sig-name descname"><span class="pre">row_target_sample_idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchLayout.row_target_sample_idx" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchLayout.row_to_ex_idx">
+<span class="sig-name descname"><span class="pre">row_to_ex_idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchLayout.row_to_ex_idx" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchLayout.work_items">
+<span class="sig-name descname"><span class="pre">work_items</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchLayout.work_items" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchSpec">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">BatchSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefixes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_strs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#BatchSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.BatchSpec" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Specification for a batch generation call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefixes</strong> – Prefix strings to feed into the model.</p></li>
+<li><p><strong>cap</strong> – Maximum number of new tokens to generate per prefix.</p></li>
+<li><p><strong>stop_strs</strong> – Stop strings that terminate generation when produced.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchSpec.cap">
+<span class="sig-name descname"><span class="pre">cap</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchSpec.cap" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchSpec.prefixes">
+<span class="sig-name descname"><span class="pre">prefixes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchSpec.prefixes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchSpec.stop_strs">
+<span class="sig-name descname"><span class="pre">stop_strs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchSpec.stop_strs" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchWriteContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">BatchWriteContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outpath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cue_strs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">existing_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState" title="src.inference.domains.math.math_core.ExistingPassState"><span class="pre">ExistingPassState</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">firstpass_choice_text_per_ex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#BatchWriteContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.BatchWriteContext" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Context object holding shared state for result writing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>outpath</strong> – Path to the JSONL results file being written.</p></li>
+<li><p><strong>config</strong> – Inference configuration used for this run.</p></li>
+<li><p><strong>cue_strs</strong> – Sequence of cue strings used for extra reconsideration passes.</p></li>
+<li><p><strong>existing_state</strong> – Snapshot of existing pass-1 samples on disk.</p></li>
+<li><p><strong>firstpass_choice_text_per_ex</strong> – Chosen pass-1 text per example for pass 2.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchWriteContext.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchWriteContext.config" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchWriteContext.cue_strs">
+<span class="sig-name descname"><span class="pre">cue_strs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchWriteContext.cue_strs" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchWriteContext.existing_state">
+<span class="sig-name descname"><span class="pre">existing_state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState" title="src.inference.domains.math.math_core.ExistingPassState"><span class="pre">ExistingPassState</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchWriteContext.existing_state" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchWriteContext.firstpass_choice_text_per_ex">
+<span class="sig-name descname"><span class="pre">firstpass_choice_text_per_ex</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchWriteContext.firstpass_choice_text_per_ex" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.BatchWriteContext.outpath">
+<span class="sig-name descname"><span class="pre">outpath</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.BatchWriteContext.outpath" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExistingPassState">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">ExistingPassState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">existing_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DefaultDict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">existing_pass1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#ExistingPassState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.ExistingPassState" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Track existing pass-1 samples found on disk for resume.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>existing_samples</strong> – Mapping from problem to the set of completed sample indices.</p></li>
+<li><p><strong>existing_pass1</strong> – Mapping from <code class="docutils literal notranslate"><span class="pre">(problem,</span> <span class="pre">sample_idx)</span></code> to full pass-1 text.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExistingPassState.existing_pass1">
+<span class="sig-name descname"><span class="pre">existing_pass1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExistingPassState.existing_pass1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExistingPassState.existing_samples">
+<span class="sig-name descname"><span class="pre">existing_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">DefaultDict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExistingPassState.existing_samples" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">ExtraPassRowContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canon_gold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout" title="src.inference.domains.math.math_core.BatchLayout"><span class="pre">BatchLayout</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext" title="src.inference.domains.math.math_core.BatchWriteContext"><span class="pre">BatchWriteContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_passes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_dataset_config.PassOutputs" title="src.inference.utils.gateway_dataset_config.PassOutputs"><span class="pre">PassOutputs</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pass1_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#ExtraPassRowContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Bundle the inputs needed to pack extra-pass outputs for a row.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext.canon_gold">
+<span class="sig-name descname"><span class="pre">canon_gold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext.canon_gold" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext.context">
+<span class="sig-name descname"><span class="pre">context</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext" title="src.inference.domains.math.math_core.BatchWriteContext"><span class="pre">BatchWriteContext</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext.context" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext.extra_passes">
+<span class="sig-name descname"><span class="pre">extra_passes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_dataset_config.PassOutputs" title="src.inference.utils.gateway_dataset_config.PassOutputs"><span class="pre">PassOutputs</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext.extra_passes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext.layout">
+<span class="sig-name descname"><span class="pre">layout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout" title="src.inference.domains.math.math_core.BatchLayout"><span class="pre">BatchLayout</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext.layout" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext.pass1_result">
+<span class="sig-name descname"><span class="pre">pass1_result</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext.pass1_result" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.ExtraPassRowContext.prob">
+<span class="sig-name descname"><span class="pre">prob</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.ExtraPassRowContext.prob" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.FirstPassChoiceInputs">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">FirstPassChoiceInputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout" title="src.inference.domains.math.math_core.BatchLayout"><span class="pre">BatchLayout</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">existing_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState" title="src.inference.domains.math.math_core.ExistingPassState"><span class="pre">ExistingPassState</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_pass1_by_ex_and_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pass1_full_texts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#FirstPassChoiceInputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Inputs required to choose a representative pass-1 sample per example.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>layout</strong> – Batch layout describing the relationship between rows and examples.</p></li>
+<li><p><strong>existing_state</strong> – Snapshot of existing pass-1 results on disk.</p></li>
+<li><p><strong>new_pass1_by_ex_and_sample</strong> – Mapping from <code class="docutils literal notranslate"><span class="pre">(example_idx,</span> <span class="pre">sample_idx)</span></code>
+to newly generated full pass-1 text.</p></li>
+<li><p><strong>pass1_full_texts</strong> – All pass-1 full texts for the current batch.</p></li>
+<li><p><strong>config</strong> – Inference configuration controlling sample selection.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.FirstPassChoiceInputs.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.config" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.FirstPassChoiceInputs.existing_state">
+<span class="sig-name descname"><span class="pre">existing_state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState" title="src.inference.domains.math.math_core.ExistingPassState"><span class="pre">ExistingPassState</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.existing_state" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.FirstPassChoiceInputs.layout">
+<span class="sig-name descname"><span class="pre">layout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout" title="src.inference.domains.math.math_core.BatchLayout"><span class="pre">BatchLayout</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.layout" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.FirstPassChoiceInputs.new_pass1_by_ex_and_sample">
+<span class="sig-name descname"><span class="pre">new_pass1_by_ex_and_sample</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.new_pass1_by_ex_and_sample" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.FirstPassChoiceInputs.pass1_full_texts">
+<span class="sig-name descname"><span class="pre">pass1_full_texts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.pass1_full_texts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">MathInferenceConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#MathInferenceConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for the two-pass math inference loop.</p>
+<p>This wraps sampling-related options and second-pass settings while exposing a
+legacy, attribute-based interface for callers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split_name</strong> – Dataset split name (for example, <code class="docutils literal notranslate"><span class="pre">&quot;test&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;validation&quot;</span></code>).</p></li>
+<li><p><strong>output_dir</strong> – Directory where JSONL results will be written.</p></li>
+<li><p><strong>step</strong> – Training or checkpoint step identifier used in the output filename.</p></li>
+<li><p><strong>kwargs</strong> – Additional configuration options such as <code class="docutils literal notranslate"><span class="pre">batch_size</span></code>,
+<code class="docutils literal notranslate"><span class="pre">num_samples</span></code>, <code class="docutils literal notranslate"><span class="pre">temperature</span></code>, <code class="docutils literal notranslate"><span class="pre">top_p</span></code>, <code class="docutils literal notranslate"><span class="pre">entropy_mode</span></code>,
+<code class="docutils literal notranslate"><span class="pre">eos_ids</span></code>, <code class="docutils literal notranslate"><span class="pre">two_pass</span></code>, <code class="docutils literal notranslate"><span class="pre">second_pass_phrase</span></code>,
+<code class="docutils literal notranslate"><span class="pre">second_pass_use_sample_idx</span></code>, <code class="docutils literal notranslate"><span class="pre">think_cap</span></code>, and <code class="docutils literal notranslate"><span class="pre">answer_cap</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.answer_cap">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">answer_cap</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.answer_cap" title="Link to this definition">¶</a></dt>
+<dd><p>Maximum number of newly generated tokens for <code class="docutils literal notranslate"><span class="pre">&lt;answer&gt;</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Token cap used when generating <code class="docutils literal notranslate"><span class="pre">&lt;answer&gt;</span></code> content.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.batch_size">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.batch_size" title="Link to this definition">¶</a></dt>
+<dd><p>Batch size used for inference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of examples processed per generation batch.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.entropy_mode">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">entropy_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.entropy_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Controls how token-level entropy is computed or disabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Name of the entropy computation mode.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.eos_ids">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eos_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.eos_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Token IDs that should trigger EOS during generation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of token IDs treated as end-of-sequence markers, if any.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.num_samples">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.num_samples" title="Link to this definition">¶</a></dt>
+<dd><p>Number of samples to generate per problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of samples drawn for each problem.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.second_pass_phrase">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">second_pass_phrase</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.second_pass_phrase" title="Link to this definition">¶</a></dt>
+<dd><p>Cue phrase injected at the start of second-pass think blocks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Phrase inserted into second-pass prompts before model reasoning.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.second_pass_use_sample_idx">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">second_pass_use_sample_idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.second_pass_use_sample_idx" title="Link to this definition">¶</a></dt>
+<dd><p>Preferred sample index from pass 1 to surface in pass 2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Zero-based index of the pass-1 sample to highlight.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.temperature">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">temperature</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.temperature" title="Link to this definition">¶</a></dt>
+<dd><p>Sampling temperature for generation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Temperature used when sampling tokens.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.think_cap">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">think_cap</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.think_cap" title="Link to this definition">¶</a></dt>
+<dd><p>Maximum number of newly generated tokens for <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Token cap used when generating <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code> content.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.top_p">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">top_p</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.top_p" title="Link to this definition">¶</a></dt>
+<dd><p>Top-p nucleus sampling parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Cumulative probability threshold for nucleus sampling.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceConfig.two_pass">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">two_pass</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceConfig.two_pass" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the reconsideration second pass is enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the second pass should be run, otherwise <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">MathInferenceContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#MathInferenceContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceContext" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Bundle tokenizer, model, and configuration for math generation helpers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tokenizer</strong> – Tokenizer used to encode prompts and decode outputs.</p></li>
+<li><p><strong>model</strong> – Underlying language model used for generation.</p></li>
+<li><p><strong>config</strong> – High-level math inference configuration.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceContext.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceContext.config" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceContext.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceContext.model" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathInferenceContext.tokenizer">
+<span class="sig-name descname"><span class="pre">tokenizer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathInferenceContext.tokenizer" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathSamplingConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">MathSamplingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entropy_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'reconsider'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eos_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#MathSamplingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.MathSamplingConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="src.inference.utils.html#src.inference.utils.generation.SamplingConfigBase" title="src.inference.utils.generation.SamplingConfigBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">SamplingConfigBase</span></code></a></p>
+<p>Sampling and generation controls shared by math inference loops.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> – Number of examples to process per generation batch.</p></li>
+<li><p><strong>num_samples</strong> – Number of samples to draw per problem.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathSamplingConfig.batch_size">
+<span class="sig-name descname"><span class="pre">batch_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathSamplingConfig.batch_size" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathSamplingConfig.num_samples">
+<span class="sig-name descname"><span class="pre">num_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathSamplingConfig.num_samples" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathTwoPassConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">MathTwoPassConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phrase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&quot;Hold</span> <span class="pre">on,</span> <span class="pre">this</span> <span class="pre">reasoning</span> <span class="pre">might</span> <span class="pre">be</span> <span class="pre">wrong.</span> <span class="pre">Let's</span> <span class="pre">go</span> <span class="pre">back</span> <span class="pre">and</span> <span class="pre">check</span> <span class="pre">each</span> <span class="pre">step</span> <span class="pre">carefully.</span> <span class="pre">|||</span> <span class="pre">Actually,</span> <span class="pre">this</span> <span class="pre">approach</span> <span class="pre">doesn't</span> <span class="pre">look</span> <span class="pre">correct.</span> <span class="pre">Let's</span> <span class="pre">restart</span> <span class="pre">and</span> <span class="pre">work</span> <span class="pre">through</span> <span class="pre">the</span> <span class="pre">solution</span> <span class="pre">more</span> <span class="pre">systematically.</span> <span class="pre">|||</span> <span class="pre">Wait,</span> <span class="pre">we</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">reconsider.</span> <span class="pre">Let's</span> <span class="pre">think</span> <span class="pre">this</span> <span class="pre">through</span> <span class="pre">step</span> <span class="pre">by</span> <span class="pre">step.&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">think_cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">750</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer_cap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#MathTwoPassConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.MathTwoPassConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration of the optional second pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enabled</strong> – Whether to run a second reconsideration pass.</p></li>
+<li><p><strong>phrase</strong> – Cue phrase injected into second-pass prompts.</p></li>
+<li><p><strong>use_sample_idx</strong> – Preferred pass-1 sample index to surface in pass 2.</p></li>
+<li><p><strong>think_cap</strong> – Maximum number of new tokens to generate for <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code>.</p></li>
+<li><p><strong>answer_cap</strong> – Maximum number of new tokens to generate for <code class="docutils literal notranslate"><span class="pre">&lt;answer&gt;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathTwoPassConfig.answer_cap">
+<span class="sig-name descname"><span class="pre">answer_cap</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">50</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathTwoPassConfig.answer_cap" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathTwoPassConfig.enabled">
+<span class="sig-name descname"><span class="pre">enabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathTwoPassConfig.enabled" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathTwoPassConfig.phrase">
+<span class="sig-name descname"><span class="pre">phrase</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&quot;Hold</span> <span class="pre">on,</span> <span class="pre">this</span> <span class="pre">reasoning</span> <span class="pre">might</span> <span class="pre">be</span> <span class="pre">wrong.</span> <span class="pre">Let's</span> <span class="pre">go</span> <span class="pre">back</span> <span class="pre">and</span> <span class="pre">check</span> <span class="pre">each</span> <span class="pre">step</span> <span class="pre">carefully.</span> <span class="pre">|||</span> <span class="pre">Actually,</span> <span class="pre">this</span> <span class="pre">approach</span> <span class="pre">doesn't</span> <span class="pre">look</span> <span class="pre">correct.</span> <span class="pre">Let's</span> <span class="pre">restart</span> <span class="pre">and</span> <span class="pre">work</span> <span class="pre">through</span> <span class="pre">the</span> <span class="pre">solution</span> <span class="pre">more</span> <span class="pre">systematically.</span> <span class="pre">|||</span> <span class="pre">Wait,</span> <span class="pre">we</span> <span class="pre">need</span> <span class="pre">to</span> <span class="pre">reconsider.</span> <span class="pre">Let's</span> <span class="pre">think</span> <span class="pre">this</span> <span class="pre">through</span> <span class="pre">step</span> <span class="pre">by</span> <span class="pre">step.&quot;</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathTwoPassConfig.phrase" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathTwoPassConfig.think_cap">
+<span class="sig-name descname"><span class="pre">think_cap</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">750</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathTwoPassConfig.think_cap" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.MathTwoPassConfig.use_sample_idx">
+<span class="sig-name descname"><span class="pre">use_sample_idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.MathTwoPassConfig.use_sample_idx" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.SecondPassInputs">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">SecondPassInputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout" title="src.inference.domains.math.math_core.BatchLayout"><span class="pre">BatchLayout</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre1_think</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">firstpass_choice_text_per_ex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cue_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#SecondPassInputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.SecondPassInputs" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Inputs required to run the optional second pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>layout</strong> – Layout mapping rows back to examples and sample indices.</p></li>
+<li><p><strong>pre1_think</strong> – Prefixes used for first-pass <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code> generations.</p></li>
+<li><p><strong>firstpass_choice_text_per_ex</strong> – Chosen pass-1 full text per example.</p></li>
+<li><p><strong>cue_str</strong> – Cue string to inject into second-pass reasoning.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.SecondPassInputs.cue_str">
+<span class="sig-name descname"><span class="pre">cue_str</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.SecondPassInputs.cue_str" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.SecondPassInputs.firstpass_choice_text_per_ex">
+<span class="sig-name descname"><span class="pre">firstpass_choice_text_per_ex</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.SecondPassInputs.firstpass_choice_text_per_ex" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.SecondPassInputs.layout">
+<span class="sig-name descname"><span class="pre">layout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout" title="src.inference.domains.math.math_core.BatchLayout"><span class="pre">BatchLayout</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.SecondPassInputs.layout" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.SecondPassInputs.pre1_think">
+<span class="sig-name descname"><span class="pre">pre1_think</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.inference.domains.math.math_core.SecondPassInputs.pre1_think" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.TwoPassBatchOutputs">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">TwoPassBatchOutputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pass1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_dataset_config.PassOutputs" title="src.inference.utils.gateway_dataset_config.PassOutputs"><span class="pre">PassOutputs</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pass2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_dataset_config.PassOutputs" title="src.inference.utils.gateway_dataset_config.PassOutputs"><span class="pre">PassOutputs</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#TwoPassBatchOutputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.TwoPassBatchOutputs" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container combining first- and optional second-pass outputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pass1</strong> – First-pass outputs, always present.</p></li>
+<li><p><strong>pass2</strong> – Second-pass outputs if <code class="docutils literal notranslate"><span class="pre">two_pass</span></code> is enabled, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.TwoPassBatchOutputs.pass1">
+<span class="sig-name descname"><span class="pre">pass1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_dataset_config.PassOutputs" title="src.inference.utils.gateway_dataset_config.PassOutputs"><span class="pre">PassOutputs</span></a></em><a class="headerlink" href="#src.inference.domains.math.math_core.TwoPassBatchOutputs.pass1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.TwoPassBatchOutputs.pass2">
+<span class="sig-name descname"><span class="pre">pass2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_dataset_config.PassOutputs" title="src.inference.utils.gateway_dataset_config.PassOutputs"><span class="pre">PassOutputs</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#src.inference.domains.math.math_core.TwoPassBatchOutputs.pass2" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.chat_base_for_pass1">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">chat_base_for_pass1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#chat_base_for_pass1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.chat_base_for_pass1" title="Link to this definition">¶</a></dt>
+<dd><p>Build the base chat prompt for pass 1.</p>
+<p>The resulting prompt includes the system message and a single user turn
+containing the math problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tokenizer</strong> – Chat tokenizer providing <code class="docutils literal notranslate"><span class="pre">apply_chat_template</span></code>.</p></li>
+<li><p><strong>problem</strong> – Raw problem text to inject into the user turn.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A formatted prompt string suitable for generation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.chat_base_for_pass2">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">chat_base_for_pass2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prev_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#chat_base_for_pass2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.chat_base_for_pass2" title="Link to this definition">¶</a></dt>
+<dd><p>Build the base chat prompt for pass 2.</p>
+<p>The prompt includes the problem, a prior assistant reasoning trace, and a
+user-provided cue that will seed the new <code class="docutils literal notranslate"><span class="pre">&lt;think&gt;</span></code> block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tokenizer</strong> – Chat tokenizer providing <code class="docutils literal notranslate"><span class="pre">apply_chat_template</span></code>.</p></li>
+<li><p><strong>problem</strong> – Raw problem text to inject into the user turn.</p></li>
+<li><p><strong>prev_output</strong> – Prior assistant reasoning and answer to show as context.</p></li>
+<li><p><strong>cue</strong> – Cue text that encourages reconsideration in the second pass.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A formatted prompt string suitable for second-pass generation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.load_math500">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">load_math500</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#load_math500"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.load_math500" title="Link to this definition">¶</a></dt>
+<dd><p>Thin wrapper delegating to the MATH-500 loader in <code class="xref py py-mod docutils literal notranslate"><span class="pre">math_core_runner</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core.run_inference_on_split">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core.</span></span><span class="sig-name descname"><span class="pre">run_inference_on_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">examples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core.html#run_inference_on_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core.run_inference_on_split" title="Link to this definition">¶</a></dt>
+<dd><p>Run math inference over a dataset split.</p>
+<p>This wrapper delegates to <a class="reference internal" href="#module-src.inference.domains.math.math_core_runner" title="src.inference.domains.math.math_core_runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">src.inference.domains.math.math_core_runner</span></code></a> while
+preserving the original public entry point.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.inference.domains.math.math_core_runner">
+<span id="src-inference-domains-math-math-core-runner-module"></span><h2>src.inference.domains.math.math_core_runner module<a class="headerlink" href="#module-src.inference.domains.math.math_core_runner" title="Link to this heading">¶</a></h2>
+<p>Helper functions for the two-pass math inference driver.</p>
+<p>These utilities are split out from <a class="reference internal" href="#module-src.inference.domains.math.math_core" title="src.inference.domains.math.math_core"><code class="xref py py-mod docutils literal notranslate"><span class="pre">src.inference.domains.math.math_core</span></code></a> to keep
+that module within linting size limits while preserving the public API.</p>
+<p>New code should continue to import <a class="reference internal" href="#src.inference.domains.math.math_core_runner.run_inference_on_split" title="src.inference.domains.math.math_core_runner.run_inference_on_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a> and
+<a class="reference internal" href="#src.inference.domains.math.math_core_runner.load_math500" title="src.inference.domains.math.math_core_runner.load_math500"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_math500()</span></code></a> from <a class="reference internal" href="#module-src.inference.domains.math.math_core" title="src.inference.domains.math.math_core"><code class="xref py py-mod docutils literal notranslate"><span class="pre">src.inference.domains.math.math_core</span></code></a>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core_runner.load_math500">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core_runner.</span></span><span class="sig-name descname"><span class="pre">load_math500</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core_runner.html#load_math500"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core_runner.load_math500" title="Link to this definition">¶</a></dt>
+<dd><p>Load MATH-500 (or a competition-math fallback) and normalize fields.</p>
+<p>The function first tries a sequence of MATH-500 repositories. If all of
+them fail, it falls back to a shuffled subset of <code class="docutils literal notranslate"><span class="pre">hendrycks/competition_math</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cache_dir</strong> – Directory to use as a datasets cache.</p></li>
+<li><p><strong>split</strong> – Dataset split name (for example, <code class="docutils literal notranslate"><span class="pre">&quot;train&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;test&quot;</span></code>).</p></li>
+<li><p><strong>seed</strong> – Random seed used when sub-sampling the fallback dataset.</p></li>
+<li><p><strong>dataset_path</strong> – Optional local JSON file to load instead of remote datasets.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A datasets-like object exposing <code class="docutils literal notranslate"><span class="pre">map</span></code>/<code class="docutils literal notranslate"><span class="pre">filter</span></code> and <code class="docutils literal notranslate"><span class="pre">select</span></code>.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – If neither MATH-500 nor the competition-math fallback can be loaded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_core_runner.run_inference_on_split">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_core_runner.</span></span><span class="sig-name descname"><span class="pre">run_inference_on_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">examples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig" title="src.inference.domains.math.math_core.MathInferenceConfig"><span class="pre">MathInferenceConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/domains/math/math_core_runner.html#run_inference_on_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_core_runner.run_inference_on_split" title="Link to this definition">¶</a></dt>
+<dd><p>Run math inference over a dataset split.</p>
+<p>The function respects existing results on disk and only generates new
+samples for problems and sample indices that have not yet been filled,
+up to <code class="docutils literal notranslate"><span class="pre">config.num_samples</span></code> per problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>examples</strong> – Dataset object containing math problems and answers.</p></li>
+<li><p><strong>tokenizer</strong> – Tokenizer compatible with the underlying language model.</p></li>
+<li><p><strong>model</strong> – Causal language model used to generate solutions.</p></li>
+<li><p><strong>config</strong> – Inference configuration controlling sampling and second-pass behavior.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. Results are appended to a JSONL file under <code class="docutils literal notranslate"><span class="pre">config.output_dir</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-src.inference.domains.math.math_llama_core">
+<span id="src-inference-domains-math-math-llama-core-module"></span><h2>src.inference.domains.math.math_llama_core module<a class="headerlink" href="#module-src.inference.domains.math.math_llama_core" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>Two-pass batch inference for Llama-style chat LMs that produce:</dt><dd><p>&lt;think&gt; … &lt;/think&gt;&lt;answer&gt; … &lt;/answer&gt;</p>
+</dd>
+</dl>
+<p>DeepSpeed (ZeRO-3) edition:
+- Loads ZeRO-3 shards directly from checkpoint-XXX/global_stepXXXX (no merge).
+- Uses deepspeed.initialize + engine.load_checkpoint.
+- Generation goes through engine.module.generate(…).</p>
+<p>This module adapts the generic math_core two-pass loop so that it can run
+with DeepSpeed-based Llama checkpoints, while keeping the CLI surface area
+backwards-compatible.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_llama_core.load_math500">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_llama_core.</span></span><span class="sig-name descname"><span class="pre">load_math500</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/domains/math/math_llama_core.html#load_math500"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_llama_core.load_math500" title="Link to this definition">¶</a></dt>
+<dd><p>Load the MATH-500 benchmark via <code class="xref py py-mod docutils literal notranslate"><span class="pre">datasets</span></code> using the shared core logic.</p>
+<p>This is a thin wrapper around
+<a class="reference internal" href="#src.inference.domains.math.math_core.load_math500" title="src.inference.domains.math.math_core.load_math500"><code class="xref py py-func docutils literal notranslate"><span class="pre">src.inference.domains.math.math_core.load_math500()</span></code></a>
+so that the Llama runner reuses a single implementation of the loading
+and normalization logic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cache_dir</strong> – Directory to use as a datasets cache.</p></li>
+<li><p><strong>split</strong> – Dataset split name (for example, <code class="docutils literal notranslate"><span class="pre">&quot;test&quot;</span></code>).</p></li>
+<li><p><strong>seed</strong> – Random seed used when sub-sampling competition-math fallback data.</p></li>
+<li><p><strong>dataset_path</strong> – Optional local JSON file to load instead of remote datasets.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A datasets-like object exposing <code class="docutils literal notranslate"><span class="pre">map</span></code> and <code class="docutils literal notranslate"><span class="pre">select</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_llama_core.main">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_llama_core.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/domains/math/math_llama_core.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_llama_core.main" title="Link to this definition">¶</a></dt>
+<dd><p>CLI entrypoint for the DeepSpeed-backed Llama MATH runner.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. The function parses arguments, runs inference, and logs progress.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.domains.math.math_llama_core.run_inference_on_split">
+<span class="sig-prename descclassname"><span class="pre">src.inference.domains.math.math_llama_core.</span></span><span class="sig-name descname"><span class="pre">run_inference_on_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/domains/math/math_llama_core.html#run_inference_on_split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.domains.math.math_llama_core.run_inference_on_split" title="Link to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Run two-pass math inference for a dataset split.</p>
+</div></blockquote>
+<p>This is a thin adapter around
+<a class="reference internal" href="#src.inference.domains.math.math_core.run_inference_on_split" title="src.inference.domains.math.math_core.run_inference_on_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">src.inference.domains.math.math_core.run_inference_on_split()</span></code></a></p>
+<blockquote>
+<div><p>that accepts the legacy keyword-only signature used by tests and the CLI
+while delegating the core loop to <code class="xref py py-class docutils literal notranslate"><span class="pre">MathInferenceConfig</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param args<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Positional arguments are rejected to preserve keyword-only usage.</p>
+</dd>
+<dt class="field-even">param kwargs<span class="colon">:</span></dt>
+<dd class="field-even"><p>Keyword arguments including <code class="docutils literal notranslate"><span class="pre">split_name</span></code>, <code class="docutils literal notranslate"><span class="pre">examples</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tokenizer</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code>, <code class="docutils literal notranslate"><span class="pre">step</span></code>, <code class="docutils literal notranslate"><span class="pre">outdir</span></code>, and optional config
+overrides such as <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> or <code class="docutils literal notranslate"><span class="pre">num_samples</span></code>.</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. Results are written to JSONL under <code class="docutils literal notranslate"><span class="pre">outdir</span></code>.</p>
+</dd>
+<dt class="field-even">raises TypeError<span class="colon">:</span></dt>
+<dd class="field-even"><p>If positional arguments are provided or required keys are missing.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</section>
+<section id="module-src.inference.domains.math">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-src.inference.domains.math" title="Link to this heading">¶</a></h2>
+<p>Math-specific inference domain modules.</p>
+<p>This subpackage now hosts the two-pass core, ZeRO/LLM variants, and the
+shared runner helpers that previously lived in the legacy <code class="docutils literal notranslate"><span class="pre">core</span></code> package.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="src.inference.domains.summarize.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">src.inference.domains.summarize package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="src.inference.domains.crossword.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">src.inference.domains.crossword package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">src.inference.domains.math package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-src.inference.domains.math.math_core">src.inference.domains.math.math_core module</a><ul>
+<li><a class="reference internal" href="#resume-fill-behaviour">Resume / fill behaviour</a></li>
+<li><a class="reference internal" href="#other-features">Other features</a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout"><code class="docutils literal notranslate"><span class="pre">BatchLayout</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout.row_target_sample_idx"><code class="docutils literal notranslate"><span class="pre">BatchLayout.row_target_sample_idx</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout.row_to_ex_idx"><code class="docutils literal notranslate"><span class="pre">BatchLayout.row_to_ex_idx</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchLayout.work_items"><code class="docutils literal notranslate"><span class="pre">BatchLayout.work_items</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchSpec"><code class="docutils literal notranslate"><span class="pre">BatchSpec</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchSpec.cap"><code class="docutils literal notranslate"><span class="pre">BatchSpec.cap</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchSpec.prefixes"><code class="docutils literal notranslate"><span class="pre">BatchSpec.prefixes</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchSpec.stop_strs"><code class="docutils literal notranslate"><span class="pre">BatchSpec.stop_strs</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext.config"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.config</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext.cue_strs"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.cue_strs</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext.existing_state"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.existing_state</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext.firstpass_choice_text_per_ex"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.firstpass_choice_text_per_ex</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.BatchWriteContext.outpath"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.outpath</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState"><code class="docutils literal notranslate"><span class="pre">ExistingPassState</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState.existing_pass1"><code class="docutils literal notranslate"><span class="pre">ExistingPassState.existing_pass1</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExistingPassState.existing_samples"><code class="docutils literal notranslate"><span class="pre">ExistingPassState.existing_samples</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext.canon_gold"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.canon_gold</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext.context"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.context</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext.extra_passes"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.extra_passes</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext.layout"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.layout</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext.pass1_result"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.pass1_result</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.ExtraPassRowContext.prob"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.prob</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.config"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.config</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.existing_state"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.existing_state</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.layout"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.layout</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.new_pass1_by_ex_and_sample"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.new_pass1_by_ex_and_sample</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.FirstPassChoiceInputs.pass1_full_texts"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.pass1_full_texts</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.answer_cap</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.batch_size</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.entropy_mode"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.entropy_mode</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.eos_ids"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.eos_ids</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.num_samples</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.second_pass_phrase"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.second_pass_phrase</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.second_pass_use_sample_idx"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.second_pass_use_sample_idx</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.temperature"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.temperature</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.think_cap</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.top_p"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.top_p</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceConfig.two_pass"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.two_pass</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceContext"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceContext.config"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext.config</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceContext.model"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext.model</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathInferenceContext.tokenizer"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext.tokenizer</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathSamplingConfig"><code class="docutils literal notranslate"><span class="pre">MathSamplingConfig</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathSamplingConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">MathSamplingConfig.batch_size</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathSamplingConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">MathSamplingConfig.num_samples</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathTwoPassConfig"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathTwoPassConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.answer_cap</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathTwoPassConfig.enabled"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.enabled</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathTwoPassConfig.phrase"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.phrase</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathTwoPassConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.think_cap</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.MathTwoPassConfig.use_sample_idx"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.use_sample_idx</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.SecondPassInputs"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.SecondPassInputs.cue_str"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.cue_str</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.SecondPassInputs.firstpass_choice_text_per_ex"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.firstpass_choice_text_per_ex</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.SecondPassInputs.layout"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.layout</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.SecondPassInputs.pre1_think"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.pre1_think</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.TwoPassBatchOutputs"><code class="docutils literal notranslate"><span class="pre">TwoPassBatchOutputs</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.TwoPassBatchOutputs.pass1"><code class="docutils literal notranslate"><span class="pre">TwoPassBatchOutputs.pass1</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.TwoPassBatchOutputs.pass2"><code class="docutils literal notranslate"><span class="pre">TwoPassBatchOutputs.pass2</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.chat_base_for_pass1"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass1()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.chat_base_for_pass2"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass2()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.inference.domains.math.math_core_runner">src.inference.domains.math.math_core_runner module</a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core_runner.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_core_runner.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.inference.domains.math.math_llama_core">src.inference.domains.math.math_llama_core module</a><ul>
+<li><a class="reference internal" href="#src.inference.domains.math.math_llama_core.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_llama_core.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.domains.math.math_llama_core.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.inference.domains.math">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

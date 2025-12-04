@@ -1,0 +1,937 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.analysis.h3_uncertainty_buckets - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.analysis.h3_uncertainty_buckets</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">H3: Can Aha! Moments Help When the Model is Uncertain?</span>
+<span class="sd">+ Re-asking (pass2) at QUESTION &amp; PROMPT levels, with Aha variants</span>
+<span class="sd">+ Wilson CIs, step-wise &amp; bucket-wise plots/tables</span>
+<span class="sd">---------------------------------------------------------------</span>
+
+<span class="sd">Uncertainty measure</span>
+<span class="sd">-------------------</span>
+<span class="sd">Default is --measure entropy (nats). Buckets are built from entropy values.</span>
+<span class="sd">(If you set --measure perplexity, the loader converts entropy-&gt;perplexity via exp(entropy).)</span>
+<span class="sd">We keep the column name &quot;perplexity_bucket&quot; for backward compatibility with your H2/H3 formula.</span>
+
+<span class="sd">What this script does</span>
+<span class="sd">---------------------</span>
+<span class="sd">1) Robustly loads your JSONL (pass1 &amp; pass2), extracts entropy/ppx, Aha labels:</span>
+<span class="sd">   - Words (excludes injected/forced cues)</span>
+<span class="sd">   - GPT-4o canonical (optionally gated by Words)</span>
+<span class="sd">   - Formal (problem-step, gated by GPT)</span>
+<span class="sd">2) H3 GLMs per Aha variant:</span>
+<span class="sd">   correct ~ C(problem) + step_std + aha * C(perplexity_bucket)</span>
+<span class="sd">3) Re-asking analysis (pass2 vs pass1), with **Wilson 95% CIs**:</span>
+<span class="sd">   • QUESTION level (per problem): fraction solved ≥1 time (overall, by step, by bucket)</span>
+<span class="sd">   • PROMPT level (per pair): accuracy (overall, by step, by bucket)</span>
+<span class="sd">   • PROMPT-level Δ histogram (with/without forced-insight split)</span>
+<span class="sd">4) Answers written to **h3_answers.txt**:</span>
+<span class="sd">   (A) Given ≥1 correct in pass1, does pass2 increase overall accuracy?</span>
+<span class="sd">   (B) Given 0 correct in pass1, does pass2 achieve ≥1 correct?</span>
+<span class="sd">   Each answered overall, step-wise, and bucket-wise.</span>
+
+<span class="sd">Outputs</span>
+<span class="sd">-------</span>
+<span class="sd">CSV:</span>
+<span class="sd">  - h3_glm_bucket_margins.csv</span>
+<span class="sd">  - h3_bucket_group_accuracy.csv</span>
+<span class="sd">  - h3_pass2_prompt_level.csv                 # per-pair aligned rows</span>
+<span class="sd">  - h3_pass2_question_level.csv               # per-problem aligned rows</span>
+<span class="sd">  - h3_pass2_conditioned_summary.csv          # overall A &amp; B answers (macro &amp; micro)</span>
+<span class="sd">  - h3_pass2_conditioned_by_forcing.csv       # (optional) split by forced insight</span>
+<span class="sd">  - h3_prompt_level_overall.csv               # k/n with Wilson CIs</span>
+<span class="sd">  - h3_prompt_level_by_step.csv               # step-wise k/n with CIs</span>
+<span class="sd">  - h3_prompt_level_by_bucket.csv             # bucket-wise k/n with CIs</span>
+<span class="sd">  - h3_question_level_overall.csv             # k/n (any-correct) with Wilson CIs</span>
+<span class="sd">  - h3_question_level_by_step.csv             # step-wise any-correct with CIs</span>
+<span class="sd">  - h3_question_level_by_bucket.csv           # bucket-wise any-correct with CIs</span>
+<span class="sd">  - (optional) h3_pass2_prompt_level_by_aha.csv</span>
+<span class="sd">  - (optional) h3_pass2_question_level_by_aha.csv</span>
+
+<span class="sd">Plots (if --make_plots):</span>
+<span class="sd">  - h3_plot_question_overall.png              # bars + Wilson CIs</span>
+<span class="sd">  - h3_plot_question_by_step.png              # lines + CIs by step</span>
+<span class="sd">  - h3_plot_question_by_bucket.png            # points/bars + CIs by bucket</span>
+<span class="sd">  - h3_plot_prompt_overall.png                # bars + CIs</span>
+<span class="sd">  - h3_plot_prompt_by_step.png                # lines + CIs</span>
+<span class="sd">  - h3_plot_prompt_by_bucket.png              # points/bars + CIs</span>
+<span class="sd">  - h3_plot_prompt_level_delta.png            # Δ histogram (± forced)</span>
+
+<span class="sd">PDF (if --make_pdf):</span>
+<span class="sd">  - h3_summary.pdf                            # GLM bucket margins summary page</span>
+
+<span class="sd">Text:</span>
+<span class="sd">  - h3_answers.txt                            # answers to (A) and (B), overall/step/bucket</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_problem_step_from_samples</span><span class="p">,</span> <span class="n">make_formal_thresholds</span><span class="p">,</span> <span class="n">mark_formal_pairs_with_gain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.h3_uncertainty.glm</span><span class="w"> </span><span class="kn">import</span> <span class="n">bucket_group_accuracy</span><span class="p">,</span> <span class="n">fit_glm_bucket_interaction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.h3_uncertainty.ingest</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_perplexity_buckets</span><span class="p">,</span> <span class="n">load_rows</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.h3_uncertainty.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">plot_prompt_by_bucket_ci</span><span class="p">,</span>
+    <span class="n">plot_prompt_by_step_ci</span><span class="p">,</span>
+    <span class="n">plot_prompt_level_deltas</span><span class="p">,</span>
+    <span class="n">plot_prompt_overall_ci</span><span class="p">,</span>
+    <span class="n">plot_question_by_bucket_ci</span><span class="p">,</span>
+    <span class="n">plot_question_by_step_ci</span><span class="p">,</span>
+    <span class="n">plot_question_overall_ci</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.h3_uncertainty.reasking</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">compute_reasking_tables</span><span class="p">,</span>
+    <span class="n">prompt_level_acc_with_ci</span><span class="p">,</span>
+    <span class="n">question_level_any_with_ci</span><span class="p">,</span>
+    <span class="n">split_reasking_by_aha</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.h3_uncertainty.reporting</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AnswersTables</span><span class="p">,</span>
+    <span class="n">PdfSummaryConfig</span><span class="p">,</span>
+    <span class="n">write_a4_summary_pdf</span><span class="p">,</span>
+    <span class="n">write_answers_txt</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan_jsonl_files</span>
+
+
+<span class="n">GLM_VARIANTS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;aha_words&quot;</span><span class="p">,</span> <span class="s2">&quot;words&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;aha_gpt&quot;</span><span class="p">,</span> <span class="s2">&quot;gpt&quot;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;aha_formal&quot;</span><span class="p">,</span> <span class="s2">&quot;formal&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="build_arg_parser">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.build_arg_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_arg_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct the CLI argument parser.&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;results_root&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--split&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--out_dir&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--dataset_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;MATH-500&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model_name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;Qwen2.5-1.5B&quot;</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--unc_field&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;overall&quot;</span><span class="p">,</span> <span class="s2">&quot;think&quot;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;answer&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--measure&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;perplexity&quot;</span><span class="p">,</span> <span class="s2">&quot;entropy&quot;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;entropy&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--n_buckets&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--bucket_method&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--bucket_edges&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Comma-separated edges for fixed bins (entropy values, e.g., 0.2,0.5,1,1.5,2,3)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--gpt_mode&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;canonical&quot;</span><span class="p">,</span> <span class="s2">&quot;broad&quot;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;canonical&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--no_gate_gpt_by_words&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;If set, GPT shifts are NOT restricted to samples with Words-cue.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--delta1&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.13</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--delta2&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.13</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--min_prior_steps&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--cluster_by&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;problem&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;problem&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--strict_interaction_only&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Fit correct ~ C(problem) + step_std + aha:C(perplexity_bucket).&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--split_reasking_by_aha&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Additionally write re-asking summaries split by Words/GPT/Formal Aha.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--tex_path&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--make_pdf&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--make_plots&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Emit PNG plots for question- and prompt-level re-asking effects (overall/step/bucket).&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--also_pdf_plots&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--font_family&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;Times New Roman&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--font_size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="parse_bucket_edges">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.parse_bucket_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_bucket_edges</span><span class="p">(</span><span class="n">edge_string</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse comma-separated bucket edges.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">edge_string</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">piece</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">piece</span> <span class="ow">in</span> <span class="n">edge_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">piece</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;Failed to parse --bucket_edges.&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span></div>
+
+
+
+<div class="viewcode-block" id="prepare_pass1_dataframe">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.prepare_pass1_dataframe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_pass1_dataframe</span><span class="p">(</span>
+    <span class="n">samples_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add formal labels and entropy buckets to the pass-1 subset.&quot;&quot;&quot;</span>
+    <span class="n">pass1_df</span> <span class="o">=</span> <span class="n">samples_df</span><span class="p">[</span><span class="n">samples_df</span><span class="p">[</span><span class="s2">&quot;pass_id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">problem_steps</span> <span class="o">=</span> <span class="n">build_problem_step_from_samples</span><span class="p">(</span><span class="n">pass1_df</span><span class="p">)</span>
+    <span class="n">thresholds</span> <span class="o">=</span> <span class="n">make_formal_thresholds</span><span class="p">(</span>
+        <span class="n">delta1</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">delta1</span><span class="p">),</span>
+        <span class="n">delta2</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">delta2</span><span class="p">),</span>
+        <span class="n">min_prior_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">min_prior_steps</span><span class="p">),</span>
+        <span class="n">delta3</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">problem_steps</span> <span class="o">=</span> <span class="n">mark_formal_pairs_with_gain</span><span class="p">(</span><span class="n">problem_steps</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">)</span>
+    <span class="n">pass1_df</span> <span class="o">=</span> <span class="n">pass1_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+        <span class="n">problem_steps</span><span class="p">[[</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="s2">&quot;problem&quot;</span><span class="p">,</span> <span class="s2">&quot;aha_formal_pair&quot;</span><span class="p">]],</span>
+        <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="s2">&quot;problem&quot;</span><span class="p">],</span>
+        <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">({</span><span class="s2">&quot;aha_formal_pair&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+    <span class="n">pass1_df</span><span class="p">[</span><span class="s2">&quot;aha_formal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pass1_df</span><span class="p">[</span><span class="s2">&quot;aha_formal_pair&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">pass1_df</span><span class="p">[</span><span class="s2">&quot;aha_gpt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">custom_edges</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">bucket_method</span> <span class="o">==</span> <span class="s2">&quot;fixed&quot;</span><span class="p">:</span>
+        <span class="n">custom_edges</span> <span class="o">=</span> <span class="n">parse_bucket_edges</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">bucket_edges</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">add_perplexity_buckets</span><span class="p">(</span>
+        <span class="n">pass1_df</span><span class="p">,</span>
+        <span class="n">n_buckets</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">n_buckets</span><span class="p">),</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">bucket_method</span><span class="p">,</span>
+        <span class="n">custom_edges</span><span class="o">=</span><span class="n">custom_edges</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="run_glm_variants">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.run_glm_variants">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_glm_variants</span><span class="p">(</span>
+    <span class="n">pass1_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fit GLMs per variant and write associated CSVs.&quot;&quot;&quot;</span>
+    <span class="n">summary_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_glm_fit_summaries&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">summary_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">margin_rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">aha_col</span><span class="p">,</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">GLM_VARIANTS</span><span class="p">:</span>
+        <span class="n">subset</span> <span class="o">=</span> <span class="n">pass1_df</span><span class="p">[</span><span class="o">~</span><span class="n">pass1_df</span><span class="p">[</span><span class="n">aha_col</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">subset</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">out_txt</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">summary_dir</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;logit_pass1_correct_on_</span><span class="si">{</span><span class="n">aha_col</span><span class="si">}</span><span class="s2">_by_bucket.txt&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">model_info</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fit_glm_bucket_interaction</span><span class="p">(</span>
+            <span class="n">data_frame</span><span class="o">=</span><span class="n">subset</span><span class="p">,</span>
+            <span class="n">aha_col</span><span class="o">=</span><span class="n">aha_col</span><span class="p">,</span>
+            <span class="n">strict_interaction_only</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">strict_interaction_only</span><span class="p">,</span>
+            <span class="n">cluster_by</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">cluster_by</span><span class="p">,</span>
+            <span class="n">out_txt</span><span class="o">=</span><span class="n">out_txt</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">bucket_row</span> <span class="ow">in</span> <span class="n">model_info</span><span class="p">[</span><span class="s2">&quot;bucket_rows&quot;</span><span class="p">]:</span>
+            <span class="n">margin_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">,</span>
+                    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+                    <span class="s2">&quot;variant&quot;</span><span class="p">:</span> <span class="n">tag</span><span class="p">,</span>
+                    <span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">:</span> <span class="n">bucket_row</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="n">bucket_row</span><span class="p">[</span><span class="s2">&quot;N&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;share_aha&quot;</span><span class="p">:</span> <span class="n">bucket_row</span><span class="p">[</span><span class="s2">&quot;share_aha&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;AME_bucket&quot;</span><span class="p">:</span> <span class="n">bucket_row</span><span class="p">[</span><span class="s2">&quot;AME_bucket&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;glm_summary_path&quot;</span><span class="p">:</span> <span class="n">out_txt</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="n">accuracy_df</span> <span class="o">=</span> <span class="n">bucket_group_accuracy</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">aha_col</span><span class="o">=</span><span class="n">aha_col</span><span class="p">)</span>
+        <span class="n">accuracy_df</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;variant&quot;</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+        <span class="n">accuracy_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;h3_bucket_group_accuracy__</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">margin_rows</span><span class="p">:</span>
+        <span class="n">margins_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">margin_rows</span><span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">&quot;variant&quot;</span><span class="p">,</span> <span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">margins_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">&quot;dataset&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;model&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;variant&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;N&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;share_aha&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;AME_bucket&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;glm_summary_path&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+    <span class="n">margins_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_glm_bucket_margins.csv&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">accuracy_parts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">GLM_VARIANTS</span><span class="p">:</span>
+        <span class="n">accuracy_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;h3_bucket_group_accuracy__</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">accuracy_path</span><span class="p">):</span>
+            <span class="n">accuracy_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">accuracy_path</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">accuracy_parts</span><span class="p">:</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">accuracy_parts</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_bucket_group_accuracy.csv&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">margins_df</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_dataframe_if_any</span><span class="p">(</span><span class="n">dataframe</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Persist ``dataframe`` to CSV when non-empty.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">destination</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_empty_prompt_tables</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return placeholder prompt-level tables when no data exists.&quot;&quot;&quot;</span>
+    <span class="n">empty</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;p_overall&quot;</span><span class="p">:</span> <span class="n">empty</span><span class="p">,</span> <span class="s2">&quot;p_by_step&quot;</span><span class="p">:</span> <span class="n">empty</span><span class="p">,</span> <span class="s2">&quot;p_by_bucket&quot;</span><span class="p">:</span> <span class="n">empty</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_empty_question_tables</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return placeholder question-level tables when no data exists.&quot;&quot;&quot;</span>
+    <span class="n">empty</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;q_overall&quot;</span><span class="p">:</span> <span class="n">empty</span><span class="p">,</span> <span class="s2">&quot;q_by_step&quot;</span><span class="p">:</span> <span class="n">empty</span><span class="p">,</span> <span class="s2">&quot;q_by_bucket&quot;</span><span class="p">:</span> <span class="n">empty</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_core_reasking_tables</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">probs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">cond_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">cond_forced_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write the base re-asking CSVs.&quot;&quot;&quot;</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_pass2_prompt_level.csv&quot;</span><span class="p">))</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span><span class="n">probs_df</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_pass2_question_level.csv&quot;</span><span class="p">))</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span><span class="n">cond_df</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_pass2_conditioned_summary.csv&quot;</span><span class="p">))</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">cond_forced_df</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_pass2_conditioned_by_forcing.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_prepare_prompt_tables</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute and persist prompt-level aggregates.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_empty_prompt_tables</span><span class="p">()</span>
+    <span class="n">prompt_tables</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;p_overall&quot;</span><span class="p">:</span> <span class="n">prompt_level_acc_with_ci</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="s2">&quot;p_by_step&quot;</span><span class="p">:</span> <span class="n">prompt_level_acc_with_ci</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="s2">&quot;perplexity_bucket&quot;</span> <span class="ow">in</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">prompt_tables</span><span class="p">[</span><span class="s2">&quot;p_by_bucket&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prompt_level_acc_with_ci</span><span class="p">(</span>
+            <span class="n">pairs_df</span><span class="p">,</span>
+            <span class="p">[</span><span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">prompt_tables</span><span class="p">[</span><span class="s2">&quot;p_by_bucket&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">prompt_tables</span><span class="p">[</span><span class="s2">&quot;p_overall&quot;</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_prompt_level_overall.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">prompt_tables</span><span class="p">[</span><span class="s2">&quot;p_by_step&quot;</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_prompt_level_by_step.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">prompt_tables</span><span class="p">[</span><span class="s2">&quot;p_by_bucket&quot;</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_prompt_level_by_bucket.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">prompt_tables</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_prepare_question_tables</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute and persist question-level aggregates.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_empty_question_tables</span><span class="p">()</span>
+    <span class="n">question_tables</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;q_overall&quot;</span><span class="p">:</span> <span class="n">question_level_any_with_ci</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="s2">&quot;q_by_step&quot;</span><span class="p">:</span> <span class="n">question_level_any_with_ci</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="s2">&quot;perplexity_bucket&quot;</span> <span class="ow">in</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">question_tables</span><span class="p">[</span><span class="s2">&quot;q_by_bucket&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">question_level_any_with_ci</span><span class="p">(</span>
+            <span class="n">pairs_df</span><span class="p">,</span>
+            <span class="p">[</span><span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">question_tables</span><span class="p">[</span><span class="s2">&quot;q_by_bucket&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">question_tables</span><span class="p">[</span><span class="s2">&quot;q_overall&quot;</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_question_level_overall.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">question_tables</span><span class="p">[</span><span class="s2">&quot;q_by_step&quot;</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_question_level_by_step.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">question_tables</span><span class="p">[</span><span class="s2">&quot;q_by_bucket&quot;</span><span class="p">],</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_question_level_by_bucket.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">question_tables</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_split_by_aha</span><span class="p">(</span>
+    <span class="n">pairs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">probs_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">pass1_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Optionally write prompt/problem splits grouped by Aha variant.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">empty</span> <span class="ow">or</span> <span class="n">probs_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">prompt_by_aha</span><span class="p">,</span> <span class="n">problem_by_aha</span> <span class="o">=</span> <span class="n">split_reasking_by_aha</span><span class="p">(</span>
+        <span class="n">pairs_df</span><span class="p">,</span>
+        <span class="n">probs_df</span><span class="p">,</span>
+        <span class="n">pass1_df</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">prompt_by_aha</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_pass2_prompt_level_by_aha.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">_write_dataframe_if_any</span><span class="p">(</span>
+        <span class="n">problem_by_aha</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_pass2_question_level_by_aha.csv&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="run_reasking_analysis">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.run_reasking_analysis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_reasking_analysis</span><span class="p">(</span>
+    <span class="n">samples_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">pass1_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Produce re-asking tables, aggregates, and optional split-by-aha files.&quot;&quot;&quot;</span>
+    <span class="n">pass1_buckets</span> <span class="o">=</span> <span class="n">pass1_df</span><span class="p">[[</span><span class="s2">&quot;pair_id&quot;</span><span class="p">,</span> <span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">,</span> <span class="s2">&quot;aha_words&quot;</span><span class="p">,</span> <span class="s2">&quot;aha_gpt&quot;</span><span class="p">,</span> <span class="s2">&quot;aha_formal&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span>
+    <span class="n">aligned_df</span> <span class="o">=</span> <span class="n">samples_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">pass1_buckets</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;pair_id&quot;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
+    <span class="n">pairs_df</span><span class="p">,</span> <span class="n">probs_df</span><span class="p">,</span> <span class="n">cond_df</span><span class="p">,</span> <span class="n">cond_forced_df</span> <span class="o">=</span> <span class="n">compute_reasking_tables</span><span class="p">(</span>
+        <span class="n">aligned_df</span><span class="p">,</span>
+        <span class="n">pass1_bucket_col</span><span class="o">=</span><span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_write_core_reasking_tables</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">pairs_df</span><span class="p">,</span> <span class="n">probs_df</span><span class="p">,</span> <span class="n">cond_df</span><span class="p">,</span> <span class="n">cond_forced_df</span><span class="p">)</span>
+
+    <span class="n">prompt_tables</span> <span class="o">=</span> <span class="n">_prepare_prompt_tables</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+    <span class="n">question_tables</span> <span class="o">=</span> <span class="n">_prepare_question_tables</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">split_reasking_by_aha</span><span class="p">:</span>
+        <span class="n">_write_split_by_aha</span><span class="p">(</span><span class="n">pairs_df</span><span class="p">,</span> <span class="n">probs_df</span><span class="p">,</span> <span class="n">pass1_df</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;pairs_df&quot;</span><span class="p">:</span> <span class="n">pairs_df</span><span class="p">,</span>
+        <span class="s2">&quot;probs_df&quot;</span><span class="p">:</span> <span class="n">probs_df</span><span class="p">,</span>
+        <span class="s2">&quot;cond_df&quot;</span><span class="p">:</span> <span class="n">cond_df</span><span class="p">,</span>
+        <span class="s2">&quot;cond_forced_df&quot;</span><span class="p">:</span> <span class="n">cond_forced_df</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt_tables</span><span class="p">)</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">question_tables</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">results</span></div>
+
+
+
+<div class="viewcode-block" id="maybe_plot_results">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.maybe_plot_results">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">maybe_plot_results</span><span class="p">(</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">results</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate plots when requested.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">make_plots</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">pairs_df</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;pairs_df&quot;</span><span class="p">]</span>
+    <span class="n">q_overall</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;q_overall&quot;</span><span class="p">]</span>
+    <span class="n">q_by_step</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;q_by_step&quot;</span><span class="p">]</span>
+    <span class="n">q_by_bucket</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;q_by_bucket&quot;</span><span class="p">]</span>
+    <span class="n">p_overall</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;p_overall&quot;</span><span class="p">]</span>
+    <span class="n">p_by_step</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;p_by_step&quot;</span><span class="p">]</span>
+    <span class="n">p_by_bucket</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;p_by_bucket&quot;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">q_overall</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_question_overall_ci</span><span class="p">(</span>
+            <span class="n">q_overall</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_question_overall.png&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">q_by_step</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_question_by_step_ci</span><span class="p">(</span>
+            <span class="n">q_by_step</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_question_by_step.png&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">q_by_bucket</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_question_by_bucket_ci</span><span class="p">(</span>
+            <span class="n">q_by_bucket</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_question_by_bucket.png&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">p_overall</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_prompt_overall_ci</span><span class="p">(</span>
+            <span class="n">p_overall</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_prompt_overall.png&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">p_by_step</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_prompt_by_step_ci</span><span class="p">(</span>
+            <span class="n">p_by_step</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_prompt_by_step.png&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">p_by_bucket</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_prompt_by_bucket_ci</span><span class="p">(</span>
+            <span class="n">p_by_bucket</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_prompt_by_bucket.png&quot;</span><span class="p">),</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pairs_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">plot_prompt_level_deltas</span><span class="p">(</span>
+            <span class="n">pairs_df</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_plot_prompt_level_delta.png&quot;</span><span class="p">),</span>
+            <span class="n">by_forced</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">also_pdf</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">also_pdf_plots</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="summarize_outputs">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.summarize_outputs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">summarize_outputs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print pointers to the key outputs.&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">WROTE:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="s2">&quot;h3_glm_bucket_margins.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_bucket_group_accuracy.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_pass2_prompt_level.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_pass2_question_level.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_pass2_conditioned_summary.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_pass2_conditioned_by_forcing.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_prompt_level_overall.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_prompt_level_by_step.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_prompt_level_by_bucket.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_question_level_overall.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_question_level_by_step.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_question_level_by_bucket.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_question_overall.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_question_by_step.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_question_by_bucket.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_prompt_overall.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_prompt_by_step.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_prompt_by_bucket.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_plot_prompt_level_delta.png&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_summary.pdf&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;h3_answers.txt&quot;</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="n">candidate</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">candidate</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="run_pipeline">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.run_pipeline">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_pipeline</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute the H3 uncertainty buckets analysis.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">results_root</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;results_root is required.&quot;</span><span class="p">)</span>
+    <span class="n">out_dir</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">out_dir</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">results_root</span><span class="p">,</span> <span class="s2">&quot;h3_uncertainty_buckets&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">scan_jsonl_files</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">results_root</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">split</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">files</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;No JSONL files found.&quot;</span><span class="p">)</span>
+
+    <span class="n">samples_df</span> <span class="o">=</span> <span class="n">load_rows</span><span class="p">(</span>
+        <span class="n">files</span><span class="p">,</span>
+        <span class="n">gpt_mode</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">gpt_mode</span><span class="p">,</span>
+        <span class="n">gate_gpt_by_words</span><span class="o">=</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_gate_gpt_by_words</span><span class="p">,</span>
+        <span class="n">unc_field</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">unc_field</span><span class="p">,</span>
+        <span class="n">measure</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">measure</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">samples_df</span><span class="p">[</span><span class="s2">&quot;pass_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">samples_df</span><span class="p">[</span><span class="s2">&quot;pass_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;No pass1 rows present; cannot proceed.&quot;</span><span class="p">)</span>
+
+    <span class="n">pass1_df</span> <span class="o">=</span> <span class="n">prepare_pass1_dataframe</span><span class="p">(</span><span class="n">samples_df</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+    <span class="n">margins_df</span> <span class="o">=</span> <span class="n">run_glm_variants</span><span class="p">(</span><span class="n">pass1_df</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+    <span class="n">reask_results</span> <span class="o">=</span> <span class="n">run_reasking_analysis</span><span class="p">(</span><span class="n">samples_df</span><span class="p">,</span> <span class="n">pass1_df</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">make_pdf</span><span class="p">:</span>
+        <span class="n">pdf_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_summary.pdf&quot;</span><span class="p">)</span>
+        <span class="n">pdf_config</span> <span class="o">=</span> <span class="n">PdfSummaryConfig</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">model_name</span><span class="p">,</span>
+            <span class="n">font_family</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">font_family</span><span class="p">,</span>
+            <span class="n">font_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">font_size</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">write_a4_summary_pdf</span><span class="p">(</span><span class="n">margins_df</span><span class="o">=</span><span class="n">margins_df</span><span class="p">,</span> <span class="n">out_pdf</span><span class="o">=</span><span class="n">pdf_path</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">pdf_config</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;A4 summary PDF:&quot;</span><span class="p">,</span> <span class="n">pdf_path</span><span class="p">)</span>
+
+    <span class="n">answers_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s2">&quot;h3_answers.txt&quot;</span><span class="p">)</span>
+    <span class="n">answers_tables</span> <span class="o">=</span> <span class="n">AnswersTables</span><span class="p">(</span>
+        <span class="n">cond</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;cond_df&quot;</span><span class="p">],</span>
+        <span class="n">q_overall</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;q_overall&quot;</span><span class="p">],</span>
+        <span class="n">q_by_step</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;q_by_step&quot;</span><span class="p">],</span>
+        <span class="n">q_by_bucket</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;q_by_bucket&quot;</span><span class="p">],</span>
+        <span class="n">p_overall</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;p_overall&quot;</span><span class="p">],</span>
+        <span class="n">p_by_step</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;p_by_step&quot;</span><span class="p">],</span>
+        <span class="n">p_by_bucket</span><span class="o">=</span><span class="n">reask_results</span><span class="p">[</span><span class="s2">&quot;p_by_bucket&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">write_answers_txt</span><span class="p">(</span><span class="n">answers_path</span><span class="p">,</span> <span class="n">answers_tables</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Answers written to:&quot;</span><span class="p">,</span> <span class="n">answers_path</span><span class="p">)</span>
+
+    <span class="n">maybe_plot_results</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span> <span class="n">reask_results</span><span class="p">)</span>
+    <span class="n">summarize_outputs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/src.analysis.html#src.analysis.h3_uncertainty_buckets.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;CLI entry point.&quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">build_arg_parser</span><span class="p">()</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    <span class="n">run_pipeline</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

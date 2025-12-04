@@ -1,0 +1,656 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.analysis.h3_uncertainty.reporting - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.analysis.h3_uncertainty.reporting</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Reporting helpers for exporting tables and text summaries.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.analysis.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_paper_font_style</span>
+
+
+<span class="c1"># Some test environments provide a stubbed matplotlib; add minimal figure support.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">plt</span><span class="p">,</span> <span class="s2">&quot;figure&quot;</span><span class="p">):</span>  <span class="c1"># pragma: no cover - defensive fallback</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">_StubAxis</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub axis() call.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub text() call.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">set_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub set_xlim() call.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub set_ylim() call.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_ylim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub get_ylim() returning default bounds.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_xlim</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub get_xlim() returning default bounds.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">_StubFigure</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_axis</span> <span class="o">=</span> <span class="n">_StubAxis</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">add_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub add_axes returning a stub axis.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axis</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">savefig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub savefig() call.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">add_subplot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub add_subplot returning a stub axis.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axis</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">tight_layout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Stub tight_layout() call.&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stub_figure</span><span class="p">(</span><span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a stub figure instance.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_StubFigure</span><span class="p">()</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span> <span class="o">=</span> <span class="n">_stub_figure</span>  <span class="c1"># type: ignore[attr-defined]</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">_a</span><span class="p">,</span> <span class="o">**</span><span class="n">_k</span><span class="p">:</span> <span class="kc">None</span>  <span class="c1"># type: ignore[attr-defined]</span>
+
+
+<div class="viewcode-block" id="PdfSummaryConfig">
+<a class="viewcode-back" href="../../../../api/src.analysis.h3_uncertainty.html#src.analysis.h3_uncertainty.reporting.PdfSummaryConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PdfSummaryConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;User-configurable styling metadata for the PDF summary.&quot;&quot;&quot;</span>
+
+    <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">font_family</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Times New Roman&quot;</span>
+    <span class="n">font_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span></div>
+
+
+
+<div class="viewcode-block" id="AnswersTables">
+<a class="viewcode-back" href="../../../../api/src.analysis.h3_uncertainty.html#src.analysis.h3_uncertainty.reporting.AnswersTables">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AnswersTables</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collection of prompt/question aggregates used for answers.txt.&quot;&quot;&quot;</span>
+
+    <span class="n">cond</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">q_overall</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">q_by_step</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">q_by_bucket</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">p_overall</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">p_by_step</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="n">p_by_bucket</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span></div>
+
+
+
+<span class="n">_GROUP_SECTION_CONFIGS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;Question-level by step (any-correct):&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;q_by_step&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">],</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;  P1&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass1&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;any_pass1_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass1_hi&quot;</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;  P2&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass2&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;any_pass2_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass2_hi&quot;</span><span class="p">)),</span>
+        <span class="p">],</span>
+    <span class="p">),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;Question-level by (entropy) bucket (any-correct):&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;q_by_bucket&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">],</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;  P1&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass1&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;any_pass1_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass1_hi&quot;</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;  P2&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass2&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;any_pass2_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;any_pass2_hi&quot;</span><span class="p">)),</span>
+        <span class="p">],</span>
+    <span class="p">),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;Prompt-level by step (accuracy):&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;p_by_step&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">],</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;  P1&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass1&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;acc_pass1_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass1_hi&quot;</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;  P2&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass2&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;acc_pass2_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass2_hi&quot;</span><span class="p">)),</span>
+        <span class="p">],</span>
+    <span class="p">),</span>
+    <span class="p">(</span>
+        <span class="s2">&quot;Prompt-level by (entropy) bucket (accuracy):&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;p_by_bucket&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;perplexity_bucket&quot;</span><span class="p">],</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;  P1&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass1&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;acc_pass1_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass1_hi&quot;</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;  P2&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass2&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;acc_pass2_lo&quot;</span><span class="p">,</span> <span class="s2">&quot;acc_pass2_hi&quot;</span><span class="p">)),</span>
+        <span class="p">],</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_format_overall_block</span><span class="p">(</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">pass1_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">pass2_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">table</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">overall_row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">title</span><span class="p">,</span>
+        <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;  Pass1 </span><span class="si">{</span><span class="n">pass1_col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="n">pass1_col</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(95% CI: </span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="n">pass1_col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;_lo&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="n">pass1_col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;_hi&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;  Pass2 </span><span class="si">{</span><span class="n">pass2_col</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="n">pass2_col</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">  &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(95% CI: </span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="n">pass2_col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;_lo&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="n">pass2_col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;_hi&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">),</span>
+        <span class="sa">f</span><span class="s2">&quot;  Δ = </span><span class="si">{</span><span class="n">overall_row</span><span class="p">[</span><span class="s1">&#39;delta&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_format_table_lines</span><span class="p">(</span>
+    <span class="n">data_frame</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">keys</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">metric_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ci_cols</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="n">formatted</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lower_col</span><span class="p">,</span> <span class="n">upper_col</span> <span class="o">=</span> <span class="n">ci_cols</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data_frame</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">key_text</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">)</span>
+        <span class="n">formatted</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">key_text</span><span class="si">}</span><span class="s2">]  pass1=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="n">metric_col</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> (CI </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="n">lower_col</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="n">upper_col</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">formatted</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_append_condition_sections</span><span class="p">(</span><span class="n">lines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">cond_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Append condition-based findings for pass1/pass2 accuracy.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">cond_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">pass1_condition</span> <span class="o">=</span> <span class="n">cond_df</span><span class="p">[</span><span class="n">cond_df</span><span class="p">[</span><span class="s2">&quot;condition&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;pass1_any_correct==1&quot;</span><span class="p">]</span>
+    <span class="n">pass0_condition</span> <span class="o">=</span> <span class="n">cond_df</span><span class="p">[</span><span class="n">cond_df</span><span class="p">[</span><span class="s2">&quot;condition&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;pass1_any_correct==0&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pass1_condition</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">pass1_row</span> <span class="o">=</span> <span class="n">pass1_condition</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;A) Given ≥1 correct in pass1, does pass2 increase overall accuracy?&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  Problems: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;n_problems&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">(</span>
+                    <span class="s2">&quot;  Macro mean acc: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass1=</span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;macro_mean_acc_pass1&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass2=</span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;macro_mean_acc_pass2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Δ=</span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;macro_delta_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="s2">&quot;  Micro mean acc: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass1=</span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;micro_acc_pass1&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass2=</span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;micro_acc_pass2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Δ=</span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;micro_delta&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Reliability (stay any-correct in pass2): </span><span class="si">{</span><span class="n">pass1_row</span><span class="p">[</span><span class="s1">&#39;share_keep_any_correct_in_pass2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pass0_condition</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">pass0_row</span> <span class="o">=</span> <span class="n">pass0_condition</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;B) Given wrong every time in pass1, does pass2 get it correct at least once?&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  Problems: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;n_problems&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  Share any-correct in pass2: </span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;share_any_pass2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">(</span>
+                    <span class="s2">&quot;  Macro mean acc: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass1=</span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;macro_mean_acc_pass1&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass2=</span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;macro_mean_acc_pass2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Δ=</span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;macro_delta_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="s2">&quot;  Micro mean acc: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass1=</span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;micro_acc_pass1&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;pass2=</span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;micro_acc_pass2&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Δ=</span><span class="si">{</span><span class="n">pass0_row</span><span class="p">[</span><span class="s1">&#39;micro_delta&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">+.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_append_group_sections</span><span class="p">(</span><span class="n">lines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tables</span><span class="p">:</span> <span class="n">AnswersTables</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Append grouped tables (step/bucket by prompt/question).&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">title</span><span class="p">,</span> <span class="n">table_attr</span><span class="p">,</span> <span class="n">key_cols</span><span class="p">,</span> <span class="n">metric_specs</span> <span class="ow">in</span> <span class="n">_GROUP_SECTION_CONFIGS</span><span class="p">:</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tables</span><span class="p">,</span> <span class="n">table_attr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">table</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">ci_cols</span> <span class="ow">in</span> <span class="n">metric_specs</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_format_table_lines</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">key_cols</span><span class="p">,</span> <span class="n">metric</span><span class="p">,</span> <span class="n">ci_cols</span><span class="p">,</span> <span class="n">label</span><span class="p">))</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="write_a4_summary_pdf">
+<a class="viewcode-back" href="../../../../api/src.analysis.h3_uncertainty.html#src.analysis.h3_uncertainty.reporting.write_a4_summary_pdf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_a4_summary_pdf</span><span class="p">(</span>
+    <span class="n">margins_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">out_pdf</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">PdfSummaryConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Render a bucket summary table onto an A4 PDF with Times-like fonts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">apply_paper_font_style</span><span class="p">(</span><span class="n">font_family</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">font_family</span><span class="p">,</span> <span class="n">font_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">font_size</span><span class="p">)</span>
+    <span class="n">a4_size</span> <span class="o">=</span> <span class="p">(</span><span class="mf">8.27</span><span class="p">,</span> <span class="mf">11.69</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">a4_size</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.08</span><span class="p">,</span> <span class="mf">0.84</span><span class="p">,</span> <span class="mf">0.84</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="s2">&quot;axis&quot;</span><span class="p">):</span>  <span class="c1"># matplotlib stubs in tests may lack .axis()</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+    <span class="n">vertical_pos</span> <span class="o">=</span> <span class="mf">0.98</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+        <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">vertical_pos</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;H3 Summary — </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">dataset</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+        <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">vertical_pos</span> <span class="o">-=</span> <span class="mf">0.04</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+        <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">vertical_pos</span><span class="p">,</span>
+        <span class="s2">&quot;Bucket-wise Aha Margins (Δ Acc):&quot;</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+        <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+        <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">vertical_pos</span> <span class="o">-=</span> <span class="mf">0.02</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Variant&quot;</span><span class="p">,</span> <span class="s2">&quot;Bucket&quot;</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;Share Aha&quot;</span><span class="p">,</span> <span class="s2">&quot;Δ Acc&quot;</span><span class="p">]</span>
+    <span class="n">column_positions</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.00</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">,</span> <span class="mf">0.56</span><span class="p">,</span> <span class="mf">0.72</span><span class="p">,</span> <span class="mf">0.86</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">position</span><span class="p">,</span> <span class="n">header</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">column_positions</span><span class="p">,</span> <span class="n">headers</span><span class="p">):</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+            <span class="n">position</span><span class="p">,</span>
+            <span class="n">vertical_pos</span><span class="p">,</span>
+            <span class="n">header</span><span class="p">,</span>
+            <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+            <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+            <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">vertical_pos</span> <span class="o">-=</span> <span class="mf">0.012</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mf">0.00</span><span class="p">,</span> <span class="mf">0.98</span><span class="p">],</span> <span class="p">[</span><span class="n">vertical_pos</span><span class="p">,</span> <span class="n">vertical_pos</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">vertical_pos</span> <span class="o">-=</span> <span class="mf">0.01</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">margins_df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">column_positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vertical_pos</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">variant</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">column_positions</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">vertical_pos</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">perplexity_bucket</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">column_positions</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">vertical_pos</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">column_positions</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">vertical_pos</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">share_aha</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">column_positions</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">vertical_pos</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">AME_bucket</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
+        <span class="n">vertical_pos</span> <span class="o">-=</span> <span class="mf">0.028</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">out_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">,</span> <span class="n">pad_inches</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_answers_txt">
+<a class="viewcode-back" href="../../../../api/src.analysis.h3_uncertainty.html#src.analysis.h3_uncertainty.reporting.write_answers_txt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_answers_txt</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="n">AnswersTables</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Emit the textual summary of the main H3 findings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;H3 Answers</span><span class="se">\n</span><span class="s2">==========</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">]</span>
+    <span class="n">_append_condition_sections</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">tables</span><span class="o">.</span><span class="n">cond</span><span class="p">)</span>
+
+    <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+        <span class="n">_format_overall_block</span><span class="p">(</span>
+            <span class="s2">&quot;Question-level (any-correct, overall)&quot;</span><span class="p">,</span>
+            <span class="n">tables</span><span class="o">.</span><span class="n">q_overall</span><span class="p">,</span>
+            <span class="s2">&quot;any_pass1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;any_pass2&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+        <span class="n">_format_overall_block</span><span class="p">(</span>
+            <span class="s2">&quot;Prompt-level (accuracy, overall)&quot;</span><span class="p">,</span>
+            <span class="n">tables</span><span class="o">.</span><span class="n">p_overall</span><span class="p">,</span>
+            <span class="s2">&quot;acc_pass1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;acc_pass2&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">_append_group_sections</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">tables</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_handle</span><span class="p">:</span>
+        <span class="n">file_handle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span></div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

@@ -1,60 +1,89 @@
 # -*- coding: utf-8 -*-
 """
-cryptic_rewards.py — Dense-but-precise rewards for GRPO on cryptic crosswords.
+Dense-but-precise rewards for GRPO on cryptic crosswords.
 
-Rewarding scheme (all rewards are per-sample and clipped to [0, 1]):
+Rewarding scheme (all rewards are per-sample and clipped to ``[0, 1]``):
 
-  TAGS & TAG FACTOR
-  -----------------
-  We look for four tags in the model's completion:
-      <think>, </think>, <answer>, </answer>
-  Let present_tags be how many of these appear (0..4). We define:
-      tag_factor = present_tags / 4.0          # 0.00, 0.25, 0.50, 0.75, 1.00
-  This tag_factor multiplies the tiny "contains" bonus and the crossword
-  accuracy reward (shaping). The exact-match term remains a strict 0/1.
+TAGS & TAG FACTOR
+-----------------
 
-  COMPONENTS
-  ----------
-  1) Exact match inside <answer>…</answer>  (binary, NOT scaled by tag_factor)
-     - Extract inner <answer> text; canonicalize to LETTERS-ONLY A–Z string.
-     - Compare to canonicalized gold. If equal → base = 1.0, else 0.0.
-     - Optional enumeration check: reject if lengths mismatch (see kwargs).
+We look for four tags in the model's completion: ``<think>``, ``</think>``,
+``<answer>``, ``</answer>``. Let ``present_tags`` be how many of these appear
+(0..4). We define::
 
-  2) Tiny "contains-anywhere" bonus  (scaled by tag_factor)
-     - If the gold string appears ANYWHERE in the whole completion as a
-       stand-alone word (not touching letters on either side), we add:
-           contains_bonus * tag_factor    (default contains_bonus = 0.02)
-     - "Stand-alone word" means the character immediately before/after the
-       match is NOT a letter (Unicode-aware). Implemented with lookarounds:
-           (?<!LETTER) gold (?!LETTER), LETTER = [^\\W\\d_]
-       (so punctuation, quotes, spaces, parentheses, etc. are valid separators;
-        glued forms like 'foosuite' or 'suitefoo' do not trigger the bonus.)
+    tag_factor = present_tags / 4.0  # 0.00, 0.25, 0.50, 0.75, 1.00
 
-  3) Crossword accuracy reward (shaping)  (scaled by tag_factor)
-     - Canonicalize completion and gold as in (2), and check if the gold
-       appears ANYWHERE. If yes, we compute a length factor:
-           0.0 at <= min_tokens, → 1.0 by >= max_full_len (linear in between)
-       and multiply by tag_factor. This shaping is added as:
-           + 0.25 * crossword_accuracy_reward
-       Defaults: min_tokens=25, max_full_len=80 (override via kwargs).
+This ``tag_factor`` multiplies the tiny "contains" bonus and the crossword
+accuracy reward (shaping). The exact-match term remains a strict 0/1.
 
-  FINAL
-  -----
-  pure_accuracy_reward(...) returns:
-      clip_0_1( base + contains_bonus * tag_factor + 0.25 * crossword_accuracy )
-  crossword_accuracy_reward(...) returns the shaping term itself (already
-  tag-scaled and length-scaled), useful when combining rewards explicitly.
+COMPONENTS
+----------
 
-Kwargs you may pass:
-  - contains_bonus: float (default 0.02) tiny bonus magnitude
-  - expected_len / n_letters / length / lengths: enumeration checks for exact match
-  - min_tokens (int, default 25), max_full_len (int, default 80)
+1. **Exact match inside ``<answer>…</answer>``** (binary, *not* scaled by
+   ``tag_factor``)
 
-Notes:
-  • Lookbehind/ahead assertions are fixed-width and zero-width in Python’s `re`;
-    we use 1-char letter lookarounds to ensure separate-word matches robustly.
-  • We purposely avoid \\b “word boundary” because \\b treats digits/_ as “word”
-    characters, which isn’t the desired notion for crossword “words”.
+   - Extract inner ``<answer>`` text and canonicalize to a LETTERS-ONLY A–Z
+     string.
+   - Compare to canonicalized gold. If equal → ``base = 1.0``, else ``0.0``.
+   - Optional enumeration check: reject if lengths mismatch (see kwargs).
+
+2. **Tiny "contains-anywhere" bonus** (scaled by ``tag_factor``)
+
+   - If the gold string appears anywhere in the whole completion as a
+     stand-alone word (not touching letters on either side), add::
+
+         contains_bonus * tag_factor  # default contains_bonus = 0.02
+
+   - "Stand-alone word" means the character immediately before/after the match
+     is not a letter (Unicode-aware). Implemented with lookarounds::
+
+         (?<!LETTER) gold (?!LETTER), LETTER = [^\\W\\d_]
+
+     so punctuation, quotes, spaces, parentheses, etc. are valid separators;
+     glued forms like ``foosuite`` or ``suitefoo`` do not trigger the bonus.
+
+3. **Crossword accuracy reward (shaping)** (scaled by ``tag_factor``)
+
+   - Canonicalize completion and gold as in (2), and check if the gold appears
+     anywhere. If yes, compute a length factor:
+
+       - ``0.0`` at ``<= min_tokens``
+       - ``1.0`` by ``>= max_full_len`` (linear in between)
+
+   - Multiply by ``tag_factor`` and add as::
+
+         + 0.25 * crossword_accuracy_reward
+
+   - Defaults: ``min_tokens=25``, ``max_full_len=80`` (override via kwargs).
+
+FINAL
+-----
+
+``pure_accuracy_reward(...)`` returns::
+
+    clip_0_1(base + contains_bonus * tag_factor + 0.25 * crossword_accuracy)
+
+``crossword_accuracy_reward(...)`` returns the shaping term itself (already
+tag-scaled and length-scaled), useful when combining rewards explicitly.
+
+Keyword arguments
+-----------------
+
+- ``contains_bonus``: float (default ``0.02``) tiny bonus magnitude.
+- ``expected_len`` / ``n_letters`` / ``length`` / ``lengths``: enumeration
+  checks for exact match.
+- ``min_tokens`` (int, default ``25``).
+- ``max_full_len`` (int, default ``80``).
+
+Notes
+-----
+
+- Lookbehind/ahead assertions are fixed-width and zero-width in Python’s
+  :mod:`re`; we use 1-char letter lookarounds to ensure separate-word matches
+  robustly.
+- We purposely avoid ``\\b`` word boundaries because ``\\b`` treats digits and
+  ``_`` as "word" characters, which isn’t the desired notion for crossword
+  "words".
 
 """
 
@@ -266,22 +295,25 @@ def crossword_accuracy_reward(
     **kwargs,
 ) -> List[float]:
     """
-    "Contains-anywhere" shaping, scaled by tag_factor and length:
+    Compute a "contains-anywhere" shaping reward scaled by tag factor and length.
 
-      reward = has_gold * length_factor * tag_factor
+    The reward is::
+
+        reward = has_gold * length_factor * tag_factor
 
     where:
-      - has_gold:
-          contains_mode = "any"        → (default) gold letters appear anywhere (after canon)
-                        = "contiguous" → gold letters appear within a single contiguous LETTER+ run
-                        = "word"       → gold letters appear as a standalone LETTER+ token
-      - length_factor:  0 at <= min_tokens; 1 at >= max_full_len; linear ramp.
-      - tag_factor:     (#present_tags / 4.0), tags ∈ {<think>, </think>, <answer>, </answer>}.
 
-    Kwargs:
-      - min_tokens (int, default 25)
-      - max_full_len (int, default 80)
-      - contains_mode (str, default "any"): "any" | "contiguous" | "word"
+    - ``has_gold``:
+
+      - ``contains_mode="any"`` (default): gold letters appear anywhere (after canon).
+      - ``contains_mode="contiguous"``: gold letters appear within a single contiguous
+        LETTER+ run.
+      - ``contains_mode="word"``: gold letters appear as a standalone LETTER+ token.
+
+    - ``length_factor`` is ``0`` at ``<= min_tokens``, ``1`` at ``>= max_full_len``,
+      with a linear ramp in between.
+    - ``tag_factor`` is ``#present_tags / 4.0`` with tags in
+      ``{<think>, </think>, <answer>, </answer>}``.
     """
     config = _CrosswordScoreConfig(
         min_tokens=int(kwargs.get("min_tokens", MIN_TOKENS_DEFAULT)),
@@ -367,20 +399,24 @@ def pure_accuracy_reward(
     **kwargs,
 ) -> List[float]:
     """
-    Exact-match + tiny separate-word bonus + crossword shaping (clipped to 1.0):
+    Exact match reward with a tiny separate-word bonus and optional crossword shaping.
 
-      base = 1.0 iff canonicalized <answer>…</answer> == canonicalized gold, else 0.0
+    The components are:
 
-      tiny_bonus = contains_bonus * tag_factor  if the canonicalized letters of the
-                   gold appear as a standalone LETTER+ word in the (normalized)
-                   completion (no spaces/punct inside the match); else 0.0.
-         • Regex (case-insensitive):
-              (?<!LETTER)  GOLD_LETTERS  (?!LETTER)
-           where LETTER = [^\\W\\d_], and GOLD_LETTERS has no spaces/punct.
+    - ``base``: ``1.0`` iff canonicalized ``<answer>…</answer>`` equals the canonicalized
+      gold answer, otherwise ``0.0``.
+    - ``tiny_bonus``: ``contains_bonus * tag_factor`` when the canonicalized letters of
+      the gold appear as a standalone LETTER+ word in the normalized completion
+      (no spaces/punctuation inside the match), otherwise ``0.0``. The underlying regex
+      (case-insensitive) is::
 
-      shaping = 0.25 * crossword_accuracy_reward(…)  # already tag-/length-scaled
+          (?<!LETTER) GOLD_LETTERS (?!LETTER)
 
-      return min(1.0, base + tiny_bonus + 0.25 * shaping)
+      where ``LETTER = [^\\W\\d_]`` and ``GOLD_LETTERS`` contains no spaces/punct.
+    - ``shaping``: ``0.25 * crossword_accuracy_reward(...)`` (already tag- and
+      length-scaled).
+
+    The final reward is ``min(1.0, base + tiny_bonus + shaping)``.
     """
     contains_bonus = float(kwargs.get("contains_bonus", 0.02))
     length_kwargs: dict[str, Any] = {
@@ -451,9 +487,13 @@ def pure_accuracy_reward_math(
     **_unused_kwargs,
 ) -> List[float]:
     """
-    Pure exact-match for math problems with format requirement:
-      • Output must match <think> … </think><answer> … </answer> (any spacing/newlines).
-      • The <answer> content must exactly equal the gold (canonicalized math form).
+    Pure exact-match reward for math problems with a strict formatting requirement.
+
+    The model output must:
+
+    - match the pattern ``<think> … </think><answer> … </answer>`` (any spacing/newlines)
+    - contain an ``<answer>`` payload whose canonicalized math form exactly equals the
+      canonicalized gold answer.
     """
     outs: List[float] = []
 
@@ -495,12 +535,15 @@ def crossword_format_reward(
     prompt: List[Any] | None = None,  # unused but kept for API parity
 ) -> List[float]:
     """
-    Formatting bonus (crosswords):
-    - 0 if the answer is correct.
-    - 1 if the answer is wrong but:
-        * tags for <think>…</think><answer>…</answer> are present, and
-        * the submitted answer is all-uppercase (no lowercase letters).
-    Otherwise 0.
+    Formatting bonus for crossword-style tasks.
+
+    - Returns ``0.0`` if the answer is correct.
+    - Returns ``1.0`` if the answer is wrong but:
+
+      * tags for ``<think>…</think><answer>…</answer>`` are present, and
+      * the submitted answer is all-uppercase (no lowercase letters).
+
+    In all other cases the bonus is ``0.0``.
     """
     _ = prompt  # kept for API parity; not used in scoring
     outs: List[float] = []

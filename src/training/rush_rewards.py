@@ -640,16 +640,17 @@ def rush_solution_shaped(
     **kwargs,
 ) -> List[float]:
     """
-    Dense, shaped reward in [0,1] for Rush Hour that works WITH or WITHOUT a board.
+    Dense, shaped reward in ``[0, 1]`` for Rush Hour that works with or without a board.
 
-    When a board is provided (board_str + N), legality and Φ-progress are used.
+    When a board is provided (``board_str`` + ``N``), legality and Φ-progress are used.
     When no board is provided, the reward still gives:
-      - exact match (vs gold candidates)
-      - prefix/LCP credit vs gold
-      - gold-only "solve optimality": shorter sequences are better based on gold_moves
 
-    ``reward_inputs`` can pre-bundle gold/board hints; explicit keyword overrides
-    like ``gold_moves`` or ``board_str`` still take precedence.
+    - exact match against gold candidate sequences
+    - prefix / longest-common-prefix credit vs gold
+    - gold-only "solve optimality": shorter sequences are better based on ``gold_moves``
+
+    ``reward_inputs`` can pre-bundle gold/board hints; explicit keyword overrides like
+    ``gold_moves`` or ``board_str`` still take precedence.
     """
     inputs = _RushRewardInputs.from_kwargs(kwargs, reward_inputs)
     ctx: Dict[str, Any] = {}

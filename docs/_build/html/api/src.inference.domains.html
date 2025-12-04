@@ -1,0 +1,743 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="src.inference.domains.carpark package" href="src.inference.domains.carpark.html"><link rel="prev" title="src.inference.cli package" href="src.inference.cli.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.inference.domains package - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">src</a><input aria-label="Toggle navigation of src" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="src.html">src package</a><input aria-label="Toggle navigation of src package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.common.html">src.common package</a></li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 current has-children current-page"><a class="current reference internal" href="#">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/src.inference.domains.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="src-inference-domains-package">
+<h1>src.inference.domains package<a class="headerlink" href="#src-inference-domains-package" title="Link to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="src.inference.domains.carpark.html">src.inference.domains.carpark package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#module-src.inference.domains.carpark.carpark_board">src.inference.domains.carpark.carpark_board module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#module-src.inference.domains.carpark.carpark_cli">src.inference.domains.carpark.carpark_cli module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#module-src.inference.domains.carpark.carpark_core">src.inference.domains.carpark.carpark_core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.answer_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.columns"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.entropy_mode"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.entropy_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.eos_ids"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.eos_ids</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.from_flat"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.from_flat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.io_config"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.io_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.limits"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.limits</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.num_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.output_dir"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.output_dir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.prompt_col"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.prompt_col</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.sampling"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.sampling</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.second_pass"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.second_pass</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.second_pass_phrase"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.second_pass_phrase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.second_pass_use_sample_idx"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.second_pass_use_sample_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.solution_col"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.solution_col</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.split_name"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.split_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.step"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.step</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.temperature"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.temperature</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.think_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.top_p"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.top_p</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.two_pass"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.two_pass</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.InferenceContext"><code class="docutils literal notranslate"><span class="pre">InferenceContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.InferenceContext.config"><code class="docutils literal notranslate"><span class="pre">InferenceContext.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.InferenceContext.model"><code class="docutils literal notranslate"><span class="pre">InferenceContext.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.InferenceContext.tokenizer"><code class="docutils literal notranslate"><span class="pre">InferenceContext.tokenizer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.load_rush_dataset"><code class="docutils literal notranslate"><span class="pre">load_rush_dataset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#module-src.inference.domains.carpark.carpark_data">src.inference.domains.carpark.carpark_data module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_data.build_batch_items_for_range"><code class="docutils literal notranslate"><span class="pre">build_batch_items_for_range()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_data.load_existing_example_index"><code class="docutils literal notranslate"><span class="pre">load_existing_example_index()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_data.load_rush_dataset"><code class="docutils literal notranslate"><span class="pre">load_rush_dataset()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_data.norm_fields"><code class="docutils literal notranslate"><span class="pre">norm_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#module-src.inference.domains.carpark.carpark_solver">src.inference.domains.carpark.carpark_solver module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.answer_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.columns"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.columns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.entropy_mode"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.entropy_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.eos_ids"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.eos_ids</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.from_flat"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.from_flat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.io_config"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.io_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.limits"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.limits</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.num_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.output_dir"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.output_dir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.prompt_col"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.prompt_col</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.sampling"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.sampling</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.second_pass"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.second_pass</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.second_pass_phrase"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.second_pass_phrase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.second_pass_use_sample_idx"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.second_pass_use_sample_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.solution_col"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.solution_col</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.split_name"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.split_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.step"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.step</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.temperature"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.temperature</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.think_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.top_p"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.top_p</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.CarparkInferenceConfig.two_pass"><code class="docutils literal notranslate"><span class="pre">CarparkInferenceConfig.two_pass</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ColumnConfig"><code class="docutils literal notranslate"><span class="pre">ColumnConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ColumnConfig.prompt_col"><code class="docutils literal notranslate"><span class="pre">ColumnConfig.prompt_col</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ColumnConfig.solution_col"><code class="docutils literal notranslate"><span class="pre">ColumnConfig.solution_col</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.GenerationSamplingConfig"><code class="docutils literal notranslate"><span class="pre">GenerationSamplingConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.GenerationSamplingConfig.entropy_mode"><code class="docutils literal notranslate"><span class="pre">GenerationSamplingConfig.entropy_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.GenerationSamplingConfig.eos_ids"><code class="docutils literal notranslate"><span class="pre">GenerationSamplingConfig.eos_ids</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.GenerationSamplingConfig.temperature"><code class="docutils literal notranslate"><span class="pre">GenerationSamplingConfig.temperature</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.GenerationSamplingConfig.top_p"><code class="docutils literal notranslate"><span class="pre">GenerationSamplingConfig.top_p</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.IOConfig"><code class="docutils literal notranslate"><span class="pre">IOConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.IOConfig.output_dir"><code class="docutils literal notranslate"><span class="pre">IOConfig.output_dir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.IOConfig.split_name"><code class="docutils literal notranslate"><span class="pre">IOConfig.split_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.IOConfig.step"><code class="docutils literal notranslate"><span class="pre">IOConfig.step</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.InferenceContext"><code class="docutils literal notranslate"><span class="pre">InferenceContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.InferenceContext.config"><code class="docutils literal notranslate"><span class="pre">InferenceContext.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.InferenceContext.model"><code class="docutils literal notranslate"><span class="pre">InferenceContext.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.InferenceContext.tokenizer"><code class="docutils literal notranslate"><span class="pre">InferenceContext.tokenizer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext"><code class="docutils literal notranslate"><span class="pre">ResultsContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext.cue_str"><code class="docutils literal notranslate"><span class="pre">ResultsContext.cue_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext.existing_by_example"><code class="docutils literal notranslate"><span class="pre">ResultsContext.existing_by_example</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext.firstpass_choice"><code class="docutils literal notranslate"><span class="pre">ResultsContext.firstpass_choice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext.inference"><code class="docutils literal notranslate"><span class="pre">ResultsContext.inference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext.num_samples"><code class="docutils literal notranslate"><span class="pre">ResultsContext.num_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.ResultsContext.outpath"><code class="docutils literal notranslate"><span class="pre">ResultsContext.outpath</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext"><code class="docutils literal notranslate"><span class="pre">SampleRowContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext.batch_index"><code class="docutils literal notranslate"><span class="pre">SampleRowContext.batch_index</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext.example"><code class="docutils literal notranslate"><span class="pre">SampleRowContext.example</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext.gold_set"><code class="docutils literal notranslate"><span class="pre">SampleRowContext.gold_set</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext.passes"><code class="docutils literal notranslate"><span class="pre">SampleRowContext.passes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext.results_ctx"><code class="docutils literal notranslate"><span class="pre">SampleRowContext.results_ctx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowContext.sample_idx"><code class="docutils literal notranslate"><span class="pre">SampleRowContext.sample_idx</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowPasses"><code class="docutils literal notranslate"><span class="pre">SampleRowPasses</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowPasses.extra_passes"><code class="docutils literal notranslate"><span class="pre">SampleRowPasses.extra_passes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowPasses.pass1"><code class="docutils literal notranslate"><span class="pre">SampleRowPasses.pass1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SampleRowPasses.pass2"><code class="docutils literal notranslate"><span class="pre">SampleRowPasses.pass2</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassConfig"><code class="docutils literal notranslate"><span class="pre">SecondPassConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassConfig.phrase"><code class="docutils literal notranslate"><span class="pre">SecondPassConfig.phrase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassConfig.two_pass"><code class="docutils literal notranslate"><span class="pre">SecondPassConfig.two_pass</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassConfig.use_sample_idx"><code class="docutils literal notranslate"><span class="pre">SecondPassConfig.use_sample_idx</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassContext"><code class="docutils literal notranslate"><span class="pre">SecondPassContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassContext.batch_items"><code class="docutils literal notranslate"><span class="pre">SecondPassContext.batch_items</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassContext.cue_str"><code class="docutils literal notranslate"><span class="pre">SecondPassContext.cue_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassContext.firstpass_choice"><code class="docutils literal notranslate"><span class="pre">SecondPassContext.firstpass_choice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassContext.inference"><code class="docutils literal notranslate"><span class="pre">SecondPassContext.inference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.SecondPassContext.num_samples"><code class="docutils literal notranslate"><span class="pre">SecondPassContext.num_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.chat_base_for_pass1_from_messages"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass1_from_messages()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.chat_base_for_pass2_from_messages"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass2_from_messages()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_solver.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.carpark.html#module-src.inference.domains.carpark">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src.inference.domains.crossword.html">src.inference.domains.crossword package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.crossword.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.crossword.html#module-src.inference.domains.crossword.crossword_core">src.inference.domains.crossword.crossword_core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.BatchGenerationContext"><code class="docutils literal notranslate"><span class="pre">BatchGenerationContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.BatchGenerationContext.config"><code class="docutils literal notranslate"><span class="pre">BatchGenerationContext.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.BatchGenerationContext.model"><code class="docutils literal notranslate"><span class="pre">BatchGenerationContext.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.BatchGenerationContext.tokenizer"><code class="docutils literal notranslate"><span class="pre">BatchGenerationContext.tokenizer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordCapsConfig"><code class="docutils literal notranslate"><span class="pre">CrosswordCapsConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordCapsConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">CrosswordCapsConfig.answer_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordCapsConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">CrosswordCapsConfig.batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordCapsConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">CrosswordCapsConfig.num_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordCapsConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">CrosswordCapsConfig.think_cap</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.caps"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.caps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.eos_ids"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.eos_ids</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.output_dir"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.output_dir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.sampling"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.sampling</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.split_name"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.split_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.step"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.step</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordInferenceConfig.two_pass"><code class="docutils literal notranslate"><span class="pre">CrosswordInferenceConfig.two_pass</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordSamplingConfig"><code class="docutils literal notranslate"><span class="pre">CrosswordSamplingConfig</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordTwoPassConfig"><code class="docutils literal notranslate"><span class="pre">CrosswordTwoPassConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordTwoPassConfig.enabled"><code class="docutils literal notranslate"><span class="pre">CrosswordTwoPassConfig.enabled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordTwoPassConfig.phrase"><code class="docutils literal notranslate"><span class="pre">CrosswordTwoPassConfig.phrase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.CrosswordTwoPassConfig.sample_index"><code class="docutils literal notranslate"><span class="pre">CrosswordTwoPassConfig.sample_index</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext.canon_gold"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.canon_gold</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext.config"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext.example"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.example</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext.extra_passes"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.extra_passes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext.firstpass_choice"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.firstpass_choice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.ExtraPassRowContext.pass1"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.pass1</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.SecondPassInputs"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.SecondPassInputs.batch"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.batch</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.SecondPassInputs.firstpass_choice"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.firstpass_choice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.SecondPassInputs.num_samples"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.num_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.chat_base_for_pass1"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.chat_base_for_pass2"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.load_crossword_local"><code class="docutils literal notranslate"><span class="pre">load_crossword_local()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.crossword.html#src.inference.domains.crossword.crossword_core.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.crossword.html#module-src.inference.domains.crossword">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src.inference.domains.math.html">src.inference.domains.math package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.math.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.math.html#module-src.inference.domains.math.math_core">src.inference.domains.math.math_core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#resume-fill-behaviour">Resume / fill behaviour</a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#other-features">Other features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchLayout"><code class="docutils literal notranslate"><span class="pre">BatchLayout</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchLayout.row_target_sample_idx"><code class="docutils literal notranslate"><span class="pre">BatchLayout.row_target_sample_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchLayout.row_to_ex_idx"><code class="docutils literal notranslate"><span class="pre">BatchLayout.row_to_ex_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchLayout.work_items"><code class="docutils literal notranslate"><span class="pre">BatchLayout.work_items</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchSpec"><code class="docutils literal notranslate"><span class="pre">BatchSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchSpec.cap"><code class="docutils literal notranslate"><span class="pre">BatchSpec.cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchSpec.prefixes"><code class="docutils literal notranslate"><span class="pre">BatchSpec.prefixes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchSpec.stop_strs"><code class="docutils literal notranslate"><span class="pre">BatchSpec.stop_strs</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchWriteContext"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchWriteContext.config"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchWriteContext.cue_strs"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.cue_strs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchWriteContext.existing_state"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.existing_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchWriteContext.firstpass_choice_text_per_ex"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.firstpass_choice_text_per_ex</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.BatchWriteContext.outpath"><code class="docutils literal notranslate"><span class="pre">BatchWriteContext.outpath</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExistingPassState"><code class="docutils literal notranslate"><span class="pre">ExistingPassState</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExistingPassState.existing_pass1"><code class="docutils literal notranslate"><span class="pre">ExistingPassState.existing_pass1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExistingPassState.existing_samples"><code class="docutils literal notranslate"><span class="pre">ExistingPassState.existing_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext.canon_gold"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.canon_gold</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext.context"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.context</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext.extra_passes"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.extra_passes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext.layout"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.layout</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext.pass1_result"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.pass1_result</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.ExtraPassRowContext.prob"><code class="docutils literal notranslate"><span class="pre">ExtraPassRowContext.prob</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.FirstPassChoiceInputs"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.FirstPassChoiceInputs.config"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.FirstPassChoiceInputs.existing_state"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.existing_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.FirstPassChoiceInputs.layout"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.layout</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.FirstPassChoiceInputs.new_pass1_by_ex_and_sample"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.new_pass1_by_ex_and_sample</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.FirstPassChoiceInputs.pass1_full_texts"><code class="docutils literal notranslate"><span class="pre">FirstPassChoiceInputs.pass1_full_texts</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.answer_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.entropy_mode"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.entropy_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.eos_ids"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.eos_ids</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.num_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.second_pass_phrase"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.second_pass_phrase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.second_pass_use_sample_idx"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.second_pass_use_sample_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.temperature"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.temperature</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.think_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.top_p"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.top_p</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceConfig.two_pass"><code class="docutils literal notranslate"><span class="pre">MathInferenceConfig.two_pass</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceContext"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceContext.config"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceContext.model"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathInferenceContext.tokenizer"><code class="docutils literal notranslate"><span class="pre">MathInferenceContext.tokenizer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathSamplingConfig"><code class="docutils literal notranslate"><span class="pre">MathSamplingConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathSamplingConfig.batch_size"><code class="docutils literal notranslate"><span class="pre">MathSamplingConfig.batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathSamplingConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">MathSamplingConfig.num_samples</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathTwoPassConfig"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathTwoPassConfig.answer_cap"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.answer_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathTwoPassConfig.enabled"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.enabled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathTwoPassConfig.phrase"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.phrase</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathTwoPassConfig.think_cap"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.think_cap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.MathTwoPassConfig.use_sample_idx"><code class="docutils literal notranslate"><span class="pre">MathTwoPassConfig.use_sample_idx</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.SecondPassInputs"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.SecondPassInputs.cue_str"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.cue_str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.SecondPassInputs.firstpass_choice_text_per_ex"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.firstpass_choice_text_per_ex</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.SecondPassInputs.layout"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.layout</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.SecondPassInputs.pre1_think"><code class="docutils literal notranslate"><span class="pre">SecondPassInputs.pre1_think</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.TwoPassBatchOutputs"><code class="docutils literal notranslate"><span class="pre">TwoPassBatchOutputs</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.TwoPassBatchOutputs.pass1"><code class="docutils literal notranslate"><span class="pre">TwoPassBatchOutputs.pass1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.TwoPassBatchOutputs.pass2"><code class="docutils literal notranslate"><span class="pre">TwoPassBatchOutputs.pass2</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.chat_base_for_pass1"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.chat_base_for_pass2"><code class="docutils literal notranslate"><span class="pre">chat_base_for_pass2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.math.html#module-src.inference.domains.math.math_core_runner">src.inference.domains.math.math_core_runner module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core_runner.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_core_runner.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.math.html#module-src.inference.domains.math.math_llama_core">src.inference.domains.math.math_llama_core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_llama_core.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_llama_core.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.math.html#src.inference.domains.math.math_llama_core.run_inference_on_split"><code class="docutils literal notranslate"><span class="pre">run_inference_on_split()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.math.html#module-src.inference.domains.math">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src.inference.domains.summarize.html">src.inference.domains.summarize package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.summarize.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.summarize.html#module-src.inference.domains.summarize.summarize_inference_core">src.inference.domains.summarize.summarize_inference_core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate"><code class="docutils literal notranslate"><span class="pre">PassAggregate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.correct_by_problem"><code class="docutils literal notranslate"><span class="pre">PassAggregate.correct_by_problem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.entropy_all"><code class="docutils literal notranslate"><span class="pre">PassAggregate.entropy_all</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.entropy_answer"><code class="docutils literal notranslate"><span class="pre">PassAggregate.entropy_answer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.entropy_think"><code class="docutils literal notranslate"><span class="pre">PassAggregate.entropy_think</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.n_samples"><code class="docutils literal notranslate"><span class="pre">PassAggregate.n_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.reconsider_numer"><code class="docutils literal notranslate"><span class="pre">PassAggregate.reconsider_numer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.sample_correct"><code class="docutils literal notranslate"><span class="pre">PassAggregate.sample_correct</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.sample_improved"><code class="docutils literal notranslate"><span class="pre">PassAggregate.sample_improved</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.soft_by_problem"><code class="docutils literal notranslate"><span class="pre">PassAggregate.soft_by_problem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.soft_values"><code class="docutils literal notranslate"><span class="pre">PassAggregate.soft_values</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.stop_answer"><code class="docutils literal notranslate"><span class="pre">PassAggregate.stop_answer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.stop_counts"><code class="docutils literal notranslate"><span class="pre">PassAggregate.stop_counts</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.stop_think"><code class="docutils literal notranslate"><span class="pre">PassAggregate.stop_think</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.tag_ok"><code class="docutils literal notranslate"><span class="pre">PassAggregate.tag_ok</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.tokens_answer"><code class="docutils literal notranslate"><span class="pre">PassAggregate.tokens_answer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.PassAggregate.tokens_think"><code class="docutils literal notranslate"><span class="pre">PassAggregate.tokens_think</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg"><code class="docutils literal notranslate"><span class="pre">StepAgg</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.add_record"><code class="docutils literal notranslate"><span class="pre">StepAgg.add_record()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.ex_improved_p2"><code class="docutils literal notranslate"><span class="pre">StepAgg.ex_improved_p2</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.example_level_soft_mean"><code class="docutils literal notranslate"><span class="pre">StepAgg.example_level_soft_mean()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.examples"><code class="docutils literal notranslate"><span class="pre">StepAgg.examples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.finalize"><code class="docutils literal notranslate"><span class="pre">StepAgg.finalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.footer_text"><code class="docutils literal notranslate"><span class="pre">StepAgg.footer_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.pass1"><code class="docutils literal notranslate"><span class="pre">StepAgg.pass1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.pass2"><code class="docutils literal notranslate"><span class="pre">StepAgg.pass2</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.row_text"><code class="docutils literal notranslate"><span class="pre">StepAgg.row_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.StepAgg.step"><code class="docutils literal notranslate"><span class="pre">StepAgg.step</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.accumulate_prompt_variants"><code class="docutils literal notranslate"><span class="pre">accumulate_prompt_variants()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.build_step_csv_row"><code class="docutils literal notranslate"><span class="pre">build_step_csv_row()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.extract_group"><code class="docutils literal notranslate"><span class="pre">extract_group()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.extract_prompt"><code class="docutils literal notranslate"><span class="pre">extract_prompt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.fmt_float"><code class="docutils literal notranslate"><span class="pre">fmt_float()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.group_name_for_record"><code class="docutils literal notranslate"><span class="pre">group_name_for_record()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.maybe_recompute_correctness"><code class="docutils literal notranslate"><span class="pre">maybe_recompute_correctness()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.mean_safe"><code class="docutils literal notranslate"><span class="pre">mean_safe()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.nat_step_from_path"><code class="docutils literal notranslate"><span class="pre">nat_step_from_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.pct"><code class="docutils literal notranslate"><span class="pre">pct()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.scan_files"><code class="docutils literal notranslate"><span class="pre">scan_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="src.inference.domains.summarize.html#src.inference.domains.summarize.summarize_inference_core.should_drop_group"><code class="docutils literal notranslate"><span class="pre">should_drop_group()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="src.inference.domains.summarize.html#module-src.inference.domains.summarize">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-src.inference.domains">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-src.inference.domains" title="Link to this heading">¶</a></h2>
+<p>Domain-specific inference modules.</p>
+<p>Each subpackage (<code class="docutils literal notranslate"><span class="pre">math</span></code>, <code class="docutils literal notranslate"><span class="pre">carpark</span></code>, <code class="docutils literal notranslate"><span class="pre">crossword</span></code>) contains the
+task-specific inference loops plus helpers that previously lived in the
+legacy <code class="docutils literal notranslate"><span class="pre">core</span></code> package.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="src.inference.domains.carpark.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">src.inference.domains.carpark package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="src.inference.cli.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">src.inference.cli package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">src.inference.domains package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#module-src.inference.domains">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

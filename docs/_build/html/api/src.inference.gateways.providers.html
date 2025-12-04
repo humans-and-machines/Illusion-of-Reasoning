@@ -1,0 +1,664 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="src.inference.runners package" href="src.inference.runners.html"><link rel="prev" title="src.inference.gateways package" href="src.inference.gateways.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.inference.gateways.providers package - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">src</a><input aria-label="Toggle navigation of src" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="src.html">src package</a><input aria-label="Toggle navigation of src package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.common.html">src.common package</a></li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 current has-children"><a class="reference internal" href="src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l5 current current-page"><a class="current reference internal" href="#">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/src.inference.gateways.providers.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="src-inference-gateways-providers-package">
+<h1>src.inference.gateways.providers package<a class="headerlink" href="#src-inference-gateways-providers-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-src.inference.gateways.providers.azure">
+<span id="src-inference-gateways-providers-azure-module"></span><h2>src.inference.gateways.providers.azure module<a class="headerlink" href="#module-src.inference.gateways.providers.azure" title="Link to this heading">¶</a></h2>
+<p>Gateway-style MATH-500 inference for Azure-hosted DeepSeek-R1 (open-source).</p>
+<p>Behavior:
+- Single-pass generation with the same math system prompt used in GRPO runs.
+- Writes JSONL to: {output_dir}/step{step:04d}_{split}.jsonl
+- Resumable: if a JSONL already exists, only missing sample_idx entries are</p>
+<blockquote>
+<div><p>generated.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Uses Azure OpenAI (Responses API if available; falls back to Chat
+Completions).</p></li>
+</ul>
+<p>This script is a <strong>specialized / legacy gateway runner</strong>. For canonical
+HF-based math evaluation, prefer <code class="docutils literal notranslate"><span class="pre">src.inference.cli.unified_math</span></code> using local
+checkpoints.</p>
+<dl class="simple">
+<dt>Usage (env-based auth):</dt><dd><p>export AZURE_OPENAI_ENDPOINT=”<a class="reference external" href="https:/">https:/</a>/&lt;resource&gt;.openai.azure.com”
+export AZURE_OPENAI_API_KEY=”<a href="#id1"><span class="problematic" id="id2">**</span></a><a href="#id3"><span class="problematic" id="id4">*</span></a>”
+export AZURE_OPENAI_DEPLOYMENT=”deepseek-r1”  # or your deployment name
+python -m src.inference.gateways.providers.azure       –output_dir artifacts/results/deepseek-r1</p>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.azure.load_math500">
+<span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.azure.</span></span><span class="sig-name descname"><span class="pre">load_math500</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/gateways/providers/azure.html#load_math500"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.azure.load_math500" title="Link to this definition">¶</a></dt>
+<dd><p>Thin wrapper that defers to the shared math-500 loader (monkeypatchable in tests).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.azure.main">
+<span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.azure.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/gateways/providers/azure.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.azure.main" title="Link to this definition">¶</a></dt>
+<dd><p>CLI entrypoint for single-pass Azure DeepSeek MATH-500 inference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. The function parses arguments and runs the generation loop.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-src.inference.gateways.providers.openrouter">
+<span id="src-inference-gateways-providers-openrouter-module"></span><h2>src.inference.gateways.providers.openrouter module<a class="headerlink" href="#module-src.inference.gateways.providers.openrouter" title="Link to this heading">¶</a></h2>
+<p>Gateway-style MATH-500 inference for DeepSeek-R1 via OpenRouter.</p>
+<p>Behavior:
+- Single-pass generation with the same math system prompt used in GRPO runs.
+- Writes JSONL to: {output_dir}/step{step:04d}_{split}.jsonl
+- Resumable: if a JSONL already exists, only missing sample_idx entries are generated.</p>
+<p>This script is a <strong>specialized / legacy gateway runner</strong> intended for remote
+API experiments. For canonical HF-based math evaluation, prefer
+<code class="docutils literal notranslate"><span class="pre">src.inference.cli.unified_math</span></code>.</p>
+<p>Auth:
+- Expects an OpenRouter API key in the <cite>OPENROUTER_API_KEY</cite> env var.</p>
+<dl>
+<dt>Example usage:</dt><dd><p>export OPENROUTER_API_KEY=”sk-or-…”
+python -m src.inference.gateways.providers.openrouter </p>
+<blockquote>
+<div><p>–output_dir artifacts/results/deepseek-r1-openrouter –model deepseek/deepseek-r1:free</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.openrouter.main">
+<span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.openrouter.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/gateways/providers/openrouter.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.openrouter.main" title="Link to this definition">¶</a></dt>
+<dd><p>CLI entry point for generating DeepSeek-R1 samples via OpenRouter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. The function parses arguments and runs the generation loop.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-src.inference.gateways.providers.portkey">
+<span id="src-inference-gateways-providers-portkey-module"></span><h2>src.inference.gateways.providers.portkey module<a class="headerlink" href="#module-src.inference.gateways.providers.portkey" title="Link to this heading">¶</a></h2>
+<p>Gateway-style MATH-500 inference via the Portkey AI Gateway (e.g., Princeton AI
+Sandbox).</p>
+<p>Behavior:
+- Single-pass generation with the same math system prompt used in GRPO runs.
+- Writes JSONL to: {output_dir}/step{step:04d}_{split}.jsonl
+- Resumable: if a JSONL already exists, only missing sample_idx entries are</p>
+<blockquote>
+<div><p>generated.</p>
+</div></blockquote>
+<p>This script is a <strong>specialized / legacy gateway runner</strong>. For canonical
+HF-based math evaluation, prefer
+<code class="docutils literal notranslate"><span class="pre">src.inference.cli.unified_math</span></code>; use this module only when you
+need Portkey/sandbox-based remote models.</p>
+<p>Auth:
+- Expects an API key in the <cite>AI_SANDBOX_KEY</cite> env var (Portkey key or sandbox</p>
+<blockquote>
+<div><p>key).</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Example usage:</dt><dd><p>export AI_SANDBOX_KEY=”<a href="#id5"><span class="problematic" id="id6">**</span></a><a href="#id7"><span class="problematic" id="id8">*</span></a>”
+python -m src.inference.gateways.providers.portkey       –output_dir artifacts/results/gpt4o-math-portkey</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.ExampleContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.portkey.</span></span><span class="sig-name descname"><span class="pre">ExampleContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">problem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gold_answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canon_gold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/gateways/providers/portkey.html#ExampleContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.portkey.ExampleContext" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Per-example metadata for a MATH-500 row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>problem</strong> – Normalized problem text.</p></li>
+<li><p><strong>gold_answer</strong> – Ground-truth answer associated with the problem.</p></li>
+<li><p><strong>canon_gold</strong> – Canonicalized gold answer.</p></li>
+<li><p><strong>sample_idx</strong> – Sample index for this generation.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.ExampleContext.canon_gold">
+<span class="sig-name descname"><span class="pre">canon_gold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.ExampleContext.canon_gold" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.ExampleContext.gold_answer">
+<span class="sig-name descname"><span class="pre">gold_answer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.ExampleContext.gold_answer" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.ExampleContext.problem">
+<span class="sig-name descname"><span class="pre">problem</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.ExampleContext.problem" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.ExampleContext.sample_idx">
+<span class="sig-name descname"><span class="pre">sample_idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.ExampleContext.sample_idx" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyCallResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.portkey.</span></span><span class="sig-name descname"><span class="pre">PortkeyCallResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finish_reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/gateways/providers/portkey.html#PortkeyCallResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyCallResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result of a single Portkey generation call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> – Raw model output text.</p></li>
+<li><p><strong>answer</strong> – Extracted answer text from the output.</p></li>
+<li><p><strong>finish_reason</strong> – Finish reason reported by the API.</p></li>
+<li><p><strong>usage</strong> – Optional usage object returned by the SDK.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyCallResult.answer">
+<span class="sig-name descname"><span class="pre">answer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.answer" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyCallResult.finish_reason">
+<span class="sig-name descname"><span class="pre">finish_reason</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.finish_reason" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyCallResult.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyCallResult.usage">
+<span class="sig-name descname"><span class="pre">usage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.usage" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.portkey.</span></span><span class="sig-name descname"><span class="pre">PortkeyRunConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_utils.GatewayCallParams" title="src.inference.utils.gateway_utils.GatewayCallParams"><span class="pre">GatewayCallParams</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/inference/gateways/providers/portkey.html#PortkeyRunConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for a Portkey MATH-500 pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_path</strong> – Path to the JSONL file where results are written.</p></li>
+<li><p><strong>split_name</strong> – Dataset split name (for example, <code class="docutils literal notranslate"><span class="pre">&quot;test&quot;</span></code>).</p></li>
+<li><p><strong>model_name</strong> – Model identifier used via Portkey.</p></li>
+<li><p><strong>num_samples</strong> – Number of samples to generate per problem.</p></li>
+<li><p><strong>params</strong> – Generation parameters such as temperature and limits.</p></li>
+<li><p><strong>seed</strong> – Random seed for sampling and dataset shuffling.</p></li>
+<li><p><strong>step</strong> – Training or checkpoint step identifier for filenames.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.model_name">
+<span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.model_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.num_samples">
+<span class="sig-name descname"><span class="pre">num_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.num_samples" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.output_path">
+<span class="sig-name descname"><span class="pre">output_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.output_path" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.params">
+<span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="src.inference.utils.html#src.inference.utils.gateway_utils.GatewayCallParams" title="src.inference.utils.gateway_utils.GatewayCallParams"><span class="pre">GatewayCallParams</span></a></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.params" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.seed">
+<span class="sig-name descname"><span class="pre">seed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.seed" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.split_name">
+<span class="sig-name descname"><span class="pre">split_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.split_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.PortkeyRunConfig.step">
+<span class="sig-name descname"><span class="pre">step</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.step" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.main">
+<span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.portkey.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/gateways/providers/portkey.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.portkey.main" title="Link to this definition">¶</a></dt>
+<dd><p>Parse arguments, load dataset, and run Portkey-based MATH-500 inference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. The function parses CLI args and runs the main loop.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.inference.gateways.providers.portkey.run_portkey_math_inference">
+<span class="sig-prename descclassname"><span class="pre">src.inference.gateways.providers.portkey.</span></span><span class="sig-name descname"><span class="pre">run_portkey_math_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">existing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig" title="src.inference.gateways.providers.portkey.PortkeyRunConfig"><span class="pre">PortkeyRunConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/inference/gateways/providers/portkey.html#run_portkey_math_inference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.inference.gateways.providers.portkey.run_portkey_math_inference" title="Link to this definition">¶</a></dt>
+<dd><p>Run single-pass math inference via Portkey and write JSONL results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> – Portkey client created by <code class="xref py py-func docutils literal notranslate"><span class="pre">_make_client()</span></code>.</p></li>
+<li><p><strong>dataset</strong> – Dataset object containing math problems and answers.</p></li>
+<li><p><strong>existing</strong> – Mapping from problem to already-filled sample indices.</p></li>
+<li><p><strong>config</strong> – Run configuration including output path and sampling options.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code>. Results are appended to the JSONL file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-src.inference.gateways.providers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-src.inference.gateways.providers" title="Link to this heading">¶</a></h2>
+<p>Provider implementations for remote math gateways.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="src.inference.runners.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">src.inference.runners package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="src.inference.gateways.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">src.inference.gateways package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">src.inference.gateways.providers package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-src.inference.gateways.providers.azure">src.inference.gateways.providers.azure module</a><ul>
+<li><a class="reference internal" href="#src.inference.gateways.providers.azure.load_math500"><code class="docutils literal notranslate"><span class="pre">load_math500()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.azure.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.inference.gateways.providers.openrouter">src.inference.gateways.providers.openrouter module</a><ul>
+<li><a class="reference internal" href="#src.inference.gateways.providers.openrouter.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.inference.gateways.providers.portkey">src.inference.gateways.providers.portkey module</a><ul>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.ExampleContext"><code class="docutils literal notranslate"><span class="pre">ExampleContext</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.ExampleContext.canon_gold"><code class="docutils literal notranslate"><span class="pre">ExampleContext.canon_gold</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.ExampleContext.gold_answer"><code class="docutils literal notranslate"><span class="pre">ExampleContext.gold_answer</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.ExampleContext.problem"><code class="docutils literal notranslate"><span class="pre">ExampleContext.problem</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.ExampleContext.sample_idx"><code class="docutils literal notranslate"><span class="pre">ExampleContext.sample_idx</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyCallResult"><code class="docutils literal notranslate"><span class="pre">PortkeyCallResult</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.answer"><code class="docutils literal notranslate"><span class="pre">PortkeyCallResult.answer</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.finish_reason"><code class="docutils literal notranslate"><span class="pre">PortkeyCallResult.finish_reason</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.text"><code class="docutils literal notranslate"><span class="pre">PortkeyCallResult.text</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyCallResult.usage"><code class="docutils literal notranslate"><span class="pre">PortkeyCallResult.usage</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig</span></code></a><ul>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.model_name"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.model_name</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.num_samples"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.num_samples</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.output_path"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.output_path</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.params"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.params</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.seed"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.seed</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.split_name"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.split_name</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.PortkeyRunConfig.step"><code class="docutils literal notranslate"><span class="pre">PortkeyRunConfig.step</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li><a class="reference internal" href="#src.inference.gateways.providers.portkey.run_portkey_math_inference"><code class="docutils literal notranslate"><span class="pre">run_portkey_math_inference()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.inference.gateways.providers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

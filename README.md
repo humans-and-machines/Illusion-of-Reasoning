@@ -8,9 +8,9 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 - **Create env (conda, local to repo):** `conda env create -f configs/environment.yml -p ./openr1 || conda env update -f configs/environment.yml -p ./openr1`, then `conda activate ./openr1`, then `make install` (installs dev extras in the same env; caches live under `.pip_cache/.tmp/.hf_cache/.conda_pkgs`).
 - **Install only runtime deps:** `pip install -e .`; dev extras: `pip install -e .[dev]`.
 - **Authenticate for gated assets:** `huggingface-cli login` or `export HF_TOKEN=<token>`.
-- **Run jobs:** ready-to-use launchers live under `scripts/inference/` (e.g., `bash scripts/inference/training-math-grpo.slurm`); cluster specs live in `scripts/inference/` and `scripts/training/`.
+- **Run jobs:** training launchers live under `scripts/training/` (e.g., `bash scripts/training/training-math-grpo.slurm`); inference launchers live under `scripts/inference/` (e.g., `bash scripts/inference/math-inference.slurm`).
 
-This repository demonstrates GRPO fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset (plus crossword and Rush Hour generators). Traces of chain-of-thought reasoning are logged and saved at fixed intervals. SFT scaffolding exists in the codebase but was not used for the paper’s results.
+This repository demonstrates GRPO fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset (plus crossword and Rush Hour generators). Traces of chain-of-thought reasoning are logged and saved at fixed intervals.
 
 The `src/inference/` package contains the main evaluation stack used throughout the project:
 
@@ -57,10 +57,11 @@ Illusion-of-Reasoning/
 ├── configs/         # env templates (conda, accelerate), linting, dotenv examples
 ├── recipes/         # task/model YAMLs for GRPO (MaxEnt-GRPO variants)
 ├── data/            # task data (car_park, crossword) + human assessment prompts
-├── src/training/    # training/generation entrypoints (grpo.py, generate.py, rlif.py, rewards*; sft.py present but not used for paper)
-├── src/inference/   # inference cores, unified runners, backends, and analysis helpers
-├── scripts -> src/scripts/  # launchers for inference/training, annotation, analysis, viz, utils, slurm
-├── artifacts/models/        # experiment outputs and checkpoints
+├── src/training/    # GRPO training + generation entrypoints (grpo.py, generate.py, rewards*, runtime/, utils/)
+├── src/inference/   # inference cores, unified runners, backends, and helpers
+├── scripts/         # Slurm launchers for training (`scripts/training/`) and inference (`scripts/inference/`)
+├── artifacts/models/        # trained checkpoints (by base model/run)
+├── artifacts/results/       # inference logs, analysis outputs, and caches
 ├── tools/           # local cache helpers and conda hook installers
 ├── Makefile         # installs dev env, lint/format/test, eval helper
 └── README.md, LICENSE, setup.py, setup.cfg
@@ -98,7 +99,7 @@ Illusion-of-Reasoning/
 
 An authenticated Hugging Face token with write permissions to push to the hubs:
 
-- `od2961/Qwen2.5-1.5B-Instruct-GRPO`
+- e.g., `od2961/Qwen2.5-1.5B-Open-R1-GRPO-math-v1`
 
 ## Data
 
@@ -138,9 +139,9 @@ gradient_checkpointing_kwargs:
 
 Detailed training configurations live in `recipes/` (per-model + per-task). Helpful pointers:
 
-- Core entrypoints: `src/training/grpo.py`, `src/training/sft.py`, `src/training/generate.py`, `src/training/rlif.py`.
-- Ready-to-run launchers and SLURM specs: `scripts/inference/` and `scripts/slurm/` (see `scripts/README.md` for layout).
-- Evaluation helpers and plotting live under `scripts/analysis/` and `scripts/viz/`.
+- Core entrypoints: `src/training/grpo.py` (GRPO training) and `src/training/generate.py` (distilabel/vLLM-based generation).
+- Ready-to-run launchers and SLURM specs: `scripts/training/` (GRPO training) and `scripts/inference/` (evaluation runs); see `scripts/README.md` for layout.
+- Evaluation helpers and plotting live under `src/analysis/` (see `src/analysis/README.md`).
 
 ## Citation
 

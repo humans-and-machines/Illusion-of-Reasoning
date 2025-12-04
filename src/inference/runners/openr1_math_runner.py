@@ -39,7 +39,8 @@ logger.info("Starting %s", os.path.basename(__file__))
 # ——— PyTorch 2.6 DeepSpeed un-pickle patch ———
 try:
     torch_module_for_patch = import_module("torch")
-    torch_version = getattr(torch_module_for_patch, "__version__", "0.0.0")
+    raw_torch_version = getattr(torch_module_for_patch, "__version__", None)
+    torch_version = raw_torch_version if isinstance(raw_torch_version, str) else "0.0.0"
     if version.parse(torch_version) >= version.parse("2.6.0"):
         torch_serialization = import_module("torch.serialization")
         deepspeed_zero = import_module("deepspeed.runtime.zero.config")
@@ -53,6 +54,8 @@ try:
         logger.info("DeepSpeed ZeRO patch enabled")
 except ImportError as deepspeed_import_exc:
     logger.info("DeepSpeed patch skipped (optional deps missing): %r", deepspeed_import_exc)
+except TypeError as version_type_exc:
+    logger.info("DeepSpeed patch skipped (unexpected torch.__version__): %r", version_type_exc)
 
 # ————— cache dirs —————
 HF_CACHE_DIR = os.path.abspath("./.hf_cache")

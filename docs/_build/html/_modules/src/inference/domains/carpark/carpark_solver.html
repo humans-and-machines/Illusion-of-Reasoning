@@ -1,0 +1,1283 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../../genindex.html"><link rel="search" title="Search" href="../../../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.inference.domains.carpark.carpark_solver - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.inference.domains.carpark.carpark_solver</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Two-pass batch inference for Rush Hour (car-parking) using Qwen2.5-style chat</span>
+<span class="sd">LMs that produce: &lt;think&gt; ... &lt;/think&gt;&lt;answer&gt; ... &lt;/answer&gt;.</span>
+
+<span class="sd">This version supports resume/fill behaviour:</span>
+<span class="sd">- If the output JSONL already contains some rows for an example_id, we detect</span>
+<span class="sd">  which sample_idx values are present and write ONLY the missing ones.</span>
+<span class="sd">- After a run, every example will have exactly --num_samples rows.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.carpark_rush_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">rush_soft_match_reward</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">add_token_and_tag_fields</span><span class="p">,</span>
+    <span class="n">build_entropy_pass_base</span><span class="p">,</span>
+    <span class="n">build_math_inference_config_kwargs</span><span class="p">,</span>
+    <span class="n">build_second_pass_cue_strings</span><span class="p">,</span>
+    <span class="n">build_two_pass_row_base</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_blocks</span> <span class="k">as</span> <span class="n">_extract_blocks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">finite_mean</span> <span class="k">as</span> <span class="n">_finite_mean</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_torch</span><span class="p">,</span> <span class="n">require_transformers</span><span class="p">,</span> <span class="n">setup_script_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.generation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GenerationLimits</span><span class="p">,</span>
+    <span class="n">PassOutputs</span><span class="p">,</span>
+    <span class="n">build_extra_pass_results_for_cues</span><span class="p">,</span>
+    <span class="n">empty_pass_outputs</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">repeat_for_samples</span> <span class="k">as</span> <span class="n">_repeat_for_samples</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_generate_batch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.math_pass_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_SECOND_PASS_PHRASE</span><span class="p">,</span> <span class="n">MathEntropySummary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.task_registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CARPARK_SYSTEM_PROMPT</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.carpark_board</span><span class="w"> </span><span class="kn">import</span> <span class="n">_canon_rush_generic</span><span class="p">,</span> <span class="n">_canon_rush_gold</span><span class="p">,</span> <span class="n">_is_valid_rush</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.carpark_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchRangeConfig</span><span class="p">,</span> <span class="n">build_batch_items_for_range</span><span class="p">,</span> <span class="n">load_existing_example_index</span>
+
+
+<span class="n">torch</span> <span class="o">=</span> <span class="n">require_torch</span><span class="p">(</span><span class="s2">&quot;carpark_core&quot;</span><span class="p">)</span>
+<span class="n">transformers_mod</span> <span class="o">=</span> <span class="n">require_transformers</span><span class="p">(</span><span class="s2">&quot;carpark_core&quot;</span><span class="p">)</span>
+<span class="n">AutoModelForCausalLM</span> <span class="o">=</span> <span class="n">transformers_mod</span><span class="o">.</span><span class="n">AutoModelForCausalLM</span>
+<span class="n">AutoTokenizer</span> <span class="o">=</span> <span class="n">transformers_mod</span><span class="o">.</span><span class="n">AutoTokenizer</span>
+<span class="n">StoppingCriteriaList</span> <span class="o">=</span> <span class="n">transformers_mod</span><span class="o">.</span><span class="n">StoppingCriteriaList</span>
+
+
+<span class="c1"># ───────────────────────── System prompt (from training) ─────────────────────────</span>
+
+<span class="n">SYSTEM_PROMPT</span> <span class="o">=</span> <span class="n">CARPARK_SYSTEM_PROMPT</span>
+
+
+<span class="c1"># Optional reconsideration markers (analytics)</span>
+<span class="n">_RECONSIDER_PATTERNS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;wait_line&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?im)^\s*wait[,\.\-–—… ]&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;wait_reconsider&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bwait\b.*\breconsider\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;step_by_step&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bstep[-\s]?by[-\s]?step\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">&quot;recheck&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\bre[-\s]?check(ing)?\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)),</span>
+<span class="p">]</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">setup_script_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># ───────────────────────── Chat builders ─────────────────────────</span>
+
+
+<div class="viewcode-block" id="chat_base_for_pass1_from_messages">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.chat_base_for_pass1_from_messages">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chat_base_for_pass1_from_messages</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a chat prompt for pass 1 from serialized messages.</span>
+
+<span class="sd">    :param tokenizer: Chat tokenizer providing ``apply_chat_template``.</span>
+<span class="sd">    :param messages: List of message dictionaries (orchestrated as role/content pairs).</span>
+<span class="sd">    :returns: A formatted prompt string suitable for first-pass generation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">msgs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+    <span class="n">has_sys</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;role&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;system&quot;</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">has_sys</span><span class="p">:</span>
+        <span class="n">msgs</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">SYSTEM_PROMPT</span><span class="p">}]</span> <span class="o">+</span> <span class="n">msgs</span>
+    <span class="k">return</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="chat_base_for_pass2_from_messages">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.chat_base_for_pass2_from_messages">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chat_base_for_pass2_from_messages</span><span class="p">(</span>
+    <span class="n">tokenizer</span><span class="p">,</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="n">prev_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">cue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a chat prompt for pass 2 that includes the pass-1 output and cue.</span>
+
+<span class="sd">    :param tokenizer: Chat tokenizer providing ``apply_chat_template``.</span>
+<span class="sd">    :param messages: Original conversation messages for the example.</span>
+<span class="sd">    :param prev_output: First-pass reasoning and answer to show as assistant output.</span>
+<span class="sd">    :param cue: Cue text encouraging reconsideration in the second pass.</span>
+<span class="sd">    :returns: A formatted prompt string suitable for second-pass generation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">msgs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+    <span class="n">has_sys</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;role&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;system&quot;</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">has_sys</span><span class="p">:</span>
+        <span class="n">msgs</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">SYSTEM_PROMPT</span><span class="p">}]</span> <span class="o">+</span> <span class="n">msgs</span>
+    <span class="n">msgs</span> <span class="o">=</span> <span class="n">msgs</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">prev_output</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">cue</span><span class="p">},</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">apply_chat_template</span><span class="p">(</span><span class="n">msgs</span><span class="p">,</span> <span class="n">tokenize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_generation_prompt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ───────────────────────── Inference config ─────────────────────────</span>
+
+
+<div class="viewcode-block" id="IOConfig">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.IOConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">IOConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Output/split configuration.&quot;&quot;&quot;</span>
+
+    <span class="n">split_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="ColumnConfig">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.ColumnConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ColumnConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataset column names.&quot;&quot;&quot;</span>
+
+    <span class="n">prompt_col</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">solution_col</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="GenerationSamplingConfig">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.GenerationSamplingConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GenerationSamplingConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sampling-related generation hyperparameters.&quot;&quot;&quot;</span>
+
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">top_p</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">entropy_mode</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">eos_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span></div>
+
+
+
+<div class="viewcode-block" id="SecondPassConfig">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.SecondPassConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SecondPassConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings controlling optional second-pass reconsideration.&quot;&quot;&quot;</span>
+
+    <span class="n">two_pass</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">phrase</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">use_sample_idx</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<div class="viewcode-block" id="CarparkInferenceConfig">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CarparkInferenceConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the two-pass Rush Hour inference loop.&quot;&quot;&quot;</span>
+
+    <span class="n">io_config</span><span class="p">:</span> <span class="n">IOConfig</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="n">ColumnConfig</span>
+    <span class="n">limits</span><span class="p">:</span> <span class="n">GenerationLimits</span>
+    <span class="n">sampling</span><span class="p">:</span> <span class="n">GenerationSamplingConfig</span>
+    <span class="n">second_pass</span><span class="p">:</span> <span class="n">SecondPassConfig</span>
+
+<div class="viewcode-block" id="CarparkInferenceConfig.from_flat">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.CarparkInferenceConfig.from_flat">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_flat</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">flat_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CarparkInferenceConfig&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct a CarparkInferenceConfig from flat arguments.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">io_config</span><span class="o">=</span><span class="n">IOConfig</span><span class="p">(</span>
+                <span class="n">split_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;split_name&quot;</span><span class="p">]),</span>
+                <span class="n">output_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;output_dir&quot;</span><span class="p">]),</span>
+                <span class="n">step</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]),</span>
+            <span class="p">),</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">ColumnConfig</span><span class="p">(</span>
+                <span class="n">prompt_col</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;prompt_col&quot;</span><span class="p">]),</span>
+                <span class="n">solution_col</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;solution_col&quot;</span><span class="p">]),</span>
+            <span class="p">),</span>
+            <span class="n">limits</span><span class="o">=</span><span class="n">GenerationLimits</span><span class="p">(</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;batch_size&quot;</span><span class="p">]),</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;num_samples&quot;</span><span class="p">]),</span>
+                <span class="n">think_cap</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;think_cap&quot;</span><span class="p">]),</span>
+                <span class="n">answer_cap</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;answer_cap&quot;</span><span class="p">]),</span>
+            <span class="p">),</span>
+            <span class="n">sampling</span><span class="o">=</span><span class="n">GenerationSamplingConfig</span><span class="p">(</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]),</span>
+                <span class="n">top_p</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;top_p&quot;</span><span class="p">]),</span>
+                <span class="n">entropy_mode</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;entropy_mode&quot;</span><span class="p">]),</span>
+                <span class="n">eos_ids</span><span class="o">=</span><span class="n">flat_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eos_ids&quot;</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">second_pass</span><span class="o">=</span><span class="n">SecondPassConfig</span><span class="p">(</span>
+                <span class="n">two_pass</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;two_pass&quot;</span><span class="p">]),</span>
+                <span class="n">phrase</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;second_pass_phrase&quot;</span><span class="p">]),</span>
+                <span class="n">use_sample_idx</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">flat_kwargs</span><span class="p">[</span><span class="s2">&quot;second_pass_use_sample_idx&quot;</span><span class="p">]),</span>
+            <span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># Convenience properties mirroring the previous dataclass fields.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">split_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dataset split name.</span>
+
+<span class="sd">        :returns: Name of the dataset split (for example, ``\&quot;train\&quot;`` or ``\&quot;test\&quot;``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_config</span><span class="o">.</span><span class="n">split_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Output directory for results.</span>
+
+<span class="sd">        :returns: Directory path where JSONL results are written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_config</span><span class="o">.</span><span class="n">output_dir</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Step index used in output filenames.</span>
+
+<span class="sd">        :returns: Integer training or checkpoint step identifier.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_config</span><span class="o">.</span><span class="n">step</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prompt_col</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Name of the prompt column in the dataset.</span>
+
+<span class="sd">        :returns: Column name containing chat messages or prompts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">prompt_col</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">solution_col</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Name of the solution/answer column in the dataset.</span>
+
+<span class="sd">        :returns: Column name containing gold solutions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">solution_col</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">batch_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generation batch size.</span>
+
+<span class="sd">        :returns: Number of examples processed per generation batch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">limits</span><span class="o">.</span><span class="n">batch_size</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Number of samples per example.</span>
+
+<span class="sd">        :returns: Number of generations drawn for each example.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">limits</span><span class="o">.</span><span class="n">num_samples</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">temperature</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sampling temperature.</span>
+
+<span class="sd">        :returns: Temperature used when sampling tokens.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling</span><span class="o">.</span><span class="n">temperature</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">top_p</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Nucleus-sampling ``top_p`` value.</span>
+
+<span class="sd">        :returns: Cumulative probability threshold for nucleus sampling.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling</span><span class="o">.</span><span class="n">top_p</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">entropy_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Entropy scoring mode.</span>
+
+<span class="sd">        :returns: Name of the entropy computation mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling</span><span class="o">.</span><span class="n">entropy_mode</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eos_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        EOS token IDs used during generation.</span>
+
+<span class="sd">        :returns: List of EOS token IDs, or ``None`` if not configured.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling</span><span class="o">.</span><span class="n">eos_ids</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">two_pass</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Whether second-pass generation is enabled.</span>
+
+<span class="sd">        :returns: ``True`` if a reconsideration second pass is enabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_pass</span><span class="o">.</span><span class="n">two_pass</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">second_pass_phrase</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cue phrase used to start the second pass.</span>
+
+<span class="sd">        :returns: Phrase injected into second-pass prompts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_pass</span><span class="o">.</span><span class="n">phrase</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">second_pass_use_sample_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Pass-1 sample index that feeds pass 2.</span>
+
+<span class="sd">        :returns: Zero-based index of the pass-1 sample highlighted in pass 2.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">second_pass</span><span class="o">.</span><span class="n">use_sample_idx</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">think_cap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Maximum number of new tokens for the think phase.</span>
+
+<span class="sd">        :returns: Token cap used when generating ``&lt;think&gt;`` content.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">limits</span><span class="o">.</span><span class="n">think_cap</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">answer_cap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Maximum number of new tokens for the answer phase.</span>
+
+<span class="sd">        :returns: Token cap used when generating ``&lt;answer&gt;`` content.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">limits</span><span class="o">.</span><span class="n">answer_cap</span></div>
+
+
+
+<div class="viewcode-block" id="InferenceContext">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.InferenceContext">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InferenceContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bundle model, tokenizer, and config for generation helpers.&quot;&quot;&quot;</span>
+
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">CarparkInferenceConfig</span></div>
+
+
+
+<div class="viewcode-block" id="ResultsContext">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.ResultsContext">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResultsContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bundle shared state needed when writing per-example results.&quot;&quot;&quot;</span>
+
+    <span class="n">outpath</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">inference</span><span class="p">:</span> <span class="n">InferenceContext</span>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">cue_str</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">firstpass_choice</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">existing_by_example</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span></div>
+
+
+
+<div class="viewcode-block" id="SecondPassContext">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.SecondPassContext">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SecondPassContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bundle inputs needed to run the optional second pass.&quot;&quot;&quot;</span>
+
+    <span class="n">batch_items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+    <span class="n">inference</span><span class="p">:</span> <span class="n">InferenceContext</span>
+    <span class="n">firstpass_choice</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">cue_str</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gen_batch</span><span class="p">(</span>
+    <span class="n">prefixes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">cap</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">stop_strs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">InferenceContext</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a batch of continuations and token-entropy series.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">run_generate_batch</span><span class="p">(</span>
+        <span class="n">prefixes</span><span class="o">=</span><span class="n">prefixes</span><span class="p">,</span>
+        <span class="n">cap</span><span class="o">=</span><span class="n">cap</span><span class="p">,</span>
+        <span class="n">stop_strings</span><span class="o">=</span><span class="n">stop_strs</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">config_like</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+        <span class="n">max_length</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span>
+        <span class="n">torch_module</span><span class="o">=</span><span class="n">torch</span><span class="p">,</span>
+        <span class="n">stopping_criteria_list_cls</span><span class="o">=</span><span class="n">StoppingCriteriaList</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="SampleRowPasses">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.SampleRowPasses">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SampleRowPasses</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-row pass outputs used when building result rows.&quot;&quot;&quot;</span>
+
+    <span class="n">pass1</span><span class="p">:</span> <span class="n">PassOutputs</span>
+    <span class="n">pass2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PassOutputs</span><span class="p">]</span>
+    <span class="n">extra_passes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PassOutputs</span><span class="p">]]]</span></div>
+
+
+
+<div class="viewcode-block" id="SampleRowContext">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.SampleRowContext">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SampleRowContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Context required to build a single output row.&quot;&quot;&quot;</span>
+
+    <span class="n">example</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">results_ctx</span><span class="p">:</span> <span class="n">ResultsContext</span>
+    <span class="n">batch_index</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">sample_idx</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">gold_set</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">passes</span><span class="p">:</span> <span class="n">SampleRowPasses</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pack_pass_result</span><span class="p">(</span>
+    <span class="n">full_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ent_think</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">ent_answer</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assemble per-pass result dict with entropy and reconsideration markers.&quot;&quot;&quot;</span>
+    <span class="n">token_entropies_all</span> <span class="o">=</span> <span class="p">(</span><span class="n">ent_think</span> <span class="ow">or</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">(</span><span class="n">ent_answer</span> <span class="ow">or</span> <span class="p">[])</span>
+
+    <span class="n">think_block</span><span class="p">,</span> <span class="n">answer_block</span> <span class="o">=</span> <span class="n">_extract_blocks</span><span class="p">(</span><span class="n">full_text</span><span class="p">)</span>
+    <span class="n">think_text</span> <span class="o">=</span> <span class="n">think_block</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">pred_answer_text</span> <span class="o">=</span> <span class="p">(</span><span class="n">answer_block</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="n">markers</span> <span class="o">=</span> <span class="n">_find_reconsider_markers</span><span class="p">(</span><span class="n">think_text</span><span class="p">,</span> <span class="n">meta</span><span class="p">)</span>
+    <span class="n">pred_canon</span> <span class="o">=</span> <span class="n">_canon_rush_generic</span><span class="p">(</span><span class="n">pred_answer_text</span><span class="p">)</span>
+
+    <span class="n">entropy_summary</span> <span class="o">=</span> <span class="n">MathEntropySummary</span><span class="p">(</span>
+        <span class="n">overall</span><span class="o">=</span><span class="n">_finite_mean</span><span class="p">(</span><span class="n">token_entropies_all</span><span class="p">)</span> <span class="k">if</span> <span class="n">token_entropies_all</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">think</span><span class="o">=</span><span class="n">_finite_mean</span><span class="p">(</span><span class="n">ent_think</span><span class="p">)</span> <span class="k">if</span> <span class="n">ent_think</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">answer</span><span class="o">=</span><span class="n">_finite_mean</span><span class="p">(</span><span class="n">ent_answer</span><span class="p">)</span> <span class="k">if</span> <span class="n">ent_answer</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">pre_cue</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">reconsider_think</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">reconsider_full</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">build_entropy_pass_base</span><span class="p">(</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">full_text</span><span class="p">,</span>
+        <span class="n">pred_answer_text</span><span class="o">=</span><span class="n">pred_answer_text</span><span class="p">,</span>
+        <span class="n">pred_canon</span><span class="o">=</span><span class="n">pred_canon</span><span class="p">,</span>
+        <span class="n">prev_output</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prev_output&quot;</span><span class="p">),</span>
+        <span class="n">entropy_summary</span><span class="o">=</span><span class="n">entropy_summary</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">tokens_think</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ent_think</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="n">tokens_answer</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ent_answer</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">:</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stop_reason_think&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">:</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;has_reconsider_cue&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">markers</span><span class="p">),</span>
+            <span class="s2">&quot;reconsider_markers&quot;</span><span class="p">:</span> <span class="n">markers</span><span class="p">,</span>
+            <span class="s2">&quot;is_valid_pred&quot;</span><span class="p">:</span> <span class="n">_is_valid_rush</span><span class="p">(</span><span class="n">pred_canon</span><span class="p">),</span>
+            <span class="s2">&quot;is_correct_pred&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">add_token_and_tag_fields</span><span class="p">(</span>
+        <span class="n">base</span><span class="p">,</span>
+        <span class="n">tokens_total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">token_entropies_all</span><span class="p">),</span>
+        <span class="n">tokens_think</span><span class="o">=</span><span class="n">tokens_think</span><span class="p">,</span>
+        <span class="n">tokens_answer</span><span class="o">=</span><span class="n">tokens_answer</span><span class="p">,</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">full_text</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_find_reconsider_markers</span><span class="p">(</span><span class="n">think_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of reconsideration markers found in the think block.&quot;&quot;&quot;</span>
+    <span class="n">markers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">think_text</span><span class="p">:</span>
+        <span class="n">skip_chars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cue_prefix_str&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="k">if</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;injected_cue&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">search_text</span> <span class="o">=</span> <span class="n">think_text</span><span class="p">[</span><span class="n">skip_chars</span><span class="p">:]</span> <span class="k">if</span> <span class="n">skip_chars</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">think_text</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">_RECONSIDER_PATTERNS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">search_text</span><span class="p">):</span>
+                <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;injected_cue&quot;</span><span class="p">):</span>
+        <span class="n">markers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;injected_cue&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">markers</span>
+    <span class="k">return</span> <span class="n">markers</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_pass1_for_batch</span><span class="p">(</span>
+    <span class="n">batch_items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">InferenceContext</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">PassOutputs</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run pass-1 (think + answer) for a batch of examples.&quot;&quot;&quot;</span>
+    <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples</span><span class="p">)</span>
+    <span class="n">base_prompts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">chat_base_for_pass1_from_messages</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">batch_items</span>
+    <span class="p">]</span>
+    <span class="n">pre1_think</span> <span class="o">=</span> <span class="n">_repeat_for_samples</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">prompt</span> <span class="o">+</span> <span class="s2">&quot;&lt;think&gt;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">base_prompts</span><span class="p">],</span>
+        <span class="n">num_samples</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">think1_texts</span><span class="p">,</span> <span class="n">think1_ents</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">think1_stop</span> <span class="o">=</span> <span class="n">_gen_batch</span><span class="p">(</span>
+        <span class="n">pre1_think</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">think_cap</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;&lt;/think&gt;&quot;</span><span class="p">],</span>
+        <span class="n">context</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pre1_answer</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pre_think</span> <span class="o">+</span> <span class="n">think_text</span> <span class="o">+</span> <span class="s2">&quot;&lt;/think&gt;</span><span class="se">\n</span><span class="s2">&lt;answer&gt;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">pre_think</span><span class="p">,</span> <span class="n">think_text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pre1_think</span><span class="p">,</span> <span class="n">think1_texts</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">answer1_texts</span><span class="p">,</span> <span class="n">answer1_ents</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">answer1_stop</span> <span class="o">=</span> <span class="n">_gen_batch</span><span class="p">(</span>
+        <span class="n">pre1_answer</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">answer_cap</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;&lt;/answer&gt;&quot;</span><span class="p">],</span>
+        <span class="n">context</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pass1_full_texts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;&lt;think&gt;</span><span class="si">{</span><span class="n">think_text</span><span class="si">}</span><span class="s2">&lt;/think&gt;</span><span class="se">\n</span><span class="s2">&lt;answer&gt;</span><span class="si">{</span><span class="n">answer_text</span><span class="si">}</span><span class="s2">&lt;/answer&gt;&quot;</span>
+        <span class="k">for</span> <span class="n">think_text</span><span class="p">,</span> <span class="n">answer_text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">think1_texts</span><span class="p">,</span> <span class="n">answer1_texts</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">PassOutputs</span><span class="p">(</span>
+            <span class="n">full_texts</span><span class="o">=</span><span class="n">pass1_full_texts</span><span class="p">,</span>
+            <span class="n">ent_think</span><span class="o">=</span><span class="n">think1_ents</span><span class="p">,</span>
+            <span class="n">ent_answer</span><span class="o">=</span><span class="n">answer1_ents</span><span class="p">,</span>
+            <span class="n">stop_reason_think</span><span class="o">=</span><span class="n">think1_stop</span><span class="p">,</span>
+            <span class="n">stop_reason_answer</span><span class="o">=</span><span class="n">answer1_stop</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">num_samples</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_first_pass_choice</span><span class="p">(</span>
+    <span class="n">batch_items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">pass1_full</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">CarparkInferenceConfig</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Select which pass-1 sample feeds pass-2 per example.&quot;&quot;&quot;</span>
+    <span class="n">choice_texts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">batch_index</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batch_items</span><span class="p">):</span>
+        <span class="n">chosen_sample</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="nb">min</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">second_pass_use_sample_idx</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">row_index</span> <span class="o">=</span> <span class="n">batch_index</span> <span class="o">*</span> <span class="n">num_samples</span> <span class="o">+</span> <span class="n">chosen_sample</span>
+        <span class="n">choice_texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pass1_full</span><span class="p">[</span><span class="n">row_index</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">choice_texts</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_second_pass_prompts</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">SecondPassContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build chat prompts for pass-2 for each batch item.&quot;&quot;&quot;</span>
+    <span class="n">cue_phrase</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">cue_str</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">chat_base_for_pass2_from_messages</span><span class="p">(</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="n">example</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">],</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">firstpass_choice</span><span class="p">[</span><span class="n">index</span><span class="p">],</span>
+            <span class="n">cue_phrase</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">example</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">batch_items</span><span class="p">)</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_second_pass_think_prefixes</span><span class="p">(</span>
+    <span class="n">prompts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">ctx</span><span class="p">:</span> <span class="n">SecondPassContext</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expand prompts and cue string into think-prefixes for all samples.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_repeat_for_samples</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">prompt</span> <span class="o">+</span> <span class="s2">&quot;&lt;think&gt;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">ctx</span><span class="o">.</span><span class="n">cue_str</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">],</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_pass2_for_batch</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">SecondPassContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassOutputs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run optional pass-2 reconsideration for a batch.&quot;&quot;&quot;</span>
+    <span class="n">prompts</span> <span class="o">=</span> <span class="n">_build_second_pass_prompts</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="n">pre_think_prefixes</span> <span class="o">=</span> <span class="n">_build_second_pass_think_prefixes</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+    <span class="n">think_texts</span><span class="p">,</span> <span class="n">ent_think</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stop_think</span> <span class="o">=</span> <span class="n">_gen_batch</span><span class="p">(</span>
+        <span class="n">pre_think_prefixes</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">think_cap</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;&lt;/think&gt;&quot;</span><span class="p">],</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">inference</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">pre_answer_prefixes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">prefix</span> <span class="o">+</span> <span class="n">text</span> <span class="o">+</span> <span class="s2">&quot;&lt;/think&gt;</span><span class="se">\n</span><span class="s2">&lt;answer&gt;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pre_think_prefixes</span><span class="p">,</span> <span class="n">think_texts</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">answer_texts</span><span class="p">,</span> <span class="n">ent_answer</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stop_answer</span> <span class="o">=</span> <span class="n">_gen_batch</span><span class="p">(</span>
+        <span class="n">pre_answer_prefixes</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">answer_cap</span><span class="p">,</span>
+        <span class="p">[</span><span class="s2">&quot;&lt;/answer&gt;&quot;</span><span class="p">],</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">inference</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">full_texts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;&lt;think&gt;</span><span class="si">{</span><span class="n">ctx</span><span class="o">.</span><span class="n">cue_str</span><span class="si">}{</span><span class="n">think_text</span><span class="si">}</span><span class="s2">&lt;/think&gt;</span><span class="se">\n</span><span class="s2">&lt;answer&gt;</span><span class="si">{</span><span class="n">answer_text</span><span class="si">}</span><span class="s2">&lt;/answer&gt;&quot;</span>
+        <span class="k">for</span> <span class="n">think_text</span><span class="p">,</span> <span class="n">answer_text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">think_texts</span><span class="p">,</span> <span class="n">answer_texts</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">PassOutputs</span><span class="p">(</span>
+        <span class="n">full_texts</span><span class="o">=</span><span class="n">full_texts</span><span class="p">,</span>
+        <span class="n">ent_think</span><span class="o">=</span><span class="n">ent_think</span><span class="p">,</span>
+        <span class="n">ent_answer</span><span class="o">=</span><span class="n">ent_answer</span><span class="p">,</span>
+        <span class="n">stop_reason_think</span><span class="o">=</span><span class="n">stop_think</span><span class="p">,</span>
+        <span class="n">stop_reason_answer</span><span class="o">=</span><span class="n">stop_answer</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_row_for_sample</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">SampleRowContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assemble the output row for a single (example, sample_idx).&quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">results_ctx</span><span class="o">.</span><span class="n">inference</span><span class="o">.</span><span class="n">config</span>
+    <span class="n">row_index</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">batch_index</span> <span class="o">*</span> <span class="n">ctx</span><span class="o">.</span><span class="n">results_ctx</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">+</span> <span class="n">ctx</span><span class="o">.</span><span class="n">sample_idx</span>
+    <span class="n">gold_set</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">gold_set</span>
+
+    <span class="n">pass1_outputs</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">passes</span><span class="o">.</span><span class="n">pass1</span>
+    <span class="n">pass2_outputs</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">passes</span><span class="o">.</span><span class="n">pass2</span>
+    <span class="n">extra_passes</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">passes</span><span class="o">.</span><span class="n">extra_passes</span>
+
+    <span class="n">pass1_result</span> <span class="o">=</span> <span class="n">_pack_pass_result</span><span class="p">(</span>
+        <span class="n">full_text</span><span class="o">=</span><span class="n">pass1_outputs</span><span class="o">.</span><span class="n">full_texts</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+        <span class="n">ent_think</span><span class="o">=</span><span class="n">pass1_outputs</span><span class="o">.</span><span class="n">ent_think</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+        <span class="n">ent_answer</span><span class="o">=</span><span class="n">pass1_outputs</span><span class="o">.</span><span class="n">ent_answer</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+        <span class="n">meta</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;injected_cue&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;prev_output&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;cue_prefix_str&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">:</span> <span class="n">pass1_outputs</span><span class="o">.</span><span class="n">stop_reason_think</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">:</span> <span class="n">pass1_outputs</span><span class="o">.</span><span class="n">stop_reason_answer</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span>
+        <span class="n">pass1_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">gold_set</span>
+    <span class="p">)</span>
+    <span class="p">(</span>
+        <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;soft_reward&quot;</span><span class="p">],</span>
+        <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;soft_reward_detail&quot;</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">rush_soft_match_reward</span><span class="p">(</span>
+        <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;pred_answer&quot;</span><span class="p">],</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;solution&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">pass2_result</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">two_pass</span> <span class="ow">and</span> <span class="n">pass2_outputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pass2_result</span> <span class="o">=</span> <span class="n">_pack_pass_result</span><span class="p">(</span>
+            <span class="n">full_text</span><span class="o">=</span><span class="n">pass2_outputs</span><span class="o">.</span><span class="n">full_texts</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="n">ent_think</span><span class="o">=</span><span class="n">pass2_outputs</span><span class="o">.</span><span class="n">ent_think</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="n">ent_answer</span><span class="o">=</span><span class="n">pass2_outputs</span><span class="o">.</span><span class="n">ent_answer</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="n">meta</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;injected_cue&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;prev_output&quot;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">results_ctx</span><span class="o">.</span><span class="n">firstpass_choice</span><span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">batch_index</span><span class="p">],</span>
+                <span class="s2">&quot;cue_prefix_str&quot;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">results_ctx</span><span class="o">.</span><span class="n">cue_str</span><span class="p">,</span>
+                <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">:</span> <span class="n">pass2_outputs</span><span class="o">.</span><span class="n">stop_reason_think</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+                <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">:</span> <span class="n">pass2_outputs</span><span class="o">.</span><span class="n">stop_reason_answer</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">pass2_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">gold_set</span>
+        <span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;soft_reward&quot;</span><span class="p">],</span>
+            <span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;soft_reward_detail&quot;</span><span class="p">],</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">rush_soft_match_reward</span><span class="p">(</span>
+            <span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;pred_answer&quot;</span><span class="p">],</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;solution&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;improved_over_pass1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">pass2_result</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">])</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Optional multi-cue reconsideration passes (pass2a / pass2b / pass2c).</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pack_extra_result</span><span class="p">(</span>
+        <span class="n">cue_str_extra</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">outputs_extra</span><span class="p">:</span> <span class="n">PassOutputs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">extra_res</span> <span class="o">=</span> <span class="n">_pack_pass_result</span><span class="p">(</span>
+            <span class="n">full_text</span><span class="o">=</span><span class="n">outputs_extra</span><span class="o">.</span><span class="n">full_texts</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="n">ent_think</span><span class="o">=</span><span class="n">outputs_extra</span><span class="o">.</span><span class="n">ent_think</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="n">ent_answer</span><span class="o">=</span><span class="n">outputs_extra</span><span class="o">.</span><span class="n">ent_answer</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="n">meta</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;injected_cue&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;prev_output&quot;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">results_ctx</span><span class="o">.</span><span class="n">firstpass_choice</span><span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">batch_index</span><span class="p">],</span>
+                <span class="s2">&quot;cue_prefix_str&quot;</span><span class="p">:</span> <span class="n">cue_str_extra</span><span class="p">,</span>
+                <span class="s2">&quot;stop_reason_think&quot;</span><span class="p">:</span> <span class="n">outputs_extra</span><span class="o">.</span><span class="n">stop_reason_think</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+                <span class="s2">&quot;stop_reason_answer&quot;</span><span class="p">:</span> <span class="n">outputs_extra</span><span class="o">.</span><span class="n">stop_reason_answer</span><span class="p">[</span><span class="n">row_index</span><span class="p">],</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">extra_res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;pred_answer_canon&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">gold_set</span>
+        <span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;soft_reward&quot;</span><span class="p">],</span>
+            <span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;soft_reward_detail&quot;</span><span class="p">],</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">rush_soft_match_reward</span><span class="p">(</span>
+            <span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;pred_answer&quot;</span><span class="p">],</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;solution&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;improved_over_pass1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">extra_res</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">])</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span>
+            <span class="n">pass1_result</span><span class="p">[</span><span class="s2">&quot;is_correct_pred&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">extra_res</span>
+
+    <span class="n">extra_pass_results</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">build_extra_pass_results_for_cues</span><span class="p">(</span>
+        <span class="n">two_pass</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">two_pass</span><span class="p">,</span>
+        <span class="n">extra_passes</span><span class="o">=</span><span class="n">extra_passes</span><span class="p">,</span>
+        <span class="n">pack_result_for_extra</span><span class="o">=</span><span class="n">_pack_extra_result</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># For convenience, expose the main pass2 as pass2c when we have ≥3 cues.</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">two_pass</span> <span class="ow">and</span> <span class="n">pass2_result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">extra_pass_results</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">extra_pass_results</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;pass2c&quot;</span><span class="p">,</span> <span class="n">pass2_result</span><span class="p">)</span>
+
+    <span class="n">messages</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;messages&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">problem_text</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">problem_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+
+    <span class="n">row_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;example_id&quot;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;problem&quot;</span><span class="p">:</span> <span class="n">problem_text</span><span class="p">,</span>
+        <span class="s2">&quot;gold_answer&quot;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;solution&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;gold_answer_canon_set&quot;</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">gold_set</span><span class="p">)),</span>
+        <span class="o">**</span><span class="n">build_two_pass_row_base</span><span class="p">(</span>
+            <span class="n">step</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">step</span><span class="p">,</span>
+            <span class="n">split_name</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="p">,</span>
+            <span class="n">sample_idx</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">sample_idx</span><span class="p">,</span>
+            <span class="n">pass1</span><span class="o">=</span><span class="n">pass1_result</span><span class="p">,</span>
+            <span class="n">pass2</span><span class="o">=</span><span class="n">pass2_result</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;pass2a&quot;</span><span class="p">,</span> <span class="s2">&quot;pass2b&quot;</span><span class="p">,</span> <span class="s2">&quot;pass2c&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">extra_pass_results</span><span class="p">:</span>
+            <span class="n">row_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">extra_pass_results</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">row_dict</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_results_for_batch</span><span class="p">(</span>
+    <span class="n">batch_items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">pass1</span><span class="p">:</span> <span class="n">PassOutputs</span><span class="p">,</span>
+    <span class="n">pass2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PassOutputs</span><span class="p">],</span>
+    <span class="n">results_ctx</span><span class="p">:</span> <span class="n">ResultsContext</span><span class="p">,</span>
+    <span class="n">extra_passes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PassOutputs</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write JSONL rows for a batch, only for missing sample indices.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">results_ctx</span><span class="o">.</span><span class="n">outpath</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">batch_index</span><span class="p">,</span> <span class="n">example</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batch_items</span><span class="p">):</span>
+            <span class="n">gold_set</span> <span class="o">=</span> <span class="n">_canon_rush_gold</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;solution&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">sample_idx</span> <span class="ow">in</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;missing_indices&quot;</span><span class="p">]:</span>
+                <span class="n">row_ctx</span> <span class="o">=</span> <span class="n">SampleRowContext</span><span class="p">(</span>
+                    <span class="n">example</span><span class="o">=</span><span class="n">example</span><span class="p">,</span>
+                    <span class="n">results_ctx</span><span class="o">=</span><span class="n">results_ctx</span><span class="p">,</span>
+                    <span class="n">batch_index</span><span class="o">=</span><span class="n">batch_index</span><span class="p">,</span>
+                    <span class="n">sample_idx</span><span class="o">=</span><span class="n">sample_idx</span><span class="p">,</span>
+                    <span class="n">gold_set</span><span class="o">=</span><span class="n">gold_set</span><span class="p">,</span>
+                    <span class="n">passes</span><span class="o">=</span><span class="n">SampleRowPasses</span><span class="p">(</span>
+                        <span class="n">pass1</span><span class="o">=</span><span class="n">pass1</span><span class="p">,</span>
+                        <span class="n">pass2</span><span class="o">=</span><span class="n">pass2</span><span class="p">,</span>
+                        <span class="n">extra_passes</span><span class="o">=</span><span class="n">extra_passes</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">_build_row_for_sample</span><span class="p">(</span><span class="n">row_ctx</span><span class="p">)</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">handle</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">handle</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">results_ctx</span><span class="o">.</span><span class="n">existing_by_example</span><span class="p">[</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sample_idx</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_second_pass_outputs_for_carpark</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">InferenceContext</span><span class="p">,</span>
+    <span class="n">batch_items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">firstpass_choice</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PassOutputs</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PassOutputs</span><span class="p">]]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run optional second-pass reconsideration for a carpark batch.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        cue_strs: list of cue strings (with trailing spaces)</span>
+<span class="sd">        main_pass2: the PassOutputs corresponding to the last cue (for pass2)</span>
+<span class="sd">        extra_passes: list of (cue_str, PassOutputs) for earlier cues</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cue_strs</span> <span class="o">=</span> <span class="n">build_second_pass_cue_strings</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">second_pass_phrase</span><span class="p">)</span>
+    <span class="n">extra_passes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PassOutputs</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">main_pass2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PassOutputs</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">two_pass</span> <span class="ow">and</span> <span class="n">cue_strs</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cue_str</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cue_strs</span><span class="p">):</span>
+            <span class="n">second_pass_ctx</span> <span class="o">=</span> <span class="n">SecondPassContext</span><span class="p">(</span>
+                <span class="n">batch_items</span><span class="o">=</span><span class="n">batch_items</span><span class="p">,</span>
+                <span class="n">inference</span><span class="o">=</span><span class="n">context</span><span class="p">,</span>
+                <span class="n">firstpass_choice</span><span class="o">=</span><span class="n">firstpass_choice</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">cue_str</span><span class="o">=</span><span class="n">cue_str</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">outputs_i</span> <span class="o">=</span> <span class="n">_run_pass2_for_batch</span><span class="p">(</span><span class="n">second_pass_ctx</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">cue_strs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">main_pass2</span> <span class="o">=</span> <span class="n">outputs_i</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">extra_passes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">cue_str</span><span class="p">,</span> <span class="n">outputs_i</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">total_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch_items</span><span class="p">)</span> <span class="o">*</span> <span class="n">num_samples</span>
+        <span class="n">main_pass2</span> <span class="o">=</span> <span class="n">empty_pass_outputs</span><span class="p">(</span><span class="n">total_rows</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">cue_strs</span><span class="p">,</span> <span class="n">main_pass2</span><span class="p">,</span> <span class="n">extra_passes</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_inference_on_split_core</span><span class="p">(</span>
+    <span class="n">examples</span><span class="p">,</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">InferenceContext</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run Rush Hour inference over a dataset, respecting existing results and</span>
+<span class="sd">    filling missing sample indices per example up to `config.num_samples`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">outpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;step</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">step</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="si">}</span><span class="s2">.jsonl&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">existing_by_example</span> <span class="o">=</span> <span class="n">load_existing_example_index</span><span class="p">(</span><span class="n">outpath</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;→ </span><span class="si">%s</span><span class="s2"> | </span><span class="si">%d</span><span class="s2"> examples | resume: loaded </span><span class="si">%d</span><span class="s2"> existing example IDs&quot;</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">examples</span><span class="p">),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">existing_by_example</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">outpath</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">start_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">examples</span><span class="p">),</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">batch_items</span> <span class="o">=</span> <span class="n">build_batch_items_for_range</span><span class="p">(</span>
+            <span class="n">examples</span><span class="o">=</span><span class="n">examples</span><span class="p">,</span>
+            <span class="n">start_idx</span><span class="o">=</span><span class="n">start_idx</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">BatchRangeConfig</span><span class="p">(</span>
+                <span class="n">prompt_col</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">prompt_col</span><span class="p">,</span>
+                <span class="n">solution_col</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">solution_col</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">existing_by_example</span><span class="o">=</span><span class="n">existing_by_example</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">batch_items</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">pass1_outputs</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="n">_run_pass1_for_batch</span><span class="p">(</span><span class="n">batch_items</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="n">firstpass_choice</span> <span class="o">=</span> <span class="n">_build_first_pass_choice</span><span class="p">(</span>
+            <span class="n">batch_items</span><span class="p">,</span>
+            <span class="n">pass1_outputs</span><span class="o">.</span><span class="n">full_texts</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">cue_strs</span><span class="p">,</span> <span class="n">main_pass2</span><span class="p">,</span> <span class="n">extra_passes</span> <span class="o">=</span> <span class="n">_compute_second_pass_outputs_for_carpark</span><span class="p">(</span>
+            <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">,</span>
+            <span class="n">batch_items</span><span class="o">=</span><span class="n">batch_items</span><span class="p">,</span>
+            <span class="n">firstpass_choice</span><span class="o">=</span><span class="n">firstpass_choice</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">results_ctx</span> <span class="o">=</span> <span class="n">ResultsContext</span><span class="p">(</span>
+            <span class="n">outpath</span><span class="o">=</span><span class="n">outpath</span><span class="p">,</span>
+            <span class="n">inference</span><span class="o">=</span><span class="n">context</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">cue_str</span><span class="o">=</span><span class="n">cue_strs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">cue_strs</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">firstpass_choice</span><span class="o">=</span><span class="n">firstpass_choice</span><span class="p">,</span>
+            <span class="n">existing_by_example</span><span class="o">=</span><span class="n">existing_by_example</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">_write_results_for_batch</span><span class="p">(</span>
+            <span class="n">batch_items</span><span class="o">=</span><span class="n">batch_items</span><span class="p">,</span>
+            <span class="n">pass1</span><span class="o">=</span><span class="n">pass1_outputs</span><span class="p">,</span>
+            <span class="n">pass2</span><span class="o">=</span><span class="n">main_pass2</span> <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">two_pass</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">results_ctx</span><span class="o">=</span><span class="n">results_ctx</span><span class="p">,</span>
+            <span class="n">extra_passes</span><span class="o">=</span><span class="n">extra_passes</span> <span class="k">if</span> <span class="n">extra_passes</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># ───────────────────── Inference Loop (public entrypoint) ─────────────────────</span>
+
+
+<div class="viewcode-block" id="run_inference_on_split">
+<a class="viewcode-back" href="../../../../../api/src.inference.domains.carpark.html#src.inference.domains.carpark.carpark_core.run_inference_on_split">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_split</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Public wrapper matching the signature used by unified runners.</span>
+
+<span class="sd">    This function adapts flat keyword arguments from the unified CLI into a</span>
+<span class="sd">    :class:`CarparkInferenceConfig` and runs the full two-pass inference loop.</span>
+
+<span class="sd">    :param kwargs: Keyword-only arguments including ``split_name``, ``examples``,</span>
+<span class="sd">        ``tokenizer``, ``model``, ``step``, ``outdir``, and common sampling</span>
+<span class="sd">        options (``batch_size``, ``num_samples``, ``temperature``, ``top_p``,</span>
+<span class="sd">        ``entropy_mode``, ``eos_ids``, ``two_pass``, ``second_pass_phrase``,</span>
+<span class="sd">        ``second_pass_use_sample_idx``, ``think_cap``, ``answer_cap``).</span>
+<span class="sd">    :returns: ``None``. Results are written to a JSONL file under ``outdir``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">config_kwargs</span> <span class="o">=</span> <span class="n">build_math_inference_config_kwargs</span><span class="p">(</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;batch_size&quot;</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+        <span class="n">num_samples</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_samples&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+        <span class="n">top_p</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;top_p&quot;</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">),</span>
+        <span class="n">entropy_mode</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entropy_mode&quot;</span><span class="p">,</span> <span class="s2">&quot;reconsider&quot;</span><span class="p">),</span>
+        <span class="n">eos_ids</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eos_ids&quot;</span><span class="p">),</span>
+        <span class="n">two_pass</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;two_pass&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="n">second_pass_phrase</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;second_pass_phrase&quot;</span><span class="p">,</span>
+            <span class="n">DEFAULT_SECOND_PASS_PHRASE</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">second_pass_use_sample_idx</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;second_pass_use_sample_idx&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="n">think_cap</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;think_cap&quot;</span><span class="p">,</span> <span class="mi">750</span><span class="p">),</span>
+        <span class="n">answer_cap</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer_cap&quot;</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">CarparkInferenceConfig</span><span class="o">.</span><span class="n">from_flat</span><span class="p">(</span>
+        <span class="n">split_name</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;split_name&quot;</span><span class="p">],</span>
+        <span class="n">output_dir</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;outdir&quot;</span><span class="p">],</span>
+        <span class="n">step</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">],</span>
+        <span class="n">prompt_col</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt_col&quot;</span><span class="p">,</span> <span class="s2">&quot;messages&quot;</span><span class="p">),</span>
+        <span class="n">solution_col</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;solution_col&quot;</span><span class="p">,</span> <span class="s2">&quot;solution&quot;</span><span class="p">),</span>
+        <span class="o">**</span><span class="n">config_kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">InferenceContext</span><span class="p">(</span>
+        <span class="n">tokenizer</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;tokenizer&quot;</span><span class="p">],</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
+        <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_run_inference_on_split_core</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;examples&quot;</span><span class="p">],</span> <span class="n">context</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># Intentionally no CLI or dataset loader here; those live in</span>
+<span class="c1"># :mod:`src.inference.domains.carpark.carpark_core` and</span>
+<span class="c1"># :mod:`src.inference.domains.carpark.carpark_data`.</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

@@ -1,0 +1,829 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.inference.runners.openr1_math_runner - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/modules.html">src</a><input aria-label="Toggle navigation of src" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/src.html">src package</a><input aria-label="Toggle navigation of src package" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/src.training.utils.html">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for src.inference.runners.openr1_math_runner</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Legacy OpenR1-style batch inference for Qwen-2.5-7B checkpoints.</span>
+
+<span class="sd">Emits ``&lt;think&gt; … &lt;/think&gt;&lt;answer&gt; … &lt;/answer&gt;`` blocks that are easy to grade</span>
+<span class="sd">on OpenR1-Math-style data. This script is kept for backwards compatibility and</span>
+<span class="sd">specialized experiments; for **canonical MATH-500 / HF evaluation**, prefer</span>
+<span class="sd">``src.inference.runners.unified_math_runner``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">import_module</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">packaging</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">HFBackend</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.inference.utils.common</span><span class="w"> </span><span class="kn">import</span> <span class="n">OPENR1_PROMPT_TEMPLATE</span><span class="p">,</span> <span class="n">require_datasets</span>
+
+
+<span class="c1"># —————————————————— logging ———————————————————</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+    <span class="n">level</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;LOGLEVEL&quot;</span><span class="p">,</span> <span class="s2">&quot;INFO&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">),</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(name)s</span><span class="s2">: </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+    <span class="n">handlers</span><span class="o">=</span><span class="p">[</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)],</span>
+<span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+
+<span class="c1"># ——— PyTorch 2.6 DeepSpeed un-pickle patch ———</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">torch_module_for_patch</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;torch&quot;</span><span class="p">)</span>
+    <span class="n">raw_torch_version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">torch_module_for_patch</span><span class="p">,</span> <span class="s2">&quot;__version__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">torch_version</span> <span class="o">=</span> <span class="n">raw_torch_version</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_torch_version</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;0.0.0&quot;</span>
+    <span class="k">if</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">torch_version</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;2.6.0&quot;</span><span class="p">):</span>
+        <span class="n">torch_serialization</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;torch.serialization&quot;</span><span class="p">)</span>
+        <span class="n">deepspeed_zero</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;deepspeed.runtime.zero.config&quot;</span><span class="p">)</span>
+        <span class="n">deepspeed_loss_scaler</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;deepspeed.runtime.fp16.loss_scaler&quot;</span><span class="p">)</span>
+
+        <span class="n">add_safe_globals</span> <span class="o">=</span> <span class="n">torch_serialization</span><span class="o">.</span><span class="n">add_safe_globals</span>
+        <span class="n">ZeroStageEnum</span> <span class="o">=</span> <span class="n">deepspeed_zero</span><span class="o">.</span><span class="n">ZeroStageEnum</span>
+        <span class="n">LossScaler</span> <span class="o">=</span> <span class="n">deepspeed_loss_scaler</span><span class="o">.</span><span class="n">LossScaler</span>
+
+        <span class="n">add_safe_globals</span><span class="p">([</span><span class="n">ZeroStageEnum</span><span class="p">,</span> <span class="n">LossScaler</span><span class="p">])</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;DeepSpeed ZeRO patch enabled&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">deepspeed_import_exc</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;DeepSpeed patch skipped (optional deps missing): </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">deepspeed_import_exc</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">version_type_exc</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;DeepSpeed patch skipped (unexpected torch.__version__): </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">version_type_exc</span><span class="p">)</span>
+
+<span class="c1"># ————— cache dirs —————</span>
+<span class="n">HF_CACHE_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;./.hf_cache&quot;</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+    <span class="n">HF_HOME</span><span class="o">=</span><span class="n">HF_CACHE_DIR</span><span class="p">,</span>
+    <span class="n">TRANSFORMERS_CACHE</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">HF_CACHE_DIR</span><span class="p">,</span> <span class="s2">&quot;transformers&quot;</span><span class="p">),</span>
+    <span class="n">HF_HUB_CACHE</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">HF_CACHE_DIR</span><span class="p">,</span> <span class="s2">&quot;hub&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># ————— prompt —————</span>
+<span class="n">PROMPT_TEMPLATE</span> <span class="o">=</span> <span class="n">OPENR1_PROMPT_TEMPLATE</span>
+<span class="n">MAX_TOKENS</span> <span class="o">=</span> <span class="mi">1224</span>  <span class="c1"># generous upper-bound so the model can finish naturally</span>
+
+<span class="c1"># —————————————————— helpers ———————————————————</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_require_torch_modules</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Import ``torch`` and ``torch.nn.functional`` dynamically, raising if missing.</span>
+
+<span class="sd">    :returns: A tuple ``(torch_module, functional_module)`` with the imported modules.</span>
+<span class="sd">    :raises ImportError: If PyTorch is not installed in the environment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">torch_module</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;torch&quot;</span><span class="p">)</span>
+        <span class="n">functional_module</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;torch.nn.functional&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">torch_import_exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - optional runtime dependency</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;torch is required: pip install torch&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">torch_import_exc</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">torch_module</span><span class="p">,</span> <span class="s2">&quot;inference_mode&quot;</span><span class="p">):</span>  <span class="c1"># pragma: no cover - stub support</span>
+        <span class="n">no_grad_fallback</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">torch_module</span><span class="p">,</span> <span class="s2">&quot;no_grad&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">torch_module</span><span class="o">.</span><span class="n">inference_mode</span> <span class="o">=</span> <span class="n">no_grad_fallback</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span>  <span class="c1"># type: ignore[attr-defined]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">torch_module</span><span class="p">,</span> <span class="s2">&quot;tensor&quot;</span><span class="p">):</span>  <span class="c1"># pragma: no cover - exercised by lightweight stubs</span>
+        <span class="n">torch_module</span><span class="o">.</span><span class="n">tensor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">torch_module</span><span class="p">,</span> <span class="s2">&quot;zeros&quot;</span><span class="p">):</span>  <span class="c1"># pragma: no cover - exercised with lightweight stubs</span>
+        <span class="c1"># Provide a minimal zeros helper for environments using stubs.</span>
+        <span class="n">torch_module</span><span class="o">.</span><span class="n">zeros</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">shape</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">torch_module</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="s2">&quot;zeros&quot;</span><span class="p">,</span> <span class="n">_fallback_zeros</span><span class="p">)(</span><span class="n">shape</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">torch_module</span><span class="p">,</span> <span class="n">functional_module</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fallback_zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lightweight zeros for environments lacking numpy.zeros (testing stub).&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+
+<div class="viewcode-block" id="append_jsonl">
+<a class="viewcode-back" href="../../../../api/src.inference.runners.html#src.inference.runners.openr1_math_runner.append_jsonl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">append_jsonl</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Append a JSON-serializable row to a JSONL file, creating parent directories.</span>
+
+<span class="sd">    :param path: Path to the JSONL file to append to.</span>
+<span class="sd">    :param row: Mapping or object that can be serialized by :mod:`json`.</span>
+<span class="sd">    :returns: ``None``. The row is appended to ``path`` on disk.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">jsonl_file</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">jsonl_file</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">jsonl_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_seen_problems</span><span class="p">(</span><span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load the set of problems already present in an existing JSONL file.</span>
+
+<span class="sd">    :param output_path: Path to the JSONL file containing prior results.</span>
+<span class="sd">    :returns: Set of problem strings that already appear in the file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">seen_problems</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">existing_file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">existing_file</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">record</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">problem</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;problem&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
+                <span class="n">seen_problems</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">seen_problems</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_generation_kwargs</span><span class="p">(</span><span class="n">tokenizer_obj</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct generation keyword arguments for the language model.</span>
+
+<span class="sd">    :param tokenizer_obj: Tokenizer instance providing an ``eos_token_id`` attribute.</span>
+<span class="sd">    :param num_samples: Number of samples to generate per prompt.</span>
+<span class="sd">    :param temperature: Sampling temperature; ignored when ``num_samples == 1``.</span>
+<span class="sd">    :returns: Dictionary of keyword arguments suitable for ``generate`` calls.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">do_sample</span> <span class="o">=</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="n">MAX_TOKENS</span><span class="p">,</span>
+        <span class="s2">&quot;pad_token_id&quot;</span><span class="p">:</span> <span class="n">tokenizer_obj</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">,</span>
+        <span class="s2">&quot;eos_token_id&quot;</span><span class="p">:</span> <span class="n">tokenizer_obj</span><span class="o">.</span><span class="n">eos_token_id</span><span class="p">,</span>
+        <span class="s2">&quot;do_sample&quot;</span><span class="p">:</span> <span class="n">do_sample</span><span class="p">,</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">temperature</span> <span class="k">if</span> <span class="n">do_sample</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="s2">&quot;num_return_sequences&quot;</span><span class="p">:</span> <span class="n">num_samples</span><span class="p">,</span>
+        <span class="s2">&quot;output_scores&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;return_dict_in_generate&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_infer_num_sequences_from_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Best-effort first-dimension size for real and fake tensors.&quot;&quot;&quot;</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">logits</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+        <span class="k">pass</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">logits</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_numpy_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert logits-like input to a numpy array for entropy fallback.&quot;&quot;&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="s2">&quot;arr&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">base</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">logits</span><span class="p">)</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="k">return</span> <span class="n">arr</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_entropy_scalar</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Best-effort conversion of entropy-like objects to a float.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s2">&quot;arr&quot;</span><span class="p">):</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">arr</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_entropies</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">functional_module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute average token entropy for each generated sequence.</span>
+
+<span class="sd">    :param scores: Sequence of logits tensors returned by ``generate``.</span>
+<span class="sd">    :param functional_module: ``torch.nn.functional`` module providing ``softmax``.</span>
+<span class="sd">    :returns: List of mean token entropies, one per generated sequence.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">scores</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">num_sequences</span> <span class="o">=</span> <span class="n">_infer_num_sequences_from_logits</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+        <span class="n">num_sequences</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span>
+    <span class="n">entropies</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sequence_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_sequences</span><span class="p">):</span>
+        <span class="n">token_entropies</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">logits</span> <span class="ow">in</span> <span class="n">scores</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logits_slice</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="n">sequence_index</span> <span class="p">:</span> <span class="n">sequence_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+                <span class="n">logits_slice</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">probabilities</span> <span class="o">=</span> <span class="n">functional_module</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span>  <span class="c1"># type: ignore[attr-defined]</span>
+                    <span class="n">logits_slice</span> <span class="k">if</span> <span class="n">logits_slice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">logits</span><span class="p">,</span>
+                    <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">probabilities</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">):</span>
+                    <span class="n">entropy_tensor</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">probabilities</span> <span class="o">*</span> <span class="n">probabilities</span><span class="o">.</span><span class="n">log</span><span class="p">())</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">probabilities</span><span class="p">,</span> <span class="s2">&quot;new_tensor&quot;</span><span class="p">):</span>
+                        <span class="n">entropy_scalar</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">probabilities</span><span class="o">.</span><span class="n">new_tensor</span><span class="p">(</span><span class="n">entropy_tensor</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">entropy_scalar</span> <span class="o">=</span> <span class="n">_to_entropy_scalar</span><span class="p">(</span><span class="n">entropy_tensor</span><span class="p">)</span>
+                    <span class="n">token_entropies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entropy_scalar</span><span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>
+                <span class="n">probabilities</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Fallback for lightweight stubs that lack functional.softmax or tensor.log</span>
+            <span class="n">logits_array</span> <span class="o">=</span> <span class="n">_as_numpy_logits</span><span class="p">(</span><span class="n">logits_slice</span> <span class="k">if</span> <span class="n">logits_slice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">logits</span><span class="p">)</span>
+            <span class="n">logits_array</span> <span class="o">=</span> <span class="n">logits_array</span> <span class="o">-</span> <span class="n">logits_array</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">probs_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logits_array</span><span class="p">)</span>
+            <span class="n">probs_array</span> <span class="o">=</span> <span class="n">probs_array</span> <span class="o">/</span> <span class="n">probs_array</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">entropy_array</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">probs_array</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">probs_array</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">)))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">entropy_val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">entropy_array</span><span class="p">))</span>
+            <span class="n">token_entropies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entropy_val</span><span class="p">)</span>
+        <span class="n">entropies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">token_entropies</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">token_entropies</span><span class="p">)</span> <span class="k">if</span> <span class="n">token_entropies</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">entropies</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_decode_new_tokens</span><span class="p">(</span><span class="n">tokenizer_obj</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decode only the newly generated tokens for each sequence.</span>
+
+<span class="sd">    :param tokenizer_obj: Tokenizer used to decode token IDs into text.</span>
+<span class="sd">    :param sequences: Tensor of full generated sequences including the prompt.</span>
+<span class="sd">    :param input_ids: Tensor of input IDs that seeded the generation.</span>
+<span class="sd">    :returns: List of decoded strings corresponding to the new tokens only.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prompt_length</span> <span class="o">=</span> <span class="n">input_ids</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">tokenizer_obj</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
+        <span class="n">sequences</span><span class="p">[:,</span> <span class="n">prompt_length</span><span class="p">:],</span>
+        <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write_batch_rows</span><span class="p">(</span>
+    <span class="n">batch</span><span class="p">,</span>
+    <span class="n">decoded_sequences</span><span class="p">,</span>
+    <span class="n">entropies</span><span class="p">,</span>
+    <span class="n">context</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write JSONL rows for a single batch of generated samples.</span>
+
+<span class="sd">    :param batch: Iterable of dataset examples containing at least</span>
+<span class="sd">        ``\&quot;problem\&quot;`` and ``\&quot;answer\&quot;``.</span>
+<span class="sd">    :param decoded_sequences: List of decoded outputs, one per sample.</span>
+<span class="sd">    :param entropies: List of average token entropies aligned with ``decoded_sequences``.</span>
+<span class="sd">    :param context: Batch-level context carrying configuration and output path.</span>
+<span class="sd">    :returns: ``None``. Rows are appended to the configured JSONL file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">batch_index</span><span class="p">,</span> <span class="n">example</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">batch</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">sample_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples</span><span class="p">):</span>
+            <span class="n">flat_index</span> <span class="o">=</span> <span class="n">batch_index</span> <span class="o">*</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">+</span> <span class="n">sample_idx</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">decoded_sequences</span><span class="p">[</span><span class="n">flat_index</span><span class="p">]</span>
+            <span class="n">avg_entropy</span> <span class="o">=</span> <span class="n">entropies</span><span class="p">[</span><span class="n">flat_index</span><span class="p">]</span>
+            <span class="n">answer_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;&lt;answer&gt;(.*?)&lt;/answer&gt;&quot;</span><span class="p">,</span>
+                <span class="n">text</span><span class="p">,</span>
+                <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">answer_match</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;❗Missing &lt;answer&gt; for problem &#39;</span><span class="si">%s</span><span class="s2">&#39; (sample </span><span class="si">%d</span><span class="s2">). Saved anyway.&quot;</span><span class="p">,</span>
+                    <span class="n">example</span><span class="p">[</span><span class="s2">&quot;problem&quot;</span><span class="p">][:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="n">sample_idx</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;problem&quot;</span><span class="p">:</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;problem&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;gold_answer&quot;</span><span class="p">:</span> <span class="n">example</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">step</span><span class="p">,</span>
+                <span class="s2">&quot;split&quot;</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="p">,</span>
+                <span class="s2">&quot;sample_idx&quot;</span><span class="p">:</span> <span class="n">sample_idx</span><span class="p">,</span>
+                <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                <span class="s2">&quot;entropy&quot;</span><span class="p">:</span> <span class="n">avg_entropy</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">append_jsonl</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span>
+
+        <span class="n">context</span><span class="o">.</span><span class="n">seen_problems</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;problem&quot;</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="InferenceConfig">
+<a class="viewcode-back" href="../../../../api/src.inference.runners.html#src.inference.runners.openr1_math_runner.InferenceConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InferenceConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration bundle for a single inference run.</span>
+
+<span class="sd">    :param split_name: Name of the dataset split being processed.</span>
+<span class="sd">    :param step: Training or checkpoint step identifier for logging and filenames.</span>
+<span class="sd">    :param output_dir: Directory where JSONL results will be written.</span>
+<span class="sd">    :param batch_size: Number of examples to process per batch.</span>
+<span class="sd">    :param num_samples: Number of samples to generate per problem.</span>
+<span class="sd">    :param temperature: Sampling temperature for generation.</span>
+<span class="sd">    :param examples: Dataset object providing ``select`` and iteration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">split_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">step</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">output_dir</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">examples</span><span class="p">:</span> <span class="nb">object</span></div>
+
+
+
+<div class="viewcode-block" id="BatchWriteContext">
+<a class="viewcode-back" href="../../../../api/src.inference.runners.html#src.inference.runners.openr1_math_runner.BatchWriteContext">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BatchWriteContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Context object passed to :func:`_write_batch_rows`.</span>
+
+<span class="sd">    :param config: Inference configuration used for the run.</span>
+<span class="sd">    :param output_path: Path to the JSONL file being written.</span>
+<span class="sd">    :param seen_problems: Set of problems that have already been written.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">config</span><span class="p">:</span> <span class="n">InferenceConfig</span>
+    <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">seen_problems</span><span class="p">:</span> <span class="nb">set</span></div>
+
+
+
+<span class="c1"># —————————————————— inference loop ———————————————————</span>
+
+
+<div class="viewcode-block" id="run_inference_on_split">
+<a class="viewcode-back" href="../../../../api/src.inference.runners.html#src.inference.runners.openr1_math_runner.run_inference_on_split">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_split</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">InferenceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience wrapper for backward compatibility.</span>
+
+<span class="sd">    This entry point exists for older call sites and simply indicates that</span>
+<span class="sd">    the caller must provide a tokenizer and model via</span>
+<span class="sd">    :func:`run_inference_on_split_with_model`.</span>
+
+<span class="sd">    :param config: Inference configuration for the run.</span>
+<span class="sd">    :returns: ``None``. The function always raises a :class:`RuntimeError`.</span>
+<span class="sd">    :raises RuntimeError: Always; callers should use ``run_inference_on_split_with_model``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+        <span class="s2">&quot;run_inference_on_split must be called with tokenizer and lm_model&quot;</span><span class="p">,</span>
+    <span class="p">)</span>  <span class="c1"># pragma: no cover</span></div>
+
+
+
+<div class="viewcode-block" id="run_inference_on_split_with_model">
+<a class="viewcode-back" href="../../../../api/src.inference.runners.html#src.inference.runners.openr1_math_runner.run_inference_on_split_with_model">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_inference_on_split_with_model</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">InferenceConfig</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="p">,</span>
+    <span class="n">lm_model</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate completions, compute average token entropy, and save JSONL rows.</span>
+
+<span class="sd">    :param config: Inference configuration specifying dataset and generation parameters.</span>
+<span class="sd">    :param tokenizer: Tokenizer used to encode prompts and decode outputs.</span>
+<span class="sd">    :param lm_model: Hugging Face-style model exposing a ``generate`` method.</span>
+<span class="sd">    :returns: ``None``. Results are appended to the output JSONL file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">torch_module</span><span class="p">,</span> <span class="n">functional_module</span> <span class="o">=</span> <span class="n">_require_torch_modules</span><span class="p">()</span>
+
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;step</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">step</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="si">}</span><span class="s2">.jsonl&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">seen_problems</span> <span class="o">=</span> <span class="n">_load_seen_problems</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;→ </span><span class="si">%s</span><span class="s2"> | </span><span class="si">%d</span><span class="s2"> examples&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">examples</span><span class="p">))</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">batch_start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">examples</span><span class="p">),</span> <span class="n">config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">batch_dataset</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">examples</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span>
+                <span class="n">batch_start</span><span class="p">,</span>
+                <span class="nb">min</span><span class="p">(</span><span class="n">batch_start</span> <span class="o">+</span> <span class="n">config</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">examples</span><span class="p">)),</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="p">[</span><span class="n">example</span> <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">batch_dataset</span> <span class="k">if</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;problem&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen_problems</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">batch</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">PROMPT_TEMPLATE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">problem</span><span class="o">=</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;problem&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">]</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">torch_module</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">tensor</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="k">with</span> <span class="n">torch_module</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">lm_model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                <span class="o">**</span><span class="n">inputs</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">_build_generation_kwargs</span><span class="p">(</span>
+                    <span class="n">tokenizer_obj</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+                    <span class="n">num_samples</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
+                    <span class="n">temperature</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="n">entropies</span> <span class="o">=</span> <span class="n">_compute_entropies</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span> <span class="n">functional_module</span><span class="p">)</span>
+        <span class="n">_write_batch_rows</span><span class="p">(</span>
+            <span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+            <span class="n">decoded_sequences</span><span class="o">=</span><span class="n">_decode_new_tokens</span><span class="p">(</span>
+                <span class="n">tokenizer_obj</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+                <span class="n">sequences</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">sequences</span><span class="p">,</span>
+                <span class="n">input_ids</span><span class="o">=</span><span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">],</span>
+            <span class="p">),</span>
+            <span class="n">entropies</span><span class="o">=</span><span class="n">entropies</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="n">BatchWriteContext</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+                <span class="n">output_path</span><span class="o">=</span><span class="n">output_path</span><span class="p">,</span>
+                <span class="n">seen_problems</span><span class="o">=</span><span class="n">seen_problems</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;✓ </span><span class="si">%s</span><span class="s2"> done in </span><span class="si">%.1f</span><span class="s2">s → </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">split_name</span><span class="p">,</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">,</span>
+        <span class="n">output_path</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_openr1_math</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">num_examples</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load the OpenR1-Math-220k training split via :mod:`datasets`.</span>
+
+<span class="sd">    :param cache_dir: Directory to use as a datasets cache.</span>
+<span class="sd">    :param num_examples: Maximum number of examples to keep from the training split.</span>
+<span class="sd">    :returns: A dataset object representing the shuffled subset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">load_dataset_fn</span> <span class="o">=</span> <span class="n">require_datasets</span><span class="p">()</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset_fn</span><span class="p">(</span><span class="s2">&quot;open-r1/OpenR1-Math-220k&quot;</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">)[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_examples</span><span class="p">))</span>
+
+
+<span class="c1"># —————————————————————— main ——————————————————————</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--model_name_or_path&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--revision&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output_dir&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--batch_size&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--num_examples&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--num_samples&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--temperature&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">HFBackend</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">model_name_or_path</span><span class="p">,</span>
+        <span class="n">revision</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">HF_CACHE_DIR</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float16&quot;</span><span class="p">,</span>
+        <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="n">attn_implementation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">hf_tokenizer</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">tokenizer</span>
+    <span class="n">language_model</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">model</span>
+
+    <span class="n">examples</span> <span class="o">=</span> <span class="n">_load_openr1_math</span><span class="p">(</span><span class="n">HF_CACHE_DIR</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">num_examples</span><span class="p">)</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">inference_run_config</span> <span class="o">=</span> <span class="n">InferenceConfig</span><span class="p">(</span>
+        <span class="n">split_name</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">,</span>
+        <span class="n">step</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">output_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">num_samples</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="n">examples</span><span class="o">=</span><span class="n">examples</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">run_inference_on_split_with_model</span><span class="p">(</span>
+        <span class="n">inference_run_config</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="o">=</span><span class="n">hf_tokenizer</span><span class="p">,</span>
+        <span class="n">lm_model</span><span class="o">=</span><span class="n">language_model</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All inference complete.&quot;</span><span class="p">)</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

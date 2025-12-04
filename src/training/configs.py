@@ -98,28 +98,30 @@ class DatasetMixtureConfig:
 @dataclass
 class ScriptArguments(trl.ScriptArguments):
     """
-    Extended version of ScriptArguments with support for dataset mixtures.
+    Extended version of :class:`trl.ScriptArguments` with support for dataset mixtures.
 
-    Args:
-        dataset_mixture (`dict[str, Any]` or `None`, *optional*, defaults to `None`):
-            Configuration for creating dataset mixtures with advanced options.
-            Format:
-              dataset_mixture:
-                datasets:
-                  - id: dataset_id1
-                    config: config_name
-                    columns:
-                      - col1
-                      - col2
-                    weight: 0.5
-                  - id: dataset_id2
-                    config: config_name
-                    columns:
-                      - col1
-                      - col2
-                    weight: 0.5
-                seed: 42
-                test_split_size: 0.1
+    Parameters
+    ----------
+    dataset_mixture :
+        Optional configuration for creating dataset mixtures with advanced options.
+        Example structure::
+
+            dataset_mixture:
+              datasets:
+                - id: dataset_id1
+                  config: config_name
+                  columns:
+                    - col1
+                    - col2
+                  weight: 0.5
+                - id: dataset_id2
+                  config: config_name
+                  columns:
+                    - col1
+                    - col2
+                  weight: 0.5
+              seed: 42
+              test_split_size: 0.1
     """
 
     # Override the dataset_name to make it optional

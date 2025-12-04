@@ -220,7 +220,10 @@ class BatchGenerationContext:
 logger = setup_script_logger(__name__)
 
 try:
-    if version.parse(torch.__version__) >= version.parse("2.6.0"):
+    # Guard against stubbed or mocked torch objects where __version__ may not
+    # be a plain string (for example, during documentation builds).
+    torch_version = getattr(torch, "__version__", None)
+    if isinstance(torch_version, str) and version.parse(torch_version) >= version.parse("2.6.0"):
         torch_serialization = importlib.import_module("torch.serialization")
         deepspeed_zero_config = importlib.import_module("deepspeed.runtime.zero.config")
         deepspeed_loss_scaler = importlib.import_module("deepspeed.runtime.fp16.loss_scaler")
@@ -229,7 +232,7 @@ try:
         loss_scaler_cls = getattr(deepspeed_loss_scaler, "LossScaler")
         add_safe_globals([zero_stage_enum_cls, loss_scaler_cls])
         logger.info("DeepSpeed ZeRO patch enabled")
-except (ImportError, AttributeError) as exc:
+except (ImportError, AttributeError, TypeError) as exc:
     logger.warning("DeepSpeed patch disabled (missing deps/attrs): %r", exc)
 
 

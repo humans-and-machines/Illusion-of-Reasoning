@@ -1,0 +1,1338 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="prev" title="src.training.runtime package" href="src.training.runtime.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.09.25 -->
+        <title>src.training.utils package - Illusion-of-Reasoning documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Illusion-of-Reasoning  documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">Illusion-of-Reasoning  documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">src</a><input aria-label="Toggle navigation of src" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="src.html">src package</a><input aria-label="Toggle navigation of src package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.analysis.html">src.analysis package</a><input aria-label="Toggle navigation of src.analysis package" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.common.html">src.analysis.common package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.core.html">src.analysis.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.figures.html">src.analysis.figures package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.analysis.h3_uncertainty.html">src.analysis.h3_uncertainty package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.annotate.html">src.annotate package</a><input aria-label="Toggle navigation of src.annotate package" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.annotate.backcompat.html">src.annotate.backcompat package</a><input aria-label="Toggle navigation of src.annotate.backcompat package" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.annotate.backcompat.tasks.html">src.annotate.backcompat.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.cli.html">src.annotate.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.core.html">src.annotate.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.infra.html">src.annotate.infra package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.annotate.tasks.html">src.annotate.tasks package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="src.common.html">src.common package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.inference.html">src.inference package</a><input aria-label="Toggle navigation of src.inference package" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.backends.html">src.inference.backends package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.cli.html">src.inference.cli package</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.inference.domains.html">src.inference.domains package</a><input aria-label="Toggle navigation of src.inference.domains package" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.carpark.html">src.inference.domains.carpark package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.crossword.html">src.inference.domains.crossword package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.math.html">src.inference.domains.math package</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.domains.summarize.html">src.inference.domains.summarize package</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.inference.gateways.html">src.inference.gateways package</a><input aria-label="Toggle navigation of src.inference.gateways package" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.inference.gateways.providers.html">src.inference.gateways.providers package</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.runners.html">src.inference.runners package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.inference.utils.html">src.inference.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="src.training.html">src.training package</a><input aria-label="Toggle navigation of src.training package" checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="src.training.cli.html">src.training.cli package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.training.runtime.html">src.training.runtime package</a></li>
+<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">src.training.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/src.training.utils.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="src-training-utils-package">
+<h1>src.training.utils package<a class="headerlink" href="#src-training-utils-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-src.training.utils.callbacks">
+<span id="src-training-utils-callbacks-module"></span><h2>src.training.utils.callbacks module<a class="headerlink" href="#module-src.training.utils.callbacks" title="Link to this heading">¶</a></h2>
+<p>Trainer callbacks for hub uploads, success caching, and replay buffer.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.PushToHubRevisionCallback">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.callbacks.</span></span><span class="sig-name descname"><span class="pre">PushToHubRevisionCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#PushToHubRevisionCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.PushToHubRevisionCallback" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TrainerCallback</span></code></p>
+<p>Callback that pushes a checkpoint to the hub under a step-specific tag.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.PushToHubRevisionCallback.get_model_config">
+<span class="sig-name descname"><span class="pre">get_model_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#PushToHubRevisionCallback.get_model_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.PushToHubRevisionCallback.get_model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Public accessor for the associated model configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.PushToHubRevisionCallback.on_save">
+<span class="sig-name descname"><span class="pre">on_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.training_args.TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.trainer_callback.TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.trainer_callback.TrainerControl</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#PushToHubRevisionCallback.on_save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.PushToHubRevisionCallback.on_save" title="Link to this definition">¶</a></dt>
+<dd><p>Push a new revision to the hub when the checkpoint is saved.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.ReplayBufferCallback">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.callbacks.</span></span><span class="sig-name descname"><span class="pre">ReplayBufferCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#ReplayBufferCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.ReplayBufferCallback" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TrainerCallback</span></code></p>
+<p>Callback that pushes high-accuracy prompts into the replay buffer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.ReplayBufferCallback.buffer_size">
+<span class="sig-name descname"><span class="pre">buffer_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#ReplayBufferCallback.buffer_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.ReplayBufferCallback.buffer_size" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current replay buffer size.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.ReplayBufferCallback.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_unused</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#ReplayBufferCallback.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.ReplayBufferCallback.on_train_batch_end" title="Link to this definition">¶</a></dt>
+<dd><p>Inspect per-batch rewards and add successful prompts to the buffer.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.SuccessCachingCallback">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.callbacks.</span></span><span class="sig-name descname"><span class="pre">SuccessCachingCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#SuccessCachingCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.SuccessCachingCallback" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TrainerCallback</span></code></p>
+<p>Scrapes <code class="docutils literal notranslate"><span class="pre">trainer._textual_logs</span></code> after every log step and pushes any prompt
+whose accuracy ≥ <code class="docutils literal notranslate"><span class="pre">acc_threshold</span></code> into <code class="xref py py-class docutils literal notranslate"><span class="pre">ReplayBuffer</span></code>.</p>
+<p>NOTE: Transformers never passes <code class="docutils literal notranslate"><span class="pre">trainer</span></code> via <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>; use
+<a class="reference internal" href="#src.training.utils.callbacks.SuccessCachingCallback.set_trainer" title="src.training.utils.callbacks.SuccessCachingCallback.set_trainer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_trainer()</span></code></a> instead.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.SuccessCachingCallback.on_log">
+<span class="sig-name descname"><span class="pre">on_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.training_args.TrainingArguments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.trainer_callback.TrainerState</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_control</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.trainer_callback.TrainerControl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_logs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#SuccessCachingCallback.on_log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.SuccessCachingCallback.on_log" title="Link to this definition">¶</a></dt>
+<dd><p>Scrape textual logs and cache successful prompts into the buffer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.SuccessCachingCallback.set_trainer">
+<span class="sig-name descname"><span class="pre">set_trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trainer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#SuccessCachingCallback.set_trainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.SuccessCachingCallback.set_trainer" title="Link to this definition">¶</a></dt>
+<dd><p>Register the underlying Trainer instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.callbacks.get_callbacks">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.callbacks.</span></span><span class="sig-name descname"><span class="pre">get_callbacks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_cfg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_cfg</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">replay_buffer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer" title="src.training.utils.replay_buffer.ReplayBuffer"><span class="pre">ReplayBuffer</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/callbacks.html#get_callbacks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.callbacks.get_callbacks" title="Link to this definition">¶</a></dt>
+<dd><p>Build the callbacks requested in <cite>train_cfg.callbacks</cite>.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.data">
+<span id="src-training-utils-data-module"></span><h2>src.training.utils.data module<a class="headerlink" href="#module-src.training.utils.data" title="Link to this heading">¶</a></h2>
+<p>Dataset loading utilities for SFT training.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.data.get_dataset">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.data.</span></span><span class="sig-name descname"><span class="pre">get_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.ScriptArguments" title="src.training.configs.ScriptArguments"><span class="pre">ScriptArguments</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/src/training/utils/data.html#get_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.data.get_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Load a dataset or a mixture of datasets based on the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – Script arguments containing dataset configuration, including
+either a single <code class="docutils literal notranslate"><span class="pre">dataset_name</span></code> or a <code class="docutils literal notranslate"><span class="pre">dataset_mixture</span></code> definition.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The loaded dataset object, or a mapping such as <code class="docutils literal notranslate"><span class="pre">{&quot;train&quot;:</span> <span class="pre">ds}</span></code>
+when a train/test split is created.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If neither <code class="docutils literal notranslate"><span class="pre">dataset_name</span></code> nor <code class="docutils literal notranslate"><span class="pre">dataset_mixture</span></code> is set,
+or if a mixture configuration fails to load any datasets.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.evaluation">
+<span id="src-training-utils-evaluation-module"></span><h2>src.training.utils.evaluation module<a class="headerlink" href="#module-src.training.utils.evaluation" title="Link to this heading">¶</a></h2>
+<p>Helpers for registering and running LightEval benchmarks via Slurm/vLLM.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.evaluation.get_lighteval_tasks">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.evaluation.</span></span><span class="sig-name descname"><span class="pre">get_lighteval_tasks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/evaluation.html#get_lighteval_tasks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.evaluation.get_lighteval_tasks" title="Link to this definition">¶</a></dt>
+<dd><p>Return the list of registered LightEval task names.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.evaluation.register_lighteval_task">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.evaluation.</span></span><span class="sig-name descname"><span class="pre">register_lighteval_task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">configs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_suite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_fewshot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/evaluation.html#register_lighteval_task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.evaluation.register_lighteval_task" title="Link to this definition">¶</a></dt>
+<dd><p>Register a LightEval task configuration.</p>
+<ul class="simple">
+<li><p>Core tasks can be added from this table:
+<a class="reference external" href="https://github.com/huggingface/lighteval/blob/main/src/lighteval/tasks/tasks_table.jsonl">https://github.com/huggingface/lighteval/blob/main/src/lighteval/tasks/tasks_table.jsonl</a></p></li>
+<li><p>Custom tasks that require their own metrics / scripts should live in
+<code class="docutils literal notranslate"><span class="pre">scripts/evaluation/extended_lighteval_tasks</span></code>.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>configs</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – The dictionary to store the task configuration.</p></li>
+<li><p><strong>eval_suite</strong> (<em>str</em>) – The evaluation suite.</p></li>
+<li><p><strong>task_name</strong> (<em>str</em>) – The name of the task.</p></li>
+<li><p><strong>task_list</strong> (<em>str</em>) – The comma-separated list of tasks in the format
+<code class="docutils literal notranslate"><span class="pre">extended|{task_name}|{num_fewshot}|0</span></code> or
+<code class="docutils literal notranslate"><span class="pre">lighteval|{task_name}|{num_fewshot}|0</span></code>.</p></li>
+<li><p><strong>num_fewshot</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of few-shot examples.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.evaluation.run_benchmark_jobs">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.evaluation.</span></span><span class="sig-name descname"><span class="pre">run_benchmark_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ModelConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/training/utils/evaluation.html#run_benchmark_jobs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.evaluation.run_benchmark_jobs" title="Link to this definition">¶</a></dt>
+<dd><p>Launch all requested benchmarks for a trained model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.evaluation.run_lighteval_job">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.evaluation.</span></span><span class="sig-name descname"><span class="pre">run_lighteval_job</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">benchmark</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ModelConfig</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/training/utils/evaluation.html#run_lighteval_job"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.evaluation.run_lighteval_job" title="Link to this definition">¶</a></dt>
+<dd><p>Submit a single LightEval benchmark job via Slurm/vLLM.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.hierarchical_grpo_dependencies">
+<span id="src-training-utils-hierarchical-grpo-dependencies-module"></span><h2>src.training.utils.hierarchical_grpo_dependencies module<a class="headerlink" href="#module-src.training.utils.hierarchical_grpo_dependencies" title="Link to this heading">¶</a></h2>
+<p>Optional dependency handling for hierarchical GRPO training.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_dependencies.canonicalize_device">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_dependencies.</span></span><span class="sig-name descname"><span class="pre">canonicalize_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_dependencies.html#canonicalize_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_dependencies.canonicalize_device" title="Link to this definition">¶</a></dt>
+<dd><p>Convert accelerator-style device objects into something torch accepts.</p>
+<p>Torch APIs expect <code class="docutils literal notranslate"><span class="pre">torch.device</span></code> (or a string). Accelerate sometimes
+provides a SimpleNamespace with a <code class="docutils literal notranslate"><span class="pre">type</span></code> attribute, which causes type
+errors when passed through directly. This helper strips out the <code class="docutils literal notranslate"><span class="pre">type</span></code> or
+wraps it in <code class="docutils literal notranslate"><span class="pre">torch.device</span></code> when available.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_dependencies.is_flash_attn_2_available">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_dependencies.</span></span><span class="sig-name descname"><span class="pre">is_flash_attn_2_available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/transformers/utils/import_utils.html#is_flash_attn_2_available"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_dependencies.is_flash_attn_2_available" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_dependencies.resolve_dependency">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_dependencies.</span></span><span class="sig-name descname"><span class="pre">resolve_dependency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_dependencies.html#resolve_dependency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_dependencies.resolve_dependency" title="Link to this definition">¶</a></dt>
+<dd><p>Return an attribute from <code class="docutils literal notranslate"><span class="pre">instance</span></code> if present, otherwise <code class="docutils literal notranslate"><span class="pre">default</span></code>.</p>
+<p>This helper avoids cross-module imports when hierarchical trainer mixins
+need to fall back to attributes supplied by the trainer.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.hierarchical_grpo_generation">
+<span id="src-training-utils-hierarchical-grpo-generation-module"></span><h2>src.training.utils.hierarchical_grpo_generation module<a class="headerlink" href="#module-src.training.utils.hierarchical_grpo_generation" title="Link to this heading">¶</a></h2>
+<p>Generation utilities for hierarchical GRPO training.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.GenerationBatch">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_generation.</span></span><span class="sig-name descname"><span class="pre">GenerationBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_generation.html#GenerationBatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for generation inputs shared across helper methods.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.GenerationBatch.device">
+<span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.device" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompt_ids">
+<span class="sig-name descname"><span class="pre">prompt_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompt_ids" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompt_mask">
+<span class="sig-name descname"><span class="pre">prompt_mask</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompt_mask" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompts">
+<span class="sig-name descname"><span class="pre">prompts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompts_text">
+<span class="sig-name descname"><span class="pre">prompts_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompts_text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_generation.</span></span><span class="sig-name descname"><span class="pre">HierarchicalGenerationMixin</span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_generation.html#HierarchicalGenerationMixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Generation helpers mixed into the hierarchical GRPO trainer.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.hierarchical_grpo_rewards">
+<span id="src-training-utils-hierarchical-grpo-rewards-module"></span><h2>src.training.utils.hierarchical_grpo_rewards module<a class="headerlink" href="#module-src.training.utils.hierarchical_grpo_rewards" title="Link to this heading">¶</a></h2>
+<p>Reward computation helpers for hierarchical GRPO training.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_rewards.</span></span><span class="sig-name descname"><span class="pre">HierarchicalRewardMixin</span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_rewards.html#HierarchicalRewardMixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Reward, advantage, and metric helpers for the hierarchical GRPO trainer.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin.compute_rewards">
+<span class="sig-name descname"><span class="pre">compute_rewards</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp_ids_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_rewards.html#HierarchicalRewardMixin.compute_rewards"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin.compute_rewards" title="Link to this definition">¶</a></dt>
+<dd><p>Public wrapper for reward computation used by callers/tests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin.normalize_rewards_and_compute_advantages">
+<span class="sig-name descname"><span class="pre">normalize_rewards_and_compute_advantages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_rewards.html#HierarchicalRewardMixin.normalize_rewards_and_compute_advantages"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin.normalize_rewards_and_compute_advantages" title="Link to this definition">¶</a></dt>
+<dd><p>Public wrapper for normalization + advantage computation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.RewardStatistics">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_rewards.</span></span><span class="sig-name descname"><span class="pre">RewardStatistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">advantages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_grouped_rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std_grouped_rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_std_zero</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_rewards.html#RewardStatistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Grouped reward statistics and advantages.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.RewardStatistics.advantages">
+<span class="sig-name descname"><span class="pre">advantages</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.advantages" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.RewardStatistics.is_std_zero">
+<span class="sig-name descname"><span class="pre">is_std_zero</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.is_std_zero" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.RewardStatistics.mean_grouped_rewards">
+<span class="sig-name descname"><span class="pre">mean_grouped_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.mean_grouped_rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_rewards.RewardStatistics.std_grouped_rewards">
+<span class="sig-name descname"><span class="pre">std_grouped_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.std_grouped_rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.hierarchical_grpo_trainer">
+<span id="src-training-utils-hierarchical-grpo-trainer-module"></span><h2>src.training.utils.hierarchical_grpo_trainer module<a class="headerlink" href="#module-src.training.utils.hierarchical_grpo_trainer" title="Link to this heading">¶</a></h2>
+<p>Hierarchical GRPO trainer utilities.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.GenerationBatch">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_trainer.</span></span><span class="sig-name descname"><span class="pre">GenerationBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_generation.html#GenerationBatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for generation inputs shared across helper methods.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.GenerationBatch.device">
+<span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.device" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompt_ids">
+<span class="sig-name descname"><span class="pre">prompt_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompt_ids" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompt_mask">
+<span class="sig-name descname"><span class="pre">prompt_mask</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompt_mask" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompts">
+<span class="sig-name descname"><span class="pre">prompts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompts_text">
+<span class="sig-name descname"><span class="pre">prompts_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompts_text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_trainer.</span></span><span class="sig-name descname"><span class="pre">HierarchicalGRPOTrainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_trainer.html#HierarchicalGRPOTrainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin" title="src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">HierarchicalGenerationMixin</span></code></a>, <a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin" title="src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">HierarchicalRewardMixin</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GRPOTrainer</span></code></p>
+<p>GRPO trainer that supports hierarchical two-stage rollouts and rich logging.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer.reset_textual_logs">
+<span class="sig-name descname"><span class="pre">reset_textual_logs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_trainer.html#HierarchicalGRPOTrainer.reset_textual_logs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer.reset_textual_logs" title="Link to this definition">¶</a></dt>
+<dd><p>Clear accumulated textual logs.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer.textual_logs">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">textual_logs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer.textual_logs" title="Link to this definition">¶</a></dt>
+<dd><p>Expose textual logs via a public attribute for callbacks.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.RewardStatistics">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_trainer.</span></span><span class="sig-name descname"><span class="pre">RewardStatistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">advantages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_grouped_rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std_grouped_rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_std_zero</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_rewards.html#RewardStatistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Grouped reward statistics and advantages.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.RewardStatistics.advantages">
+<span class="sig-name descname"><span class="pre">advantages</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.advantages" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.RewardStatistics.is_std_zero">
+<span class="sig-name descname"><span class="pre">is_std_zero</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.is_std_zero" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.RewardStatistics.mean_grouped_rewards">
+<span class="sig-name descname"><span class="pre">mean_grouped_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.mean_grouped_rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.RewardStatistics.std_grouped_rewards">
+<span class="sig-name descname"><span class="pre">std_grouped_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.std_grouped_rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.canonicalize_device">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_trainer.</span></span><span class="sig-name descname"><span class="pre">canonicalize_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_dependencies.html#canonicalize_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.canonicalize_device" title="Link to this definition">¶</a></dt>
+<dd><p>Convert accelerator-style device objects into something torch accepts.</p>
+<p>Torch APIs expect <code class="docutils literal notranslate"><span class="pre">torch.device</span></code> (or a string). Accelerate sometimes
+provides a SimpleNamespace with a <code class="docutils literal notranslate"><span class="pre">type</span></code> attribute, which causes type
+errors when passed through directly. This helper strips out the <code class="docutils literal notranslate"><span class="pre">type</span></code> or
+wraps it in <code class="docutils literal notranslate"><span class="pre">torch.device</span></code> when available.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.is_flash_attn_2_available">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_trainer.</span></span><span class="sig-name descname"><span class="pre">is_flash_attn_2_available</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/transformers/utils/import_utils.html#is_flash_attn_2_available"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.is_flash_attn_2_available" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_grpo_trainer.resolve_dependency">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_grpo_trainer.</span></span><span class="sig-name descname"><span class="pre">resolve_dependency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_dependencies.html#resolve_dependency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_grpo_trainer.resolve_dependency" title="Link to this definition">¶</a></dt>
+<dd><p>Return an attribute from <code class="docutils literal notranslate"><span class="pre">instance</span></code> if present, otherwise <code class="docutils literal notranslate"><span class="pre">default</span></code>.</p>
+<p>This helper avoids cross-module imports when hierarchical trainer mixins
+need to fall back to attributes supplied by the trainer.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.hierarchical_rollout">
+<span id="src-training-utils-hierarchical-rollout-module"></span><h2>src.training.utils.hierarchical_rollout module<a class="headerlink" href="#module-src.training.utils.hierarchical_rollout" title="Link to this heading">¶</a></h2>
+<p>Two-stage hierarchical rollout helper and trainer re-exports.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.GenerationBatch">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_rollout.</span></span><span class="sig-name descname"><span class="pre">GenerationBatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompts_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_generation.html#GenerationBatch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.GenerationBatch" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for generation inputs shared across helper methods.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.GenerationBatch.device">
+<span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.GenerationBatch.device" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.GenerationBatch.prompt_ids">
+<span class="sig-name descname"><span class="pre">prompt_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompt_ids" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.GenerationBatch.prompt_mask">
+<span class="sig-name descname"><span class="pre">prompt_mask</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompt_mask" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.GenerationBatch.prompts">
+<span class="sig-name descname"><span class="pre">prompts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.GenerationBatch.prompts_text">
+<span class="sig-name descname"><span class="pre">prompts_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompts_text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_rollout.</span></span><span class="sig-name descname"><span class="pre">HierarchicalGRPOTrainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_trainer.html#HierarchicalGRPOTrainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin" title="src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">HierarchicalGenerationMixin</span></code></a>, <a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin" title="src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">HierarchicalRewardMixin</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GRPOTrainer</span></code></p>
+<p>GRPO trainer that supports hierarchical two-stage rollouts and rich logging.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer.reset_textual_logs">
+<span class="sig-name descname"><span class="pre">reset_textual_logs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_trainer.html#HierarchicalGRPOTrainer.reset_textual_logs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer.reset_textual_logs" title="Link to this definition">¶</a></dt>
+<dd><p>Clear accumulated textual logs.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer.textual_logs">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">textual_logs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer.textual_logs" title="Link to this definition">¶</a></dt>
+<dd><p>Expose textual logs via a public attribute for callbacks.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.HierarchicalRollout">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_rollout.</span></span><span class="sig-name descname"><span class="pre">HierarchicalRollout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">transformers.generation.utils.GenerationMixin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PreTrainedTokenizerBase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vllm_client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_reason_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">800</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_rollout.html#HierarchicalRollout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.HierarchicalRollout" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>Two-stage generation:</dt><dd><ol class="arabic simple">
+<li><p>Generate until &lt;/think&gt; (or first &lt;answer&gt;), append the tags.</p></li>
+<li><p>Feed that full sequence back in to finish the answer.</p></li>
+</ol>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.HierarchicalRollout.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_new_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">gen_kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_rollout.html#HierarchicalRollout.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.HierarchicalRollout.generate" title="Link to this definition">¶</a></dt>
+<dd><p>Generate completions using the two-stage hierarchical rollout.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.HierarchicalRollout.get_tag_ids">
+<span class="sig-name descname"><span class="pre">get_tag_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_rollout.html#HierarchicalRollout.get_tag_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.HierarchicalRollout.get_tag_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Return the token ids used to detect &lt;/think&gt; and &lt;answer&gt; tags.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.RewardStatistics">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.hierarchical_rollout.</span></span><span class="sig-name descname"><span class="pre">RewardStatistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">advantages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_grouped_rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std_grouped_rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_std_zero</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hierarchical_grpo_rewards.html#RewardStatistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hierarchical_rollout.RewardStatistics" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Grouped reward statistics and advantages.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.RewardStatistics.advantages">
+<span class="sig-name descname"><span class="pre">advantages</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.RewardStatistics.advantages" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.RewardStatistics.is_std_zero">
+<span class="sig-name descname"><span class="pre">is_std_zero</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.RewardStatistics.is_std_zero" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.RewardStatistics.mean_grouped_rewards">
+<span class="sig-name descname"><span class="pre">mean_grouped_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.RewardStatistics.mean_grouped_rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.hierarchical_rollout.RewardStatistics.std_grouped_rewards">
+<span class="sig-name descname"><span class="pre">std_grouped_rewards</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#src.training.utils.hierarchical_rollout.RewardStatistics.std_grouped_rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.hub">
+<span id="src-training-utils-hub-module"></span><h2>src.training.utils.hub module<a class="headerlink" href="#module-src.training.utils.hub" title="Link to this heading">¶</a></h2>
+<p>Lightweight helpers for interacting with the Hugging Face Hub.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hub.check_hub_revision_exists">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hub.</span></span><span class="sig-name descname"><span class="pre">check_hub_revision_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/hub.html#check_hub_revision_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hub.check_hub_revision_exists" title="Link to this definition">¶</a></dt>
+<dd><p>Checks if a given Hub revision exists.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hub.get_gpu_count_for_vllm">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hub.</span></span><span class="sig-name descname"><span class="pre">get_gpu_count_for_vllm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">revision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'main'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_gpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hub.html#get_gpu_count_for_vllm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hub.get_gpu_count_for_vllm" title="Link to this definition">¶</a></dt>
+<dd><p>Choose a vLLM GPU count compatible with the model.</p>
+<p>vLLM requires both <code class="docutils literal notranslate"><span class="pre">num_attention_heads</span></code> and <code class="docutils literal notranslate"><span class="pre">64</span></code> to be divisible by
+<code class="docutils literal notranslate"><span class="pre">num_gpus</span></code>; this routine decreases <code class="docutils literal notranslate"><span class="pre">num_gpus</span></code> until that holds.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hub.get_param_count_from_repo_id">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hub.</span></span><span class="sig-name descname"><span class="pre">get_param_count_from_repo_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repo_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hub.html#get_param_count_from_repo_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hub.get_param_count_from_repo_id" title="Link to this definition">¶</a></dt>
+<dd><p>Infer parameter count for a model repo.</p>
+<p>Tries safetensors metadata first, then patterns like <code class="docutils literal notranslate"><span class="pre">42m</span></code>, <code class="docutils literal notranslate"><span class="pre">1.5b</span></code> or
+products such as <code class="docutils literal notranslate"><span class="pre">8x7b</span></code> in the repo ID when metadata is unavailable.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.hub.push_to_hub_revision">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.hub.</span></span><span class="sig-name descname"><span class="pre">push_to_hub_revision</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_ignore_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Future</span></span></span><a class="reference internal" href="../_modules/src/training/utils/hub.html#push_to_hub_revision"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.hub.push_to_hub_revision" title="Link to this definition">¶</a></dt>
+<dd><p>Pushes the model to branch on a Hub repo.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.model_utils">
+<span id="src-training-utils-model-utils-module"></span><h2>src.training.utils.model_utils module<a class="headerlink" href="#module-src.training.utils.model_utils" title="Link to this heading">¶</a></h2>
+<p>Helpers for constructing models and tokenizers for training.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.model_utils.get_model">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ModelConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AutoModelForCausalLM</span></span></span><a class="reference internal" href="../_modules/src/training/utils/model_utils.html#get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.model_utils.get_model" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiate and return the causal LM model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.model_utils.get_tokenizer">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.model_utils.</span></span><span class="sig-name descname"><span class="pre">get_tokenizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ModelConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PreTrainedTokenizer</span></span></span><a class="reference internal" href="../_modules/src/training/utils/model_utils.html#get_tokenizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.model_utils.get_tokenizer" title="Link to this definition">¶</a></dt>
+<dd><p>Return a tokenizer configured for the given model and training args.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.replay_buffer">
+<span id="src-training-utils-replay-buffer-module"></span><h2>src.training.utils.replay_buffer module<a class="headerlink" href="#module-src.training.utils.replay_buffer" title="Link to this heading">¶</a></h2>
+<p>Simple replay buffer used for GRPO-style training.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.replay_buffer.</span></span><span class="sig-name descname"><span class="pre">ReplayBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ucb_coefficient</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Bandit / UCB replay buffer with stable UIDs and optional exploit/explore mixing.</p>
+<ul class="simple">
+<li><p>add_group(…) -&gt; uid (&gt;=0) on success, -1 on failure</p></li>
+<li><p>sample_uid(…) returns a uid you can feed back into trainer._inject_one_replay_group</p></li>
+<li><p>update_priority_by_uid updates μ / priority using a stable uid (safe for DDP)</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.add" title="Link to this definition">¶</a></dt>
+<dd><p>Add (sample, reward). If full, replace the worst-μ entry only if reward is higher.
+Returns (inserted?, uid). On failure, returns (False, -1).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.add_group">
+<span class="sig-name descname"><span class="pre">add_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.add_group"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.add_group" title="Link to this definition">¶</a></dt>
+<dd><p>Store a <em>group</em> (list) of examples under a single uid.
+Returns the uid (or the same uid if it was deduped and not inserted).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.capacity">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">capacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.capacity" title="Link to this definition">¶</a></dt>
+<dd><p>Maximum number of entries the buffer can hold.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.debug_state">
+<span class="sig-name descname"><span class="pre">debug_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.debug_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.debug_state" title="Link to this definition">¶</a></dt>
+<dd><p>Return a small debug snapshot of the buffer tail and metadata.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.debug_steps">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">debug_steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.debug_steps" title="Link to this definition">¶</a></dt>
+<dd><p>Verbosity level controlling optional debug prints.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.get_group">
+<span class="sig-name descname"><span class="pre">get_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.get_group"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.get_group" title="Link to this definition">¶</a></dt>
+<dd><p>Return the stored group for a uid, or [] if missing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.last_error">
+<span class="sig-name descname"><span class="pre">last_error</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.last_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.last_error" title="Link to this definition">¶</a></dt>
+<dd><p>Return the last error metadata recorded during insertion.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.sample" title="Link to this definition">¶</a></dt>
+<dd><p>Uniformly sample <cite>batch_size</cite> distinct entries from the buffer.</p>
+<ul class="simple">
+<li><p>Ignores μ, n, C, and mix_exploit_ratio.</p></li>
+<li><p>Still returns (samples, idxs, uids, isw) so the rest of your
+training loop remains untouched.  <cite>isw</cite> stays all‑ones.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.sample_uid">
+<span class="sig-name descname"><span class="pre">sample_uid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.sample_uid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.sample_uid" title="Link to this definition">¶</a></dt>
+<dd><p>Convenience: return a single UID chosen uniformly at random.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.ucb_coefficient">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ucb_coefficient</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.ucb_coefficient" title="Link to this definition">¶</a></dt>
+<dd><p>Exploration coefficient used for UCB-style sampling (if enabled).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.update_priority">
+<span class="sig-name descname"><span class="pre">update_priority</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.update_priority"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.update_priority" title="Link to this definition">¶</a></dt>
+<dd><p>Update running priority statistics using a raw buffer index.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.replay_buffer.ReplayBuffer.update_priority_by_uid">
+<span class="sig-name descname"><span class="pre">update_priority_by_uid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/replay_buffer.html#ReplayBuffer.update_priority_by_uid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_buffer.ReplayBuffer.update_priority_by_uid" title="Link to this definition">¶</a></dt>
+<dd><p>Update running priority statistics for a given uid.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.replay_dataset">
+<span id="src-training-utils-replay-dataset-module"></span><h2>src.training.utils.replay_dataset module<a class="headerlink" href="#module-src.training.utils.replay_dataset" title="Link to this heading">¶</a></h2>
+<p>Replay-aware dataset and collate helpers used during GRPO training.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.replay_dataset.ReplayMixDataset">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.replay_dataset.</span></span><span class="sig-name descname"><span class="pre">ReplayMixDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/replay_dataset.html#ReplayMixDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_dataset.ReplayMixDataset" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Thin wrapper that tracks <cite>is_replay</cite> on items from a base dataset.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.replay_dataset.replay_collate">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.replay_dataset.</span></span><span class="sig-name descname"><span class="pre">replay_collate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_replay_buffer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_replay_prob</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/replay_dataset.html#replay_collate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.replay_dataset.replay_collate" title="Link to this definition">¶</a></dt>
+<dd><p>Identity collate — no sampling here.</p>
+<p>We only want to clear the old <cite>is_replay</cite> flag,
+but we <em>must not</em> drop ‘accuracy’.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.vllm_patch">
+<span id="src-training-utils-vllm-patch-module"></span><h2>src.training.utils.vllm_patch module<a class="headerlink" href="#module-src.training.utils.vllm_patch" title="Link to this heading">¶</a></h2>
+<p>Helpers for talking to an external <cite>trl vllm-serve</cite> instance.</p>
+<dl class="simple">
+<dt>vLLM ≤ 0.8.5 returns <em>token IDs</em> by default:</dt><dd><p>{“completion_ids”: [[ids…]], “prompt_ids”: [[ids…]]}</p>
+</dd>
+</dl>
+<p>This helper now detects that schema and decodes it if a tokenizer is passed.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerateConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.vllm_patch.</span></span><span class="sig-name descname"><span class="pre">VLLMGenerateConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'http://localhost:8000/generate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params:</span> <span class="pre">~src.training.utils.vllm_patch.VLLMGenerationParams</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry:</span> <span class="pre">~src.training.utils.vllm_patch.VLLMRetryConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer:</span> <span class="pre">~typing.Any</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/vllm_patch.html#VLLMGenerateConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerateConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for a vLLM <cite>/generate</cite> request.</p>
+<p>The defaults mirror the legacy keyword arguments that were previously
+exposed on <a class="reference internal" href="#src.training.utils.vllm_patch.safe_generate" title="src.training.utils.vllm_patch.safe_generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">safe_generate()</span></code></a>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerateConfig.params">
+<span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams" title="src.training.utils.vllm_patch.VLLMGenerationParams"><span class="pre">VLLMGenerationParams</span></a></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.params" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerateConfig.retry">
+<span class="sig-name descname"><span class="pre">retry</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMRetryConfig" title="src.training.utils.vllm_patch.VLLMRetryConfig"><span class="pre">VLLMRetryConfig</span></a></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.retry" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerateConfig.to_payload">
+<span class="sig-name descname"><span class="pre">to_payload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/src/training/utils/vllm_patch.html#VLLMGenerateConfig.to_payload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.to_payload" title="Link to this definition">¶</a></dt>
+<dd><p>Build the JSON payload expected by vLLM.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerateConfig.tokenizer">
+<span class="sig-name descname"><span class="pre">tokenizer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.tokenizer" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerateConfig.url">
+<span class="sig-name descname"><span class="pre">url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'http://localhost:8000/generate'</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.url" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerationParams">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.vllm_patch.</span></span><span class="sig-name descname"><span class="pre">VLLMGenerationParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/vllm_patch.html#VLLMGenerationParams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerationParams" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Payload parameters for a vLLM <cite>/generate</cite> request.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerationParams.max_tokens">
+<span class="sig-name descname"><span class="pre">max_tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">256</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerationParams.max_tokens" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerationParams.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerationParams.n" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerationParams.stream">
+<span class="sig-name descname"><span class="pre">stream</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerationParams.stream" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerationParams.temperature">
+<span class="sig-name descname"><span class="pre">temperature</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.7</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerationParams.temperature" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMGenerationParams.top_p">
+<span class="sig-name descname"><span class="pre">top_p</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.9</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMGenerationParams.top_p" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMRetryConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.training.utils.vllm_patch.</span></span><span class="sig-name descname"><span class="pre">VLLMRetryConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_retries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backoff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/vllm_patch.html#VLLMRetryConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMRetryConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Retry/backoff configuration for a vLLM request.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMRetryConfig.backoff">
+<span class="sig-name descname"><span class="pre">backoff</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMRetryConfig.backoff" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMRetryConfig.max_retries">
+<span class="sig-name descname"><span class="pre">max_retries</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMRetryConfig.max_retries" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.VLLMRetryConfig.timeout">
+<span class="sig-name descname"><span class="pre">timeout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30.0</span></em><a class="headerlink" href="#src.training.utils.vllm_patch.VLLMRetryConfig.timeout" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.safe_generate">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.vllm_patch.</span></span><span class="sig-name descname"><span class="pre">safe_generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig" title="src.training.utils.vllm_patch.VLLMGenerateConfig"><span class="pre">VLLMGenerateConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">overrides</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/src/training/utils/vllm_patch.html#safe_generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.vllm_patch.safe_generate" title="Link to this definition">¶</a></dt>
+<dd><p>Robust call to /generate with retry + schema-agnostic decoding.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">config</span></code> to control request behavior; individual fields can be
+overridden via keyword arguments for convenience (e.g., <code class="docutils literal notranslate"><span class="pre">top_p=0.8</span></code>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.vllm_patch.safe_request">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.vllm_patch.</span></span><span class="sig-name descname"><span class="pre">safe_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backoff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/src/training/utils/vllm_patch.html#safe_request"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.vllm_patch.safe_request" title="Link to this definition">¶</a></dt>
+<dd><p>Perform a GET request with simple retry and exponential backoff.</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils.wandb_logging">
+<span id="src-training-utils-wandb-logging-module"></span><h2>src.training.utils.wandb_logging module<a class="headerlink" href="#module-src.training.utils.wandb_logging" title="Link to this heading">¶</a></h2>
+<p>Utilities for configuring Weights &amp; Biases logging.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.wandb_logging.init_wandb_training">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.wandb_logging.</span></span><span class="sig-name descname"><span class="pre">init_wandb_training</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">training_args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/training/utils/wandb_logging.html#init_wandb_training"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.wandb_logging.init_wandb_training" title="Link to this definition">¶</a></dt>
+<dd><p>Configure environment variables for Weights &amp; Biases runs.</p>
+<p>Expects <cite>training_args</cite> to provide <cite>wandb_entity</cite>, <cite>wandb_project</cite>,
+and <cite>wandb_run_group</cite> attributes (all optional).</p>
+</dd></dl>
+
+</section>
+<section id="module-src.training.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-src.training.utils" title="Link to this heading">¶</a></h2>
+<p>Convenience re-exports for training utility helpers.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.get_dataset">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.</span></span><span class="sig-name descname"><span class="pre">get_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.ScriptArguments" title="src.training.configs.ScriptArguments"><span class="pre">ScriptArguments</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/src/training/utils/data.html#get_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.get_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Load a dataset or a mixture of datasets based on the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>args</strong> – Script arguments containing dataset configuration, including
+either a single <code class="docutils literal notranslate"><span class="pre">dataset_name</span></code> or a <code class="docutils literal notranslate"><span class="pre">dataset_mixture</span></code> definition.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The loaded dataset object, or a mapping such as <code class="docutils literal notranslate"><span class="pre">{&quot;train&quot;:</span> <span class="pre">ds}</span></code>
+when a train/test split is created.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If neither <code class="docutils literal notranslate"><span class="pre">dataset_name</span></code> nor <code class="docutils literal notranslate"><span class="pre">dataset_mixture</span></code> is set,
+or if a mixture configuration fails to load any datasets.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.get_model">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.</span></span><span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ModelConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AutoModelForCausalLM</span></span></span><a class="reference internal" href="../_modules/src/training/utils/model_utils.html#get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.get_model" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiate and return the causal LM model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.training.utils.get_tokenizer">
+<span class="sig-prename descclassname"><span class="pre">src.training.utils.</span></span><span class="sig-name descname"><span class="pre">get_tokenizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ModelConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="src.training.html#src.training.configs.SFTConfig" title="src.training.configs.SFTConfig"><span class="pre">SFTConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="src.training.html#src.training.configs.GRPOConfig" title="src.training.configs.GRPOConfig"><span class="pre">GRPOConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PreTrainedTokenizer</span></span></span><a class="reference internal" href="../_modules/src/training/utils/model_utils.html#get_tokenizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.training.utils.get_tokenizer" title="Link to this definition">¶</a></dt>
+<dd><p>Return a tokenizer configured for the given model and training args.</p>
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          <a class="prev-page" href="src.training.runtime.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">src.training.runtime package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">src.training.utils package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-src.training.utils.callbacks">src.training.utils.callbacks module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.callbacks.PushToHubRevisionCallback"><code class="docutils literal notranslate"><span class="pre">PushToHubRevisionCallback</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.callbacks.PushToHubRevisionCallback.get_model_config"><code class="docutils literal notranslate"><span class="pre">PushToHubRevisionCallback.get_model_config()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.callbacks.PushToHubRevisionCallback.on_save"><code class="docutils literal notranslate"><span class="pre">PushToHubRevisionCallback.on_save()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.callbacks.ReplayBufferCallback"><code class="docutils literal notranslate"><span class="pre">ReplayBufferCallback</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.callbacks.ReplayBufferCallback.buffer_size"><code class="docutils literal notranslate"><span class="pre">ReplayBufferCallback.buffer_size()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.callbacks.ReplayBufferCallback.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ReplayBufferCallback.on_train_batch_end()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.callbacks.SuccessCachingCallback"><code class="docutils literal notranslate"><span class="pre">SuccessCachingCallback</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.callbacks.SuccessCachingCallback.on_log"><code class="docutils literal notranslate"><span class="pre">SuccessCachingCallback.on_log()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.callbacks.SuccessCachingCallback.set_trainer"><code class="docutils literal notranslate"><span class="pre">SuccessCachingCallback.set_trainer()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.callbacks.get_callbacks"><code class="docutils literal notranslate"><span class="pre">get_callbacks()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.data">src.training.utils.data module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.data.get_dataset"><code class="docutils literal notranslate"><span class="pre">get_dataset()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.evaluation">src.training.utils.evaluation module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.evaluation.get_lighteval_tasks"><code class="docutils literal notranslate"><span class="pre">get_lighteval_tasks()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.evaluation.register_lighteval_task"><code class="docutils literal notranslate"><span class="pre">register_lighteval_task()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.evaluation.run_benchmark_jobs"><code class="docutils literal notranslate"><span class="pre">run_benchmark_jobs()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.evaluation.run_lighteval_job"><code class="docutils literal notranslate"><span class="pre">run_lighteval_job()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.hierarchical_grpo_dependencies">src.training.utils.hierarchical_grpo_dependencies module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_dependencies.canonicalize_device"><code class="docutils literal notranslate"><span class="pre">canonicalize_device()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_dependencies.is_flash_attn_2_available"><code class="docutils literal notranslate"><span class="pre">is_flash_attn_2_available()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_dependencies.resolve_dependency"><code class="docutils literal notranslate"><span class="pre">resolve_dependency()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.hierarchical_grpo_generation">src.training.utils.hierarchical_grpo_generation module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch"><code class="docutils literal notranslate"><span class="pre">GenerationBatch</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.device"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.device</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompt_ids"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompt_ids</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompt_mask"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompt_mask</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompts"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompts</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.GenerationBatch.prompts_text"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompts_text</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_generation.HierarchicalGenerationMixin"><code class="docutils literal notranslate"><span class="pre">HierarchicalGenerationMixin</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.hierarchical_grpo_rewards">src.training.utils.hierarchical_grpo_rewards module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin"><code class="docutils literal notranslate"><span class="pre">HierarchicalRewardMixin</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin.compute_rewards"><code class="docutils literal notranslate"><span class="pre">HierarchicalRewardMixin.compute_rewards()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.HierarchicalRewardMixin.normalize_rewards_and_compute_advantages"><code class="docutils literal notranslate"><span class="pre">HierarchicalRewardMixin.normalize_rewards_and_compute_advantages()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics"><code class="docutils literal notranslate"><span class="pre">RewardStatistics</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.advantages"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.advantages</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.is_std_zero"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.is_std_zero</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.mean_grouped_rewards"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.mean_grouped_rewards</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_rewards.RewardStatistics.std_grouped_rewards"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.std_grouped_rewards</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.hierarchical_grpo_trainer">src.training.utils.hierarchical_grpo_trainer module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch"><code class="docutils literal notranslate"><span class="pre">GenerationBatch</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.device"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.device</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompt_ids"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompt_ids</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompt_mask"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompt_mask</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompts"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompts</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.GenerationBatch.prompts_text"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompts_text</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer"><code class="docutils literal notranslate"><span class="pre">HierarchicalGRPOTrainer</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer.reset_textual_logs"><code class="docutils literal notranslate"><span class="pre">HierarchicalGRPOTrainer.reset_textual_logs()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.HierarchicalGRPOTrainer.textual_logs"><code class="docutils literal notranslate"><span class="pre">HierarchicalGRPOTrainer.textual_logs</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics"><code class="docutils literal notranslate"><span class="pre">RewardStatistics</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.advantages"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.advantages</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.is_std_zero"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.is_std_zero</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.mean_grouped_rewards"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.mean_grouped_rewards</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.RewardStatistics.std_grouped_rewards"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.std_grouped_rewards</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.canonicalize_device"><code class="docutils literal notranslate"><span class="pre">canonicalize_device()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.is_flash_attn_2_available"><code class="docutils literal notranslate"><span class="pre">is_flash_attn_2_available()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_grpo_trainer.resolve_dependency"><code class="docutils literal notranslate"><span class="pre">resolve_dependency()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.hierarchical_rollout">src.training.utils.hierarchical_rollout module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.GenerationBatch"><code class="docutils literal notranslate"><span class="pre">GenerationBatch</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.GenerationBatch.device"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.device</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompt_ids"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompt_ids</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompt_mask"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompt_mask</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompts"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompts</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.GenerationBatch.prompts_text"><code class="docutils literal notranslate"><span class="pre">GenerationBatch.prompts_text</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer"><code class="docutils literal notranslate"><span class="pre">HierarchicalGRPOTrainer</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer.reset_textual_logs"><code class="docutils literal notranslate"><span class="pre">HierarchicalGRPOTrainer.reset_textual_logs()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.HierarchicalGRPOTrainer.textual_logs"><code class="docutils literal notranslate"><span class="pre">HierarchicalGRPOTrainer.textual_logs</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.HierarchicalRollout"><code class="docutils literal notranslate"><span class="pre">HierarchicalRollout</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.HierarchicalRollout.generate"><code class="docutils literal notranslate"><span class="pre">HierarchicalRollout.generate()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.HierarchicalRollout.get_tag_ids"><code class="docutils literal notranslate"><span class="pre">HierarchicalRollout.get_tag_ids()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.RewardStatistics"><code class="docutils literal notranslate"><span class="pre">RewardStatistics</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.RewardStatistics.advantages"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.advantages</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.RewardStatistics.is_std_zero"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.is_std_zero</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.RewardStatistics.mean_grouped_rewards"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.mean_grouped_rewards</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hierarchical_rollout.RewardStatistics.std_grouped_rewards"><code class="docutils literal notranslate"><span class="pre">RewardStatistics.std_grouped_rewards</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.hub">src.training.utils.hub module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.hub.check_hub_revision_exists"><code class="docutils literal notranslate"><span class="pre">check_hub_revision_exists()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hub.get_gpu_count_for_vllm"><code class="docutils literal notranslate"><span class="pre">get_gpu_count_for_vllm()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hub.get_param_count_from_repo_id"><code class="docutils literal notranslate"><span class="pre">get_param_count_from_repo_id()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.hub.push_to_hub_revision"><code class="docutils literal notranslate"><span class="pre">push_to_hub_revision()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.model_utils">src.training.utils.model_utils module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.model_utils.get_model"><code class="docutils literal notranslate"><span class="pre">get_model()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.model_utils.get_tokenizer"><code class="docutils literal notranslate"><span class="pre">get_tokenizer()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.replay_buffer">src.training.utils.replay_buffer module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.add"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.add()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.add_group"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.add_group()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.capacity"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.capacity</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.debug_state"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.debug_state()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.debug_steps"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.debug_steps</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.get_group"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.get_group()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.last_error"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.last_error()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.sample"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.sample()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.sample_uid"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.sample_uid()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.ucb_coefficient"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.ucb_coefficient</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.update_priority"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.update_priority()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_buffer.ReplayBuffer.update_priority_by_uid"><code class="docutils literal notranslate"><span class="pre">ReplayBuffer.update_priority_by_uid()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.replay_dataset">src.training.utils.replay_dataset module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.replay_dataset.ReplayMixDataset"><code class="docutils literal notranslate"><span class="pre">ReplayMixDataset</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.replay_dataset.replay_collate"><code class="docutils literal notranslate"><span class="pre">replay_collate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.vllm_patch">src.training.utils.vllm_patch module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig"><code class="docutils literal notranslate"><span class="pre">VLLMGenerateConfig</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.params"><code class="docutils literal notranslate"><span class="pre">VLLMGenerateConfig.params</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.retry"><code class="docutils literal notranslate"><span class="pre">VLLMGenerateConfig.retry</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.to_payload"><code class="docutils literal notranslate"><span class="pre">VLLMGenerateConfig.to_payload()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.tokenizer"><code class="docutils literal notranslate"><span class="pre">VLLMGenerateConfig.tokenizer</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerateConfig.url"><code class="docutils literal notranslate"><span class="pre">VLLMGenerateConfig.url</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams"><code class="docutils literal notranslate"><span class="pre">VLLMGenerationParams</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams.max_tokens"><code class="docutils literal notranslate"><span class="pre">VLLMGenerationParams.max_tokens</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams.n"><code class="docutils literal notranslate"><span class="pre">VLLMGenerationParams.n</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams.stream"><code class="docutils literal notranslate"><span class="pre">VLLMGenerationParams.stream</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams.temperature"><code class="docutils literal notranslate"><span class="pre">VLLMGenerationParams.temperature</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMGenerationParams.top_p"><code class="docutils literal notranslate"><span class="pre">VLLMGenerationParams.top_p</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMRetryConfig"><code class="docutils literal notranslate"><span class="pre">VLLMRetryConfig</span></code></a><ul>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMRetryConfig.backoff"><code class="docutils literal notranslate"><span class="pre">VLLMRetryConfig.backoff</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMRetryConfig.max_retries"><code class="docutils literal notranslate"><span class="pre">VLLMRetryConfig.max_retries</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.VLLMRetryConfig.timeout"><code class="docutils literal notranslate"><span class="pre">VLLMRetryConfig.timeout</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.safe_generate"><code class="docutils literal notranslate"><span class="pre">safe_generate()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.vllm_patch.safe_request"><code class="docutils literal notranslate"><span class="pre">safe_request()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils.wandb_logging">src.training.utils.wandb_logging module</a><ul>
+<li><a class="reference internal" href="#src.training.utils.wandb_logging.init_wandb_training"><code class="docutils literal notranslate"><span class="pre">init_wandb_training()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-src.training.utils">Module contents</a><ul>
+<li><a class="reference internal" href="#src.training.utils.get_dataset"><code class="docutils literal notranslate"><span class="pre">get_dataset()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.get_model"><code class="docutils literal notranslate"><span class="pre">get_model()</span></code></a></li>
+<li><a class="reference internal" href="#src.training.utils.get_tokenizer"><code class="docutils literal notranslate"><span class="pre">get_tokenizer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

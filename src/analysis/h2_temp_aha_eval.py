@@ -44,19 +44,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from src.analysis.core import (
-    add_standard_formal_flags,
-    build_problem_step_for_formal,
-    iter_pass1_records,
-)
+from src.analysis.core import add_standard_formal_flags, build_problem_step_for_formal, iter_pass1_records
 from src.analysis.io import scan_jsonl_files
 from src.analysis.labels import aha_gpt_broad, aha_gpt_canonical, aha_words
 from src.analysis.metrics import add_step_std_column, lazy_import_statsmodels
-from src.analysis.utils import (
-    coerce_bool,
-    extract_pass1_and_step,
-    problem_key_from_record,
-)
+from src.analysis.utils import coerce_bool, extract_pass1_and_step, problem_key_from_record
+
 
 # ---------- file scanning & misc ----------
 
@@ -154,7 +147,9 @@ def load_samples(
         )
     return pd.DataFrame(rows)
 
+
 # ---------- overlap + merge helpers ----------
+
 
 def restrict_to_overlap(
     df_high: pd.DataFrame,
@@ -180,19 +175,13 @@ def restrict_to_overlap(
     if common.empty:
         raise SystemExit("No overlapping (problem, step[, sample_idx]) between runs.")
 
-    merged_high = (
-        common.merge(df_high, on=keys, how="inner")
-        .sort_values(keys)
-        .reset_index(drop=True)
-    )
-    merged_low = (
-        common.merge(df_low, on=keys, how="inner")
-        .sort_values(keys)
-        .reset_index(drop=True)
-    )
+    merged_high = common.merge(df_high, on=keys, how="inner").sort_values(keys).reset_index(drop=True)
+    merged_low = common.merge(df_low, on=keys, how="inner").sort_values(keys).reset_index(drop=True)
     return merged_high, merged_low, keys
 
+
 # ---------- stage bucketing ----------
+
 
 def assign_stage(
     input_df: pd.DataFrame,
@@ -236,6 +225,7 @@ def assign_stage(
     stage_df["stage"] = stage_df["step"].apply(_stage_label)
     return stage_df, info
 
+
 # ---------- FORMAL Aha (problem–step) ----------
 def attach_formal_sample_level(
     samples_df: pd.DataFrame,
@@ -275,7 +265,9 @@ def attach_formal_sample_level(
     )
     return merged_df
 
+
 # ---------- modeling ----------
+
 
 def fit_glm_binomial(
     input_df: pd.DataFrame,
@@ -299,11 +291,14 @@ def fit_glm_binomial(
     formula = "correct ~ " + " + ".join(formula_terms)
 
     if cluster_by == "problem":
-        cov_type, cov_kwds = "cluster", {
-            "groups": pd.Categorical(glm_df["problem"]).codes,
-            "use_correction": True,
-            "df_correction": True,
-        }
+        cov_type, cov_kwds = (
+            "cluster",
+            {
+                "groups": pd.Categorical(glm_df["problem"]).codes,
+                "use_correction": True,
+                "df_correction": True,
+            },
+        )
     else:
         cov_type, cov_kwds = "HC1", {}
 
@@ -325,10 +320,7 @@ def fit_glm_binomial(
             "term": res.params.index,
             "coef": res.params.values,
             "se": res.bse.values,
-            "z": (
-                res.params.values
-                / np.where(res.bse.values == 0, np.nan, res.bse.values)
-            ),
+            "z": (res.params.values / np.where(res.bse.values == 0, np.nan, res.bse.values)),
             "p": res.pvalues.values,
         },
     )
@@ -337,8 +329,7 @@ def fit_glm_binomial(
         with open(out_txt, "w", encoding="utf-8") as handle:
             handle.write(res.summary().as_text())
             handle.write(
-                f"\n\nFormula: {formula}\nCovariance: {cov_type} "
-                f"(clustered by {cluster_by})\n",
+                f"\n\nFormula: {formula}\nCovariance: {cov_type} (clustered by {cluster_by})\n",
             )
 
     out = {"formula": formula, "N": int(len(glm_df))}
@@ -357,6 +348,7 @@ def fit_glm_binomial(
         )
     return out, coef_df
 
+
 def fit_glm_stage_interaction(
     input_df: pd.DataFrame,
     aha_col: Optional[str],
@@ -368,9 +360,7 @@ def fit_glm_stage_interaction(
     """
     stats_module, stats_formula = lazy_import_statsmodels()
     glm_df = input_df.copy()
-    glm_df["step_std"] = (glm_df["step"] - glm_df["step"].mean()) / (
-        glm_df["step"].std(ddof=0) + 1e-8
-    )
+    glm_df["step_std"] = (glm_df["step"] - glm_df["step"].mean()) / (glm_df["step"].std(ddof=0) + 1e-8)
     base_terms = ["C(problem)", "step_std", "temp_low", "C(stage)"]
     if aha_col:
         base_terms += [aha_col, f"temp_low:{aha_col}"]
@@ -380,11 +370,14 @@ def fit_glm_stage_interaction(
 
     formula = "correct ~ " + " + ".join(base_terms)
     if cluster_by == "problem":
-        cov_type, cov_kwds = "cluster", {
-            "groups": pd.Categorical(glm_df["problem"]).codes,
-            "use_correction": True,
-            "df_correction": True,
-        }
+        cov_type, cov_kwds = (
+            "cluster",
+            {
+                "groups": pd.Categorical(glm_df["problem"]).codes,
+                "use_correction": True,
+                "df_correction": True,
+            },
+        )
     else:
         cov_type, cov_kwds = "HC1", {}
 
@@ -406,10 +399,7 @@ def fit_glm_stage_interaction(
             "term": res.params.index,
             "coef": res.params.values,
             "se": res.bse.values,
-            "z": (
-                res.params.values
-                / np.where(res.bse.values == 0, np.nan, res.bse.values)
-            ),
+            "z": (res.params.values / np.where(res.bse.values == 0, np.nan, res.bse.values)),
             "p": res.pvalues.values,
         },
     )
@@ -419,8 +409,7 @@ def fit_glm_stage_interaction(
             handle.write("\n\n=== Stage-interaction GLM ===\n")
             handle.write(res.summary().as_text())
             handle.write(
-                f"\n\nFormula: {formula}\nCovariance: {cov_type} "
-                f"(clustered by {cluster_by})\n",
+                f"\n\nFormula: {formula}\nCovariance: {cov_type} (clustered by {cluster_by})\n",
             )
 
     out = {"formula": formula, "N": int(len(glm_df))}
@@ -439,7 +428,9 @@ def fit_glm_stage_interaction(
         )
     return out, coef_df
 
+
 # ---------- group accuracy tables ----------
+
 
 def compute_group_acc(
     input_df: pd.DataFrame,
@@ -449,10 +440,7 @@ def compute_group_acc(
     Compute overall and per-step accuracy tables, optionally split by Aha flag.
     """
     grp_cols = ["temp_low"] + ([aha_col] if aha_col else [])
-    overall = (
-        input_df.groupby(grp_cols, as_index=False)
-        .agg(n=("correct", "size"), k=("correct", "sum"))
-    )
+    overall = input_df.groupby(grp_cols, as_index=False).agg(n=("correct", "size"), k=("correct", "sum"))
     overall["accuracy"] = overall["k"] / overall["n"]
     by_step = input_df.groupby(["step"] + grp_cols, as_index=False).agg(
         n=("correct", "size"),
@@ -460,6 +448,7 @@ def compute_group_acc(
     )
     by_step["accuracy"] = by_step["k"] / by_step["n"]
     return overall, by_step
+
 
 def compute_stage_group_acc(
     stage_df: pd.DataFrame,
@@ -469,10 +458,7 @@ def compute_stage_group_acc(
     Compute per-stage, per-temp accuracy tables, optionally split by Aha flag.
     """
     grp_cols = ["stage", "temp_low"] + ([aha_col] if aha_col else [])
-    grouped = (
-        stage_df.groupby(grp_cols, as_index=False)
-        .agg(n=("correct", "size"), k=("correct", "sum"))
-    )
+    grouped = stage_df.groupby(grp_cols, as_index=False).agg(n=("correct", "size"), k=("correct", "sum"))
     grouped["accuracy"] = grouped["k"] / grouped["n"]
     return grouped
 
@@ -487,11 +473,9 @@ def compute_stage_aha_counts(
     if aha_col is None:
         return pd.DataFrame()
     sub = stage_df[stage_df[aha_col] == 1]
-    counts = (
-        sub.groupby(["stage", "temp_low"], as_index=False)
-        .agg(n_aha=("correct", "size"))
-    )
+    counts = sub.groupby(["stage", "temp_low"], as_index=False).agg(n_aha=("correct", "size"))
     return counts
+
 
 # ---------- per-stage GLMs & outputs ----------
 
@@ -586,18 +570,14 @@ def _write_group_outputs(
 
     # Console snippet
     print(
-        f"\n[{aha_mode_name.upper()}] Baseline GLM: "
-        f"{summ_base['formula']}  N={summ_base['N']}",
+        f"\n[{aha_mode_name.upper()}] Baseline GLM: {summ_base['formula']}  N={summ_base['N']}",
     )
     print(
-        "  temp_low coef="
-        f"{summ_base.get('coef_temp_low', np.nan):+.4f}  "
-        f"p={summ_base.get('p_temp_low', np.nan):.3g}",
+        f"  temp_low coef={summ_base.get('coef_temp_low', np.nan):+.4f}  p={summ_base.get('p_temp_low', np.nan):.3g}",
     )
     if aha_col:
         print(
-            f"  {aha_col} coef={summ_base.get('coef_aha', np.nan):+.4f}  "
-            f"p={summ_base.get('p_aha', np.nan):.3g}",
+            f"  {aha_col} coef={summ_base.get('coef_aha', np.nan):+.4f}  p={summ_base.get('p_aha', np.nan):.3g}",
         )
         print(
             f"  temp_low:{aha_col} coef="
@@ -608,6 +588,7 @@ def _write_group_outputs(
 
 
 # ---------- Orchestrate one Aha mode ----------
+
 
 def evaluate_for_aha_mode(
     combined_in: pd.DataFrame,
@@ -626,7 +607,7 @@ def evaluate_for_aha_mode(
     # Select aha column name
     if aha_mode_name == "words":
         aha_col = "aha_words"
-    elif aha_mode_name in ("gpt","gpt_broad"):
+    elif aha_mode_name in ("gpt", "gpt_broad"):
         aha_col = "aha"
     elif aha_mode_name == "formal":
         # formal uses problem-step flags; compute by run and AND with sample GPT
@@ -679,6 +660,7 @@ def evaluate_for_aha_mode(
         },
     )
 
+
 # ---------- main ----------
 
 
@@ -724,19 +706,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--formal_delta1",
         type=float,
         default=0.13,
-        help=(
-            "Formal prior failure threshold on freq_correct "
-            "(default 0.13)."
-        ),
+        help=("Formal prior failure threshold on freq_correct (default 0.13)."),
     )
     parser.add_argument(
         "--formal_delta2",
         type=float,
         default=0.13,
-        help=(
-            "Formal prior shift-stability threshold on aha_rate_gpt "
-            "(default 0.13)."
-        ),
+        help=("Formal prior shift-stability threshold on aha_rate_gpt (default 0.13)."),
     )
     parser.add_argument(
         "--formal_min_prior_steps",
@@ -797,8 +773,7 @@ def _load_and_overlap_runs(
     )
     if df_high.empty or df_low.empty:
         raise SystemExit(
-            "One directory has no usable sample-level rows. "
-            "Check --split and file structure.",
+            "One directory has no usable sample-level rows. Check --split and file structure.",
         )
 
     df_high_overlap, df_low_overlap, overlap_keys = restrict_to_overlap(df_high, df_low)
@@ -878,9 +853,7 @@ def _run_modes_for_combined(
     Loop over requested modes, optionally recomputing broad GPT Aha flags.
     """
     for mode_name in modes:
-        mode_out_dir = (
-            os.path.join(out_root, mode_name) if len(modes) > 1 else out_root
-        )
+        mode_out_dir = os.path.join(out_root, mode_name) if len(modes) > 1 else out_root
         mode_df = combined_df.copy()
 
         if mode_name == "gpt_broad":
@@ -905,15 +878,12 @@ def _run_modes_for_combined(
             df_low_broad["temp_low"] = 1
             df_low_broad["run_label"] = "low"
             broad_columns = ["problem", "step", "sample_idx", "aha_words", "aha_gpt"]
-            mode_df = (
-                mode_df.drop(columns=["aha_words", "aha_gpt"], errors="ignore")
-                .merge(
-                    pd.concat(
-                        [df_high_broad[broad_columns], df_low_broad[broad_columns]],
-                    ),
-                    on=["problem", "step", "sample_idx"],
-                    how="left",
-                )
+            mode_df = mode_df.drop(columns=["aha_words", "aha_gpt"], errors="ignore").merge(
+                pd.concat(
+                    [df_high_broad[broad_columns], df_low_broad[broad_columns]],
+                ),
+                on=["problem", "step", "sample_idx"],
+                how="left",
             )
 
         evaluate_for_aha_mode(
@@ -975,18 +945,16 @@ def main() -> None:
     print(f"N combined rows (both temps): {len(combined_df)}")
     if stage_info.get("mode") == "fixed":
         print(
-            "Stage cuts (fixed): "
-            f"early <= {stage_info['bounds'][0]} < mid <= "
-            f"{stage_info['bounds'][1]} < late",
+            f"Stage cuts (fixed): early <= {stage_info['bounds'][0]} < mid <= {stage_info['bounds'][1]} < late",
         )
     else:
         cutpoints = stage_info.get("cutpoints", [])
         quantiles = stage_info.get("quantiles", [])
         print(
-            f"Stage cuts (quantiles {quantiles}): "
-            f"early <= {cutpoints[0]} < mid <= {cutpoints[1]} < late",
+            f"Stage cuts (quantiles {quantiles}): early <= {cutpoints[0]} < mid <= {cutpoints[1]} < late",
         )
     print("Output root:", out_root)
+
 
 if __name__ == "__main__":
     main()

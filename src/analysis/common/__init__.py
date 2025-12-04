@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
-from .. import io, labels, metrics, utils, plotting  # type: ignore F401
+from .. import io, labels, metrics, plotting, utils  # type: ignore F401
+
 
 __all__ = ["io", "labels", "metrics", "utils", "plotting"]

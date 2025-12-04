@@ -8,5 +8,5 @@ from __future__ import annotations
 
 from . import summarize_inference_core
 
-__all__ = ["summarize_inference_core"]
 
+__all__ = ["summarize_inference_core"]

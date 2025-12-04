@@ -10,9 +10,9 @@ this file simply delegates to keep existing CLI entry points working.
 
 from __future__ import annotations
 
+from src.analysis.forced_aha_effect_impl import main
 from src.analysis.script_utils import ensure_script_context
 
-from src.analysis.forced_aha_effect_impl import main
 
 ensure_script_context()
 

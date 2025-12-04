@@ -34,13 +34,10 @@ from typing import Any, Dict, Iterable, List, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 
+from src.analysis.common.parser_helpers import add_binning_argument
 from src.analysis.io import iter_records_from_file
 from src.analysis.labels import aha_gpt
-from src.analysis.common.parser_helpers import add_binning_argument
-from src.analysis.utils import (
-    add_split_and_gpt_mode_args,
-    step_from_record_if_within_bounds,
-)
+from src.analysis.utils import add_split_and_gpt_mode_args, step_from_record_if_within_bounds
 
 
 def parse_args() -> argparse.Namespace:
@@ -104,9 +101,7 @@ def extract_entropy_pass1(rec: Dict[str, Any]) -> Optional[float]:
         if isinstance(value, (int, float)):
             return float(value)
     token_entropies = (
-        pass1_data.get("answer_token_entropies")
-        or pass1_data.get("token_entropies")
-        or pass1_data.get("entropies")
+        pass1_data.get("answer_token_entropies") or pass1_data.get("token_entropies") or pass1_data.get("entropies")
     )
     if isinstance(token_entropies, list) and token_entropies:
         try:
@@ -280,8 +275,7 @@ def _plot_stacked_histogram(
 
     out_path = os.path.join(
         args.outdir,
-        f"graph_3_pass1_stacked_{args.outfile_tag or 'combined'}"
-        f"{'_normalized' if args.normalize else ''}.png",
+        f"graph_3_pass1_stacked_{args.outfile_tag or 'combined'}{'_normalized' if args.normalize else ''}.png",
     )
     plt.savefig(out_path, dpi=args.dpi)
     print(f"[ok] wrote {out_path}")
@@ -321,6 +315,7 @@ def main() -> None:
 
     histogram = _compute_binned_from_rows(rows, args)
     _plot_stacked_histogram(args, histogram)
+
 
 if __name__ == "__main__":
     main()

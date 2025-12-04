@@ -7,24 +7,24 @@ from __future__ import annotations
 
 import argparse
 import os
+import types
 from dataclasses import dataclass
 from itertools import product
 from typing import Any, Dict, List, Tuple
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-from .figure_1_style import set_global_fonts, lighten_hex
 from .figure_1_data import (
-    slugify,
-    scan_files,
-    load_pass1_samples_multi,
-    build_problem_step,
-    mark_formal_pairs,
     bootstrap_problem_ratio,
     build_positive_delta_flags,
+    build_problem_step,
+    load_pass1_samples_multi,
+    mark_formal_pairs,
     parse_float_list,
+    scan_files,
+    slugify,
 )
 from .figure_1_export import (
     ExportDestinations,
@@ -33,11 +33,26 @@ from .figure_1_export import (
     GptFilterConfig,
     export_formal_aha_json_with_text,
 )
-from .figure_1_plotting import (
-    FormalSweepPlotConfig,
-    plot_formal_sweep_grid,
-    plot_three_ratios_shared_axes_multi,
-)
+from .figure_1_plotting import FormalSweepPlotConfig, plot_formal_sweep_grid, plot_three_ratios_shared_axes_multi
+from .figure_1_style import lighten_hex, set_global_fonts
+
+
+# Matplotlib stubs used in tests may lack ``cycler``; backfill a tiny version.
+if not hasattr(plt, "cycler"):
+    try:  # pragma: no cover - best-effort compat
+        import matplotlib as _mpl  # type: ignore
+
+        plt.cycler = getattr(_mpl, "cycler")  # type: ignore[assignment]
+    except (ImportError, AttributeError, TypeError):
+
+        def _fallback_cycler(**kwargs):
+            """Minimal cycler stub returning a by_key() mapping."""
+            colors = list(kwargs.get("color", []) or [])
+            return types.SimpleNamespace(by_key=lambda: {"color": colors})
+
+        plt.cycler = _fallback_cycler  # type: ignore[assignment]
+    if isinstance(getattr(plt, "rcParams", None), dict) and "axes.prop_cycle" not in plt.rcParams:
+        plt.rcParams["axes.prop_cycle"] = plt.cycler(color=[])
 
 
 @dataclass(frozen=True)
@@ -249,11 +264,7 @@ def _load_samples(
             have = sub.groupby("problem")["step"].nunique() == len(step_values)
             keep_probs = set(have[have].index.tolist())
             balanced_parts.append(sub[sub["problem"].isin(keep_probs)])
-        samples_df = (
-            pd.concat(balanced_parts, ignore_index=True)
-            if balanced_parts
-            else pd.DataFrame()
-        )
+        samples_df = pd.concat(balanced_parts, ignore_index=True) if balanced_parts else pd.DataFrame()
         if samples_df.empty:
             raise SystemExit("Balanced panel filter removed all rows; relax filters.")
     return samples_df
@@ -291,6 +302,7 @@ def _write_domain_ratios_csv(
     formal_by_dom: Dict[str, pd.DataFrame],
 ) -> str:
     """Persist the per-domain ratio bootstrap tables."""
+
     def _tag(domain_df: pd.DataFrame, series_label: str, domain_name: str) -> pd.DataFrame:
         tagged = domain_df.copy()
         tagged["series"] = series_label
@@ -303,11 +315,7 @@ def _write_domain_ratios_csv(
         frames.append(_tag(gpt_by_dom[domain], "LLM-Detected Shifts", domain))
         frames.append(_tag(formal_by_dom[domain], "Formal Shifts", domain))
     csv_path = os.path.join(out_dir, f"aha_ratios_problems_bootstrap__{slug}.csv")
-    (
-        pd.concat(frames, ignore_index=True)
-        .sort_values(["series", "domain", "step"])
-        .to_csv(csv_path, index=False)
-    )
+    (pd.concat(frames, ignore_index=True).sort_values(["series", "domain", "step"]).to_csv(csv_path, index=False))
     return csv_path
 
 
@@ -367,11 +375,7 @@ def _write_sweep_csv(
         )
         sweep_rows.append(sweep_ratio_df)
     sweep_csv = os.path.join(out_dir, f"aha_formal_ratio_sweep__{slug}.csv")
-    (
-        pd.concat(sweep_rows, ignore_index=True)
-        .sort_values(["delta1", "delta2", "step"])
-        .to_csv(sweep_csv, index=False)
-    )
+    (pd.concat(sweep_rows, ignore_index=True).sort_values(["delta1", "delta2", "step"]).to_csv(sweep_csv, index=False))
     return sweep_csv
 
 

@@ -147,8 +147,7 @@ def build_argparser() -> argparse.ArgumentParser:
         type=int,
         default=0,
         help=(
-            "Maximum number of individual shift examples to print in shift_summary "
-            "(default: 0, i.e., summary only)."
+            "Maximum number of individual shift examples to print in shift_summary (default: 0, i.e., summary only)."
         ),
     )
     return parser

@@ -12,8 +12,8 @@ need to change their import paths.
 from __future__ import annotations
 
 from src.analysis.script_utils import ensure_script_context
-
 from src.analysis.uncertainty_bucket_effects_impl import main
+
 
 ensure_script_context()
 

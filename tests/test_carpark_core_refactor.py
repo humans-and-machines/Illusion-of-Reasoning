@@ -11,9 +11,9 @@ while refactoring carpark_core.run_inference_on_split and helpers.
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 
 import pytest
+
 
 torch = pytest.importorskip("torch")
 carpark_core = pytest.importorskip("src.inference.domains.carpark.carpark_core")
@@ -144,11 +144,7 @@ def test_run_inference_on_split_carpark_smoke(tmp_path):
 
     outpath = outdir / "step0000_test.jsonl"
     assert outpath.exists()
-    rows = [
-        json.loads(line)
-        for line in outpath.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    rows = [json.loads(line) for line in outpath.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(rows) == 1
     row = rows[0]
     # Basic structural checks.

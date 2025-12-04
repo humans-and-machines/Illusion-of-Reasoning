@@ -27,7 +27,7 @@ def test_canonicalize_prioritizes_earliest_horizontal_two():
     canonical = rush._canonicalize(grid, pieces, size)
 
     assert canonical[1:3] == "AA"  # earliest horizontal length-2 is mapped to A
-    assert canonical[0] == "B"     # first non-A piece keeps earliest non-A label
+    assert canonical[0] == "B"  # first non-A piece keeps earliest non-A label
     assert canonical[6:8] == "CC"  # subsequent piece advances the label
 
 

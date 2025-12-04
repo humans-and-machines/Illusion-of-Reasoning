@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from src.inference.utils.common import GenerationLimits, SamplingConfigBase
 
+
 __all__ = [
     "GenerationLimits",
     "SamplingConfigBase",

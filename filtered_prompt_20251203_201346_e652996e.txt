@@ -1,0 +1,55 @@
+Problem/Clue (if available):
+At 50 miles per hour, how far would a car travel in $2\frac{3}{4}$ hours? Express your answer as a mixed number.
+
+PASS-1 <think> (truncated if long):
+Hold on, this reasoning might be wrong. Let's go back and check each step carefully. 1. The goal is to find the distance traveled by a car at 50 miles per hour for \(2\frac{3}{4}\) hours. We can use the formula for distance, which is:
+
+\[ \text{Distance} = \text{Speed} \times \text{Time} \]
+
+Given speed is 50 miles per hour and time is \(2\frac{3}{4}\) hours, we first convert the mixed number to an improper fraction:
+
+\[ 2\frac{3}{4} = \frac{8}{4} + \frac{3}{4} = \frac{11}{4} \]
+
+Now, substitute the values into the distance formula:
+
+\[ \text{Distance} = 50 \times \frac{11}{4} \]
+
+Perform the multiplication:
+
+\[ \text{Distance} = \frac{50 \times 11}{4} = \frac{550}{4} \]
+
+Simplify the fraction:
+
+\[ \text{Distance} = \frac{550 \div 2}{4 \div 2} = \frac{275}{2} \]
+
+Convert the improper fraction to a mixed number:
+
+\[ \frac{275}{2} = 137\frac{1}{2} \]
+
+So, the distance traveled is \(137\frac{1}{2}\) miles.
+
+Heuristic cue candidates (may be empty): hold on
+first_marker_pos: 0
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": true,
+  "confidence": "high",
+  "markers_found": ["Hold on"],
+  "first_marker_index": 0,
+  "before_excerpt": "",
+  "after_excerpt": "Hold on, this reasoning might be wrong. Let's go back and check each step carefully. 1. The goal is to find the distance traveled by a car at 50 miles per hour for \(2\\frac{3}{4}\) hours. We can use the formula for distance, which is:\n\n\\[ \\text{Distance} = \\text{Speed} \\times \\text{Time} \\]\n\nGiven speed is 50 miles per hour and time is \\(2\\frac{3}{4}\\) hours, we first convert the mixed number to an improper fraction:\n\n\\[ 2\\frac{3}{4} = \\frac{8}{4} + \\frac{3}{4} = \\frac{11}{4} \\]\n\nNow, substitute the values into the distance formula:\n\n\\[ \\text{Distance} = 50 \\times \\frac{11}{4} \\]\n\nPerform the multiplication:\n\n\\[ \\text{Distance} = \\frac{50 \\times 11}{4} = \\frac{550}{4} \\]\n\nSimplify the fraction:\n\n\\[ \\text{Distance} = \\frac{550 \\div 2}{4 \\div 2} = \\frac{275}{2} \\]\n\nConvert the improper fraction to a mixed number:\n\n\\[ \\frac{275}{2} = 137\\frac{1}{2} \\]\n\nSo, the distance traveled is \\(137\\frac{1}{2}\\) miles.",
+  "explanation_short": "The cue 'Hold on' indicates a re-evaluation of the reasoning, leading to a careful step-by-step verification of the solution process."
+}
+```

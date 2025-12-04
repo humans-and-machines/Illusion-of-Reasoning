@@ -28,6 +28,8 @@ CSVs:
 Use --a4_pdf to save exact A4 PDFs; text is Times/Times New Roman (12 pt).
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 from typing import Dict, Optional, Tuple
@@ -35,17 +37,10 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from src.analysis.core.plotting_helpers import set_global_fonts
 from src.analysis.common.parser_helpers import standard_results_parser
-from src.analysis.figure_2_accuracy import (
-    AccuracyPlotConfig,
-    plot_accuracy_by_bin_overlay,
-)
-from src.analysis.figure_2_data import (
-    _load_all_samples,
-    _standardize_uncertainty,
-    make_edges_from_std,
-)
+from src.analysis.core.plotting_helpers import set_global_fonts
+from src.analysis.figure_2_accuracy import AccuracyPlotConfig, plot_accuracy_by_bin_overlay
+from src.analysis.figure_2_data import _load_all_samples, _standardize_uncertainty, make_edges_from_std
 from src.analysis.figure_2_density import (
     DensityPlotConfig,
     FourHistConfig,
@@ -53,11 +48,7 @@ from src.analysis.figure_2_density import (
     plot_four_correct_hists,
     plot_overlaid_densities,
 )
-from src.analysis.figure_2_regression import (
-    RegressionOutputConfig,
-    RegressionPlotConfig,
-    plot_regression_curves,
-)
+from src.analysis.figure_2_regression import RegressionOutputConfig, RegressionPlotConfig, plot_regression_curves
 from src.analysis.utils import (
     add_formal_threshold_args,
     add_gpt_mode_arg,

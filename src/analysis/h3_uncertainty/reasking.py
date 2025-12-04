@@ -49,8 +49,7 @@ def wilson_ci(num_success: int, num_trials: int, alpha: float = 0.05) -> Tuple[f
     half_width = (
         z_score
         * math.sqrt(
-            proportion * (1 - proportion) / num_trials
-            + z_score * z_score / (4 * num_trials * num_trials),
+            proportion * (1 - proportion) / num_trials + z_score * z_score / (4 * num_trials * num_trials),
         )
         / denom
     )
@@ -98,12 +97,8 @@ def _build_problem_summary(merged_df: pd.DataFrame) -> pd.DataFrame:
         )
         .copy()
     )
-    problem_summary["delta_any"] = (
-        problem_summary["any_pass2"] - problem_summary["any_pass1"]
-    )
-    problem_summary["delta_mean"] = (
-        problem_summary["mean_pass2"] - problem_summary["mean_pass1"]
-    )
+    problem_summary["delta_any"] = problem_summary["any_pass2"] - problem_summary["any_pass1"]
+    problem_summary["delta_mean"] = problem_summary["mean_pass2"] - problem_summary["mean_pass1"]
     return problem_summary
 
 
@@ -191,18 +186,10 @@ def compute_reasking_tables(
         subset = matched_rows[matched_rows["problem"].isin(probs_subset["problem"])]
         micro_pass1 = float(subset["correct1"].mean()) if not subset.empty else np.nan
         micro_pass2 = float(subset["correct2"].mean()) if not subset.empty else np.nan
-        micro_delta = (
-            float(micro_pass2 - micro_pass1) if not subset.empty else np.nan
-        )
-        macro_mean_pass1 = (
-            float(probs_subset["mean_pass1"].mean()) if problem_count else np.nan
-        )
-        macro_mean_pass2 = (
-            float(probs_subset["mean_pass2"].mean()) if problem_count else np.nan
-        )
-        macro_delta = (
-            float(probs_subset["delta_mean"].mean()) if problem_count else np.nan
-        )
+        micro_delta = float(micro_pass2 - micro_pass1) if not subset.empty else np.nan
+        macro_mean_pass1 = float(probs_subset["mean_pass1"].mean()) if problem_count else np.nan
+        macro_mean_pass2 = float(probs_subset["mean_pass2"].mean()) if problem_count else np.nan
+        macro_delta = float(probs_subset["delta_mean"].mean()) if problem_count else np.nan
         result = {
             "condition": label,
             "n_problems": int(problem_count),
@@ -259,11 +246,7 @@ def split_reasking_by_aha(
         ("aha_formal", "formal"),
     ]
     flag_cols = [col for col, _ in aha_variants]
-    flags = (
-        pass1_df[["pair_id"] + flag_cols]
-        .drop_duplicates("pair_id")
-        .copy()
-    )
+    flags = pass1_df[["pair_id"] + flag_cols].drop_duplicates("pair_id").copy()
     if flags.empty:
         return pd.DataFrame(), pd.DataFrame()
     prompt_parts = []
@@ -281,16 +264,8 @@ def split_reasking_by_aha(
         problems["aha_variant"] = label
         problem_parts.append(problems)
 
-    prompt_by_aha = (
-        pd.concat(prompt_parts, ignore_index=True)
-        if prompt_parts
-        else pd.DataFrame()
-    )
-    problem_by_aha = (
-        pd.concat(problem_parts, ignore_index=True)
-        if problem_parts
-        else pd.DataFrame()
-    )
+    prompt_by_aha = pd.concat(prompt_parts, ignore_index=True) if prompt_parts else pd.DataFrame()
+    problem_by_aha = pd.concat(problem_parts, ignore_index=True) if problem_parts else pd.DataFrame()
     return prompt_by_aha, problem_by_aha
 
 
@@ -341,11 +316,12 @@ def prompt_level_acc_with_ci(
         for group_vals, subset in data.groupby(keys)
     ]
     return pd.DataFrame(rows).sort_values(keys).reset_index(drop=True)
+
+
 def _per_problem_aggregate(data: pd.DataFrame, keys: List[str]) -> pd.DataFrame:
     """Aggregate pair-level rows into per-problem any-pass flags."""
-    return (
-        data.groupby(keys + ["problem"], as_index=False)
-        .agg(any_pass1=("correct1", "max"), any_pass2=("correct2", "max"))
+    return data.groupby(keys + ["problem"], as_index=False).agg(
+        any_pass1=("correct1", "max"), any_pass2=("correct2", "max")
     )
 
 
@@ -371,7 +347,5 @@ def _pairwise_accuracy_delta(
         row[f"{column}_lo"] = lower
         row[f"{column}_hi"] = upper
 
-    row["delta"] = (
-        row[spec.pass2_col] - row[spec.pass1_col] if pair_count else float("nan")
-    )
+    row["delta"] = row[spec.pass2_col] - row[spec.pass1_col] if pair_count else float("nan")
     return row

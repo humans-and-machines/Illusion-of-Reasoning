@@ -11,9 +11,71 @@ from __future__ import annotations
 
 import json
 import time
+from dataclasses import dataclass, field, replace
 from typing import Any, List
 
-import requests
+
+try:
+    import requests
+except ImportError:  # pragma: no cover - optional in minimal test environments
+    from types import SimpleNamespace
+
+    def _missing_requests(*_args, **_kwargs):
+        msg = "The 'requests' package is required for vLLM helpers."
+        raise ImportError(msg)
+
+    requests = SimpleNamespace(
+        ConnectionError=RuntimeError,
+        Timeout=RuntimeError,
+        get=_missing_requests,
+        post=_missing_requests,
+    )
+
+
+@dataclass
+class VLLMGenerationParams:
+    """Payload parameters for a vLLM `/generate` request."""
+
+    max_tokens: int = 256
+    temperature: float = 0.7
+    top_p: float = 0.9
+    n: int = 1
+    stream: bool = False
+
+
+@dataclass
+class VLLMRetryConfig:
+    """Retry/backoff configuration for a vLLM request."""
+
+    max_retries: int = 3
+    backoff: float = 1.0
+    timeout: float = 30.0
+
+
+@dataclass
+class VLLMGenerateConfig:
+    """
+    Configuration for a vLLM `/generate` request.
+
+    The defaults mirror the legacy keyword arguments that were previously
+    exposed on :func:`safe_generate`.
+    """
+
+    url: str = "http://localhost:8000/generate"
+    params: VLLMGenerationParams = field(default_factory=VLLMGenerationParams)
+    retry: VLLMRetryConfig = field(default_factory=VLLMRetryConfig)
+    tokenizer: Any | None = None
+
+    def to_payload(self, prompts: List[str]) -> dict:
+        """Build the JSON payload expected by vLLM."""
+        return {
+            "prompts": prompts,
+            "temperature": self.params.temperature,
+            "top_p": self.params.top_p,
+            "n": self.params.n,
+            "max_tokens": self.params.max_tokens,
+            "stream": self.params.stream,
+        }
 
 
 # ─────────────────── generic GET helper ──────────────────────────────────────
@@ -31,9 +93,7 @@ def safe_request(
             response = requests.get(url, timeout=timeout)
             if response.status_code == 200:
                 return response.json()
-            last_error = RuntimeError(
-                f"HTTP {response.status_code}: {response.text[:120]}"
-            )
+            last_error = RuntimeError(f"HTTP {response.status_code}: {response.text[:120]}")
             break
         except (requests.ConnectionError, requests.Timeout) as exc:
             last_error = exc
@@ -63,13 +123,8 @@ def _parse_nonstream_json(
     # vLLM 0.8.x token-ID output
     if "completion_ids" in data:
         if tokenizer is None:
-            raise RuntimeError(
-                "Server returned token IDs but no tokenizer was supplied to safe_generate()."
-            )
-        return [
-            [tokenizer.decode(ids, skip_special_tokens=True)]
-            for ids in data["completion_ids"]
-        ]
+            raise RuntimeError("Server returned token IDs but no tokenizer was supplied to safe_generate().")
+        return [[tokenizer.decode(ids, skip_special_tokens=True)] for ids in data["completion_ids"]]
     raise RuntimeError(f"Unknown vLLM response format: {data}")
 
 
@@ -91,33 +146,28 @@ def _parse_streaming_response(
 def _generate_with_retries(
     *,
     prompts: List[str],
-    url: str,
     payload: dict,
-    tokenizer: Any | None,
-    stream: bool,
-    max_retries: int,
-    backoff: float,
-    timeout: float,
+    config: VLLMGenerateConfig,
 ) -> List[List[str]]:
     """Call the vLLM server with retries and decode the response."""
-    for attempt in range(max_retries):
+    for attempt in range(config.retry.max_retries):
         try:
             response = requests.post(
-                url,
+                config.url,
                 json=payload,
-                timeout=timeout,
-                stream=stream,
+                timeout=config.retry.timeout,
+                stream=config.params.stream,
             )
             if response.status_code != 200:
                 msg = f"HTTP {response.status_code}: {response.text[:120]}"
                 raise RuntimeError(msg)
 
-            if stream:
+            if config.params.stream:
                 return _parse_streaming_response(response, len(prompts))
-            return _parse_nonstream_json(response.json(), tokenizer)
+            return _parse_nonstream_json(response.json(), config.tokenizer)
         except (requests.ConnectionError, requests.Timeout, RuntimeError) as exc:
-            if attempt < max_retries - 1:
-                time.sleep(backoff * (2**attempt))
+            if attempt < config.retry.max_retries - 1:
+                time.sleep(config.retry.backoff * (2**attempt))
             else:
                 msg = f"safe_generate failed: {exc}"
                 raise RuntimeError(msg) from exc
@@ -125,37 +175,56 @@ def _generate_with_retries(
     raise RuntimeError("safe_generate failed without performing any HTTP request.")
 
 
+def _resolve_config(
+    config: VLLMGenerateConfig | None,
+    overrides: dict[str, Any],
+) -> VLLMGenerateConfig:
+    """
+    Normalize configuration by applying user overrides to a base dataclass.
+    """
+    resolved = config or VLLMGenerateConfig()
+    if not overrides:
+        return resolved
+
+    payload_fields = {"max_tokens", "temperature", "top_p", "n", "stream"}
+    retry_fields = {"max_retries", "backoff", "timeout"}
+    root_fields = {"url", "tokenizer"}
+
+    unexpected = set(overrides) - payload_fields - retry_fields - root_fields
+    if unexpected:
+        msg = f"safe_generate got unexpected config keys: {sorted(unexpected)}"
+        raise TypeError(msg)
+
+    params_kwargs = {key: overrides[key] for key in payload_fields if key in overrides}
+    retry_kwargs = {key: overrides[key] for key in retry_fields if key in overrides}
+
+    new_params = replace(resolved.params, **params_kwargs) if params_kwargs else resolved.params
+    new_retry = replace(resolved.retry, **retry_kwargs) if retry_kwargs else resolved.retry
+    return replace(
+        resolved,
+        url=overrides.get("url", resolved.url),
+        tokenizer=overrides.get("tokenizer", resolved.tokenizer),
+        params=new_params,
+        retry=new_retry,
+    )
+
+
 # ─────────────────── POST /generate helper ────────────────────────────────────
 def safe_generate(
-    *,
     prompts: List[str],
-    url: str = "http://localhost:8000/generate",
-    max_tokens: int = 256,
-    temperature: float = 0.7,
-    top_p: float = 0.9,
-    n: int = 1,
-    stream: bool = False,
-    tokenizer: Any | None = None,
-    max_retries: int = 3,
-    backoff: float = 1.0,
-    timeout: float = 30.0,
+    config: VLLMGenerateConfig | None = None,
+    **overrides: Any,
 ) -> List[List[str]]:
-    """Robust call to /generate with retry + schema-agnostic decoding."""
-    payload = {
-        "prompts": prompts,
-        "temperature": temperature,
-        "top_p": top_p,
-        "n": n,
-        "max_tokens": max_tokens,
-        "stream": stream,
-    }
+    """
+    Robust call to /generate with retry + schema-agnostic decoding.
+
+    Use ``config`` to control request behavior; individual fields can be
+    overridden via keyword arguments for convenience (e.g., ``top_p=0.8``).
+    """
+    resolved_config = _resolve_config(config, overrides)
+    payload = resolved_config.to_payload(prompts)
     return _generate_with_retries(
         prompts=prompts,
-        url=url,
         payload=payload,
-        tokenizer=tokenizer,
-        stream=stream,
-        max_retries=max_retries,
-        backoff=backoff,
-        timeout=timeout,
+        config=resolved_config,
     )

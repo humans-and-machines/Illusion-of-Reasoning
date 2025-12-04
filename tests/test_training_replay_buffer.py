@@ -6,6 +6,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+
 rb_mod = pytest.importorskip("src.training.utils.replay_buffer")
 
 

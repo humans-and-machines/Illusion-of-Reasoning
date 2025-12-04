@@ -9,11 +9,12 @@ This module holds the bulk of the data structures and aggregation logic used by
 
 from __future__ import annotations
 
-import os
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+from src.common.jsonl_utils import scan_jsonl_files
 
 
 def mean_safe(values: List[Optional[float]]) -> Optional[float]:
@@ -80,20 +81,7 @@ def scan_files(root: str, split: Optional[str]) -> List[str]:
     :param split: Optional substring that must appear in the filename (for example, ``\"test\"``).
     :returns: Sorted list of JSONL file paths ordered by step then name.
     """
-    matches: List[str] = []
-    for dirpath, _, filenames in os.walk(root):
-        for filename in filenames:
-            if not filename.endswith(".jsonl"):
-                continue
-            if split and split not in filename:
-                continue
-            full_path = os.path.join(dirpath, filename)
-            # Only keep files that follow the step#### naming convention so that
-            # step-based sorting behaves as expected.
-            if nat_step_from_path(full_path) is None:
-                continue
-            matches.append(full_path)
-
+    matches = [path for path in scan_jsonl_files(root, split_substr=split) if nat_step_from_path(path) is not None]
     matches.sort(key=lambda path: (nat_step_from_path(path) or 0, path))
     return matches
 
@@ -504,13 +492,7 @@ class StepAgg:
 
         # Handle multi-cue second-pass variants by preferring the canonical
         # ``pass2`` field and falling back to pass2c/pass2b/pass2a when needed.
-        pass2 = (
-            record.get("pass2")
-            or record.get("pass2c")
-            or record.get("pass2b")
-            or record.get("pass2a")
-            or {}
-        )
+        pass2 = record.get("pass2") or record.get("pass2c") or record.get("pass2b") or record.get("pass2a") or {}
         if pass2:
             self._add_pass2(pass2, problem, gold_canon, recompute_mode)
 
@@ -668,12 +650,8 @@ class StepAgg:
         metrics["improvement_sample"] = (
             pct(self.pass2.sample_improved, self.pass2.n_samples) if self.pass2.n_samples else "-"
         )
-        metrics["tag1"] = (
-            pct(self.pass1.tag_ok, self.pass1.n_samples) if self.pass1.n_samples else "-"
-        )
-        metrics["tag2"] = (
-            pct(self.pass2.tag_ok, self.pass2.n_samples) if self.pass2.n_samples else "-"
-        )
+        metrics["tag1"] = pct(self.pass1.tag_ok, self.pass1.n_samples) if self.pass1.n_samples else "-"
+        metrics["tag2"] = pct(self.pass2.tag_ok, self.pass2.n_samples) if self.pass2.n_samples else "-"
         return metrics
 
     @staticmethod
@@ -688,70 +666,46 @@ class StepAgg:
         """Append per-pass stop reason breakdown lines."""
         if self.pass1.n_samples:
             lines.append(
-                "   • p1 think stops: "
-                f"{self._format_stop_counter(self.pass1.stop_think, self.pass1.n_samples)}",
+                f"   • p1 think stops: {self._format_stop_counter(self.pass1.stop_think, self.pass1.n_samples)}",
             )
             lines.append(
-                "   • p1 answer stops: "
-                f"{self._format_stop_counter(self.pass1.stop_answer, self.pass1.n_samples)}",
+                f"   • p1 answer stops: {self._format_stop_counter(self.pass1.stop_answer, self.pass1.n_samples)}",
             )
         if self.pass2.n_samples:
             lines.append(
-                "   • p2 think stops: "
-                f"{self._format_stop_counter(self.pass2.stop_think, self.pass2.n_samples)}",
+                f"   • p2 think stops: {self._format_stop_counter(self.pass2.stop_think, self.pass2.n_samples)}",
             )
             lines.append(
-                "   • p2 answer stops: "
-                f"{self._format_stop_counter(self.pass2.stop_answer, self.pass2.n_samples)}",
+                f"   • p2 answer stops: {self._format_stop_counter(self.pass2.stop_answer, self.pass2.n_samples)}",
             )
 
     def _append_reconsider_lines(self, lines: List[str]) -> None:
         """Append reconsideration marker rate lines."""
         if self.pass1.n_samples:
             lines.append(
-                "   • p1 reconsider-markers rate: "
-                f"{pct(self.pass1.reconsider_numer, self.pass1.n_samples)}",
+                f"   • p1 reconsider-markers rate: {pct(self.pass1.reconsider_numer, self.pass1.n_samples)}",
             )
         if self.pass2.n_samples:
             lines.append(
-                "   • p2 reconsider-markers rate: "
-                f"{pct(self.pass2.reconsider_numer, self.pass2.n_samples)}",
+                f"   • p2 reconsider-markers rate: {pct(self.pass2.reconsider_numer, self.pass2.n_samples)}",
             )
 
     def _append_token_stats_lines(self, lines: List[str]) -> None:
         """Append mean token count lines if token data is present."""
-        if not any(
-            value is not None for value in self.pass1.tokens_think + self.pass2.tokens_think
-        ):
+        if not any(value is not None for value in self.pass1.tokens_think + self.pass2.tokens_think):
             return
 
         mean_think1 = mean_safe(
-            [
-                value
-                for value in self.pass1.tokens_think
-                if isinstance(value, (int, float))
-            ],
+            [value for value in self.pass1.tokens_think if isinstance(value, (int, float))],
         )
         mean_answer1 = mean_safe(
-            [
-                value
-                for value in self.pass1.tokens_answer
-                if isinstance(value, (int, float))
-            ],
+            [value for value in self.pass1.tokens_answer if isinstance(value, (int, float))],
         )
         mean_think2 = mean_safe(
-            [
-                value
-                for value in self.pass2.tokens_think
-                if isinstance(value, (int, float))
-            ],
+            [value for value in self.pass2.tokens_think if isinstance(value, (int, float))],
         )
         mean_answer2 = mean_safe(
-            [
-                value
-                for value in self.pass2.tokens_answer
-                if isinstance(value, (int, float))
-            ],
+            [value for value in self.pass2.tokens_answer if isinstance(value, (int, float))],
         )
 
         mean_think1_str = "-" if mean_think1 is None else f"{mean_think1:.1f}"
@@ -770,29 +724,19 @@ class StepAgg:
         mean_soft1_samples = mean_safe(self.pass1.soft_values)
         mean_soft1_examples = self.example_level_soft_mean(self.pass1.soft_by_problem)
         if mean_soft1_samples is not None or mean_soft1_examples is not None:
-            mean_soft1_samples_str = (
-                "-" if mean_soft1_samples is None else f"{mean_soft1_samples:.3f}"
-            )
-            mean_soft1_examples_str = (
-                "-" if mean_soft1_examples is None else f"{mean_soft1_examples:.3f}"
-            )
+            mean_soft1_samples_str = "-" if mean_soft1_samples is None else f"{mean_soft1_samples:.3f}"
+            mean_soft1_examples_str = "-" if mean_soft1_examples is None else f"{mean_soft1_examples:.3f}"
             lines.append(
-                "   • mean soft (p1): "
-                f"samples={mean_soft1_samples_str}; examples[max]={mean_soft1_examples_str}",
+                f"   • mean soft (p1): samples={mean_soft1_samples_str}; examples[max]={mean_soft1_examples_str}",
             )
 
         mean_soft2_samples = mean_safe(self.pass2.soft_values)
         mean_soft2_examples = self.example_level_soft_mean(self.pass2.soft_by_problem)
         if mean_soft2_samples is not None or mean_soft2_examples is not None:
-            mean_soft2_samples_str = (
-                "-" if mean_soft2_samples is None else f"{mean_soft2_samples:.3f}"
-            )
-            mean_soft2_examples_str = (
-                "-" if mean_soft2_examples is None else f"{mean_soft2_examples:.3f}"
-            )
+            mean_soft2_samples_str = "-" if mean_soft2_samples is None else f"{mean_soft2_samples:.3f}"
+            mean_soft2_examples_str = "-" if mean_soft2_examples is None else f"{mean_soft2_examples:.3f}"
             lines.append(
-                "   • mean soft (p2): "
-                f"samples={mean_soft2_samples_str}; examples[max]={mean_soft2_examples_str}",
+                f"   • mean soft (p2): samples={mean_soft2_samples_str}; examples[max]={mean_soft2_examples_str}",
             )
 
 
@@ -850,47 +794,27 @@ def build_step_csv_row(aggregator: StepAgg) -> List[Any]:
     num_examples = len(aggregator.examples) if aggregator.examples else 0
 
     acc1_sample = (
-        100.0 * aggregator.pass1.sample_correct / aggregator.pass1.n_samples
-        if aggregator.pass1.n_samples
-        else None
+        100.0 * aggregator.pass1.sample_correct / aggregator.pass1.n_samples if aggregator.pass1.n_samples else None
     )
     acc2_sample = (
-        100.0 * aggregator.pass2.sample_correct / aggregator.pass2.n_samples
-        if aggregator.pass2.n_samples
-        else None
+        100.0 * aggregator.pass2.sample_correct / aggregator.pass2.n_samples if aggregator.pass2.n_samples else None
     )
     acc1_example = (
-        100.0
-        * sum(1 for value in aggregator.pass1.correct_by_problem.values() if value)
-        / num_examples
+        100.0 * sum(1 for value in aggregator.pass1.correct_by_problem.values() if value) / num_examples
         if num_examples
         else None
     )
     acc2_example = (
-        100.0
-        * sum(1 for value in aggregator.pass2.correct_by_problem.values() if value)
-        / num_examples
+        100.0 * sum(1 for value in aggregator.pass2.correct_by_problem.values() if value) / num_examples
         if num_examples
         else None
     )
     imp_sample = (
-        100.0 * aggregator.pass2.sample_improved / aggregator.pass2.n_samples
-        if aggregator.pass2.n_samples
-        else None
+        100.0 * aggregator.pass2.sample_improved / aggregator.pass2.n_samples if aggregator.pass2.n_samples else None
     )
-    imp_example = (
-        100.0 * aggregator.ex_improved_p2 / num_examples if num_examples else None
-    )
-    tag1_pct = (
-        100.0 * aggregator.pass1.tag_ok / aggregator.pass1.n_samples
-        if aggregator.pass1.n_samples
-        else None
-    )
-    tag2_pct = (
-        100.0 * aggregator.pass2.tag_ok / aggregator.pass2.n_samples
-        if aggregator.pass2.n_samples
-        else None
-    )
+    imp_example = 100.0 * aggregator.ex_improved_p2 / num_examples if num_examples else None
+    tag1_pct = 100.0 * aggregator.pass1.tag_ok / aggregator.pass1.n_samples if aggregator.pass1.n_samples else None
+    tag2_pct = 100.0 * aggregator.pass2.tag_ok / aggregator.pass2.n_samples if aggregator.pass2.n_samples else None
 
     soft1_sample = mean_safe(aggregator.pass1.soft_values)
     soft2_sample = mean_safe(aggregator.pass2.soft_values)

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
+
 configs = pytest.importorskip("src.training.configs")
 rewards_mod = pytest.importorskip("src.training.rewards")
 data_utils = pytest.importorskip("src.training.utils.data")
@@ -108,3 +109,65 @@ def test_get_callbacks_builds_and_validates(monkeypatch):
     assert any(isinstance(cb, callbacks_mod.PushToHubRevisionCallback) for cb in cb_list)
     assert any(isinstance(cb, callbacks_mod.SuccessCachingCallback) for cb in cb_list)
     assert any(isinstance(cb, callbacks_mod.ReplayBufferCallback) for cb in cb_list)
+
+
+def test_callbacks_interact_with_buffer_and_tokenizer(capsys):
+    class DummyBuf:
+        def __init__(self):
+            self.added = []
+
+        def add(self, prompt):
+            self.added.append(prompt)
+
+        def __len__(self):
+            return len(self.added)
+
+    class DummyTok:
+        def decode(self, ids, skip_special_tokens=True):
+            return f"decoded-{len(ids)}"
+
+    dummy_buf = DummyBuf()
+
+    # SuccessCachingCallback adds prompts above threshold.
+    cache_cb = callbacks_mod.SuccessCachingCallback(dummy_buf, acc_threshold=0.5)
+    trainer = SimpleNamespace(
+        textual_logs={
+            "prompt": ["p1", "p2"],
+            "rewards": {"foo_accuracy": [0.6, 0.1]},
+        }
+    )
+    cache_cb.set_trainer(trainer)
+    cache_cb.on_log(None, None, None)
+    assert dummy_buf.added == ["p1"]
+
+    # ReplayBufferCallback decodes and adds prompts with high rewards.
+    class FakeTensor:
+        def __init__(self, values):
+            self.values = values
+
+        def detach(self):
+            return self
+
+        def cpu(self):
+            return self
+
+        def tolist(self):
+            return list(self.values)
+
+    replay_cb = callbacks_mod.ReplayBufferCallback(
+        replay_buffer=dummy_buf,
+        tokenizer=DummyTok(),
+        accuracy_key="acc_key",
+        threshold=0.5,
+    )
+    args = SimpleNamespace(local_rank=-1)
+    rewards = {"acc_key": FakeTensor([0.4, 0.8])}
+    replay_cb.on_train_batch_end(
+        args,
+        outputs={"rewards": rewards},
+        inputs={"input_ids": [[1, 2], [3, 4]]},
+    )
+    # One more prompt added from replay path.
+    assert dummy_buf.added[-1] == "decoded-2"
+    out = capsys.readouterr().out
+    assert "buffer" in out

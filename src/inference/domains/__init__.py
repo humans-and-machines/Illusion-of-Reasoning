@@ -8,4 +8,5 @@ legacy ``core`` package.
 
 from __future__ import annotations
 
+
 __all__ = ["math", "carpark", "crossword", "summarize"]

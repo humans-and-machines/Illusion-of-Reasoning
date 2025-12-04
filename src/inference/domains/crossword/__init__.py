@@ -8,5 +8,5 @@ from __future__ import annotations
 
 from . import crossword_core
 
-__all__ = ["crossword_core"]
 
+__all__ = ["crossword_core"]

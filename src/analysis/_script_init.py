@@ -10,8 +10,8 @@ Importing this module injects the repository root into ``sys.path`` which allows
 
 from __future__ import annotations
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 
 def ensure_repo_root_on_path() -> None:

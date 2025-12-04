@@ -1,14 +1,15 @@
 """Legacy module that re-exports the full GRPO runtime implementation."""
 
-from src.training.grpo_runtime_main import main
-from src.training.grpo_trainer_replay_impl import GRPOTrainerReplay
-from src.training.grpo_trainer_replay_support import (
-    ReplaySettings,
-    TemperatureSchedule,
-    MixSettings,
-    RuntimeState,
+from .grpo_trainer_replay_impl import GRPOTrainerReplay
+from .grpo_trainer_replay_support import (
     LossLoggingCallback,
+    MixSettings,
+    ReplaySettings,
+    RuntimeState,
+    TemperatureSchedule,
 )
+from .runtime.main import main
+
 
 __all__ = [
     "ReplaySettings",

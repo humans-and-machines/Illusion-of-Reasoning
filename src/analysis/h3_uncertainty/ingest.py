@@ -12,11 +12,7 @@ import pandas as pd
 
 from src.analysis.common.problem_utils import resolve_problem_identifier
 from src.analysis.core import iter_pass1_records
-from src.analysis.utils import (
-    coerce_bool,
-    extract_pass1_and_step,
-    gpt_keys_for_mode,
-)
+from src.analysis.utils import coerce_bool, extract_pass1_and_step, gpt_keys_for_mode
 
 
 @dataclass(frozen=True)
@@ -60,9 +56,7 @@ class RowBuilderContext:
 def _aha_words(record: Dict[str, Any]) -> int:
     flag = coerce_bool(record.get("has_reconsider_cue"))
     markers = record.get("reconsider_markers") or []
-    if isinstance(markers, list) and (
-        "injected_cue" in markers or "forced_insight" in markers
-    ):
+    if isinstance(markers, list) and ("injected_cue" in markers or "forced_insight" in markers):
         return 0
     return 0 if flag is None else int(flag)
 
@@ -107,9 +101,7 @@ def _any_key_contains(
 ) -> Optional[float]:
     for key, value in record.items():
         key_lower = key.lower()
-        if all(token in key_lower for token in must) and any(
-            token in key_lower for token in any_of
-        ):
+        if all(token in key_lower for token in must) and any(token in key_lower for token in any_of):
             if isinstance(value, (int, float, np.floating)):
                 return float(value)
             if isinstance(value, str):
@@ -241,9 +233,7 @@ def _detect_forced_insight(pass_dict: Dict[str, Any], rec: Dict[str, Any]) -> in
     pass_markers = pass_dict.get("reconsider_markers") or []
     record_markers = rec.get("reconsider_markers") or []
     markers = set(pass_markers + record_markers)
-    prompt_variant_value = (
-        pass_dict.get("prompt_variant") or rec.get("prompt_variant") or ""
-    )
+    prompt_variant_value = pass_dict.get("prompt_variant") or rec.get("prompt_variant") or ""
     variant_lower = str(prompt_variant_value).lower()
     forced = (
         ("forced_insight" in markers)
@@ -264,11 +254,7 @@ def _build_pass_row(
         return None
     words_flag = _aha_words(pass_payload)
     gpt_raw = context.aha.gpt_fn(pass_payload, record)
-    gpt_flag = (
-        int(gpt_raw and words_flag)
-        if context.aha.gate_by_words
-        else int(gpt_raw)
-    )
+    gpt_flag = int(gpt_raw and words_flag) if context.aha.gate_by_words else int(gpt_raw)
     uncertainty = extract_uncertainty_or_ppx(
         pass_payload,
         context.uncertainty.field,

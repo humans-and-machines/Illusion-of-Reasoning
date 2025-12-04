@@ -10,14 +10,18 @@ Notes:
 import logging
 from typing import Tuple
 
+
 try:
-    from openai import OpenAI as _OpenAI, AzureOpenAI as _AzureOpenAI, OpenAIError as _OpenAIError
+    from openai import AzureOpenAI as _AzureOpenAI
+    from openai import OpenAI as _OpenAI
+    from openai import OpenAIError as _OpenAIError
 except ImportError:  # pragma: no cover - optional dependency
     _OpenAI = None
     _AzureOpenAI = None
 
     class _OpenAIError(Exception):
         """Fallback when openai is not installed."""
+
 
 OpenAI = _OpenAI
 AzureOpenAI = _AzureOpenAI
@@ -63,10 +67,7 @@ def build_preferred_client(
             )
 
     if AzureOpenAI is None:
-        raise RuntimeError(
-            "openai>=1.x with AzureOpenAI or v1 OpenAI client is required. "
-            "pip install -U openai"
-        )
+        raise RuntimeError("openai>=1.x with AzureOpenAI or v1 OpenAI client is required. pip install -U openai")
 
     try:
         client = AzureOpenAI(

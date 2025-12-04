@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
-
 import argparse
 import json
 import os
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -53,6 +52,23 @@ def make_formal_thresholds(
     )
 
 
+def build_formal_thresholds_from_args(
+    delta1: float,
+    delta2: float,
+    min_prior_steps: int,
+    delta3: Optional[float],
+) -> FormalThresholds:
+    """
+    Shared wrapper to construct :class:`FormalThresholds` from raw args.
+    """
+    return make_formal_thresholds(
+        delta1=delta1,
+        delta2=delta2,
+        min_prior_steps=min_prior_steps,
+        delta3=delta3,
+    )
+
+
 @dataclass
 class LoadRowsConfig:
     """Configuration for loading per-record/sample rows with GPT and Carpark gating."""
@@ -64,14 +80,26 @@ class LoadRowsConfig:
     carpark_success_fn: Callable[[Any], Optional[int]]
 
 
+@dataclass
+class FormalFlagConfig:
+    """Bundle of thresholds and output settings for formal-aha flag computation."""
+
+    thresholds: FormalThresholds
+    out_column: str = "aha_formal_ps"
+    formal_prior_ok_fn: Callable[
+        [np.ndarray, np.ndarray, int, FormalThresholds],
+        bool,
+    ] = formal_prior_ok
+    group_keys: Optional[List[str]] = None
+
+
 def compute_correct_and_shift(
     domain: str,
     pass1_data: Dict[str, Any],
     record: Dict[str, Any],
     *,
-    gpt_subset_native: bool,
-    gpt_keys: List[str],
-    carpark_success_fn: Callable[[Any], Optional[int]],
+    config: Optional[LoadRowsConfig] = None,
+    **legacy_gating: Any,
 ) -> Optional[Tuple[int, int]]:
     """
     Compute (correct, shift) flags for a single PASS-1-style sample.
@@ -79,12 +107,29 @@ def compute_correct_and_shift(
     The ``carpark_success_fn`` is only used for Carpark-style domains.
     Returns ``None`` if correctness cannot be determined.
     """
+    if config is None:
+        try:
+            config = LoadRowsConfig(
+                gpt_keys=legacy_gating.pop("gpt_keys"),
+                gpt_subset_native=legacy_gating.pop("gpt_subset_native"),
+                min_step=legacy_gating.pop("min_step", None),
+                max_step=legacy_gating.pop("max_step", None),
+                carpark_success_fn=legacy_gating.pop("carpark_success_fn"),
+            )
+        except KeyError as exc:
+            raise TypeError(
+                "compute_correct_and_shift requires a LoadRowsConfig or legacy gating kwargs "
+                "(gpt_keys, gpt_subset_native, carpark_success_fn)"
+            ) from exc
+        if legacy_gating:
+            raise TypeError(f"Unexpected gating arguments: {sorted(legacy_gating)}")
+
     dom_lower = str(domain).lower()
     if dom_lower.startswith("carpark"):
         soft_reward = coerce_float(
             record.get("soft_reward", pass1_data.get("soft_reward")),
         )
-        success_flag = carpark_success_fn(soft_reward)
+        success_flag = config.carpark_success_fn(soft_reward)
         if success_flag is None:
             return None
         correct = int(success_flag)
@@ -97,8 +142,8 @@ def compute_correct_and_shift(
     shift = aha_gpt_for_rec(
         pass1_data,
         record,
-        gpt_subset_native,
-        gpt_keys,
+        config.gpt_subset_native,
+        config.gpt_keys,
         domain,
     )
     return correct, int(shift)
@@ -140,35 +185,28 @@ def add_standard_formal_flags(
     frame: pd.DataFrame,
     group_keys: List[str],
     *,
-    out_column: str = "aha_formal_ps",
-    delta1: float,
-    delta2: float,
-    min_prior_steps: int,
+    config: Optional[FormalFlagConfig] = None,
+    **legacy_thresholds: Any,
 ) -> pd.DataFrame:
     """
     Convenience wrapper around :func:`add_formal_flags_column` using
     the shared :func:`formal_prior_ok` predicate.
     """
-    return add_formal_flags_column(
-        frame,
-        group_keys=group_keys,
-        out_column=out_column,
-        delta1=delta1,
-        delta2=delta2,
-        min_prior_steps=min_prior_steps,
-        formal_prior_ok_fn=formal_prior_ok,
-    )
+    if config is not None:
+        if config.group_keys is None:
+            config.group_keys = list(group_keys)
+        return add_formal_flags_column(frame, config=config)
+
+    legacy_thresholds.setdefault("formal_prior_ok_fn", formal_prior_ok)
+    return add_formal_flags_column(frame, group_keys=group_keys, **legacy_thresholds)
 
 
 def add_formal_flags_column(
     frame: pd.DataFrame,
-    group_keys: List[str],
+    group_keys: Optional[List[str]] = None,
     *,
-    out_column: str,
-    delta1: float,
-    delta2: float,
-    min_prior_steps: int,
-    formal_prior_ok_fn: Callable[[np.ndarray, np.ndarray, int, FormalThresholds], bool],
+    config: Optional[FormalFlagConfig] = None,
+    **legacy_thresholds: Any,
 ) -> pd.DataFrame:
     """
     Add a per-row Formal Aha flag column grouped by ``group_keys``.
@@ -180,16 +218,32 @@ def add_formal_flags_column(
     required_columns = {"step", "freq_correct", "aha_rate_gpt", "aha_any_gpt"}
     missing_columns = required_columns.difference(frame.columns)
     if missing_columns:
-        raise ValueError(
-            "add_formal_flags_column: missing columns: "
-            + ", ".join(sorted(missing_columns))
-        )
+        raise ValueError("add_formal_flags_column: missing columns: " + ", ".join(sorted(missing_columns)))
 
-    thresholds = FormalThresholds(
-        delta1=delta1,
-        delta2=delta2,
-        min_prior_steps=min_prior_steps,
-    )
+    if group_keys is None and config is not None:
+        group_keys = config.group_keys
+    if not group_keys:
+        raise ValueError("add_formal_flags_column requires non-empty group_keys")
+
+    if config is None:
+        try:
+            thresholds = build_formal_thresholds_from_args(
+                delta1=legacy_thresholds.pop("delta1"),
+                delta2=legacy_thresholds.pop("delta2"),
+                min_prior_steps=legacy_thresholds.pop("min_prior_steps"),
+                delta3=legacy_thresholds.pop("delta3", None),
+            )
+        except KeyError as exc:
+            raise TypeError(
+                "FormalFlagConfig or legacy thresholds (delta1, delta2, min_prior_steps) are required"
+            ) from exc
+        config = FormalFlagConfig(
+            thresholds=thresholds,
+            out_column=legacy_thresholds.pop("out_column", "aha_formal_ps"),
+            formal_prior_ok_fn=legacy_thresholds.pop("formal_prior_ok_fn", formal_prior_ok),
+        )
+        if legacy_thresholds:
+            raise TypeError(f"Unexpected formal flag arguments: {sorted(legacy_thresholds)}")
 
     sort_keys = list(group_keys) + ["step"]
     grouped_frame = frame.sort_values(sort_keys).reset_index(drop=True).copy()
@@ -198,12 +252,12 @@ def add_formal_flags_column(
     for _, sub in grouped_frame.groupby(group_keys, sort=False):
         sub_flags = compute_formal_flags_for_group(
             sub,
-            thresholds=thresholds,
-            formal_prior_ok_fn=formal_prior_ok_fn,
+            thresholds=config.thresholds,
+            formal_prior_ok_fn=config.formal_prior_ok_fn,
         )
         flags[sub.index.to_numpy()] = sub_flags
 
-    grouped_frame[out_column] = flags
+    grouped_frame[config.out_column] = flags
     return grouped_frame
 
 
@@ -240,11 +294,7 @@ def build_problem_step_from_samples(
 
     When ``include_native`` is True, native aha columns are aggregated as well.
     """
-    group_keys = (
-        ["domain", "step", "problem"]
-        if "domain" in samples_df.columns
-        else ["step", "problem"]
-    )
+    group_keys = ["domain", "step", "problem"] if "domain" in samples_df.columns else ["step", "problem"]
 
     aggregation_spec: Dict[str, Tuple[str, str]] = {
         "n_samples": ("correct", "size"),
@@ -279,7 +329,11 @@ def build_problem_step_from_samples(
             )
         return pd.Series({"p_correct_given_shift": np.nan})
 
-    pcs = samples_df.groupby(group_keys).apply(_pcs_row).reset_index()
+    try:
+        pcs = samples_df.groupby(group_keys).apply(_pcs_row, include_groups=False)
+    except TypeError:  # pragma: no cover - older pandas
+        pcs = samples_df.groupby(group_keys).apply(_pcs_row)
+    pcs = pcs.reset_index()
     problem_step_df = base.merge(pcs, on=group_keys, how="left")
 
     for col in ("n_samples", "aha_any_gpt"):
@@ -349,29 +403,41 @@ def mark_formal_pairs_with_gain(
 def iter_correct_and_shift_samples(
     files_by_domain: Dict[str, List[str]],
     *,
-    gpt_keys: List[str],
-    gpt_subset_native: bool,
-    min_step: Optional[int],
-    max_step: Optional[int],
-    carpark_success_fn: Callable[[Any], Optional[int]],
+    config: Optional[LoadRowsConfig] = None,
+    **legacy_gating: Any,
 ) -> Iterable[Tuple[str, int, Dict[str, Any], int, int]]:
     """
     Iterate PASS-1 samples and yield correctness and shift flags.
 
     Yields ``(domain, step, record, correct, shift)`` tuples.
     """
+    if config is None:
+        try:
+            config = LoadRowsConfig(
+                gpt_keys=legacy_gating.pop("gpt_keys"),
+                gpt_subset_native=legacy_gating.pop("gpt_subset_native"),
+                min_step=legacy_gating.pop("min_step", None),
+                max_step=legacy_gating.pop("max_step", None),
+                carpark_success_fn=legacy_gating.pop("carpark_success_fn"),
+            )
+        except KeyError as exc:
+            raise TypeError(
+                "iter_correct_and_shift_samples requires a LoadRowsConfig or legacy gating kwargs "
+                "(gpt_keys, gpt_subset_native, carpark_success_fn)"
+            ) from exc
+        if legacy_gating:
+            raise TypeError(f"Unexpected gating arguments: {sorted(legacy_gating)}")
+
     for domain_name, pass1_data, step, record in iter_pass1_samples_by_domain(
         files_by_domain,
-        min_step=min_step,
-        max_step=max_step,
+        min_step=config.min_step,
+        max_step=config.max_step,
     ):
         result = compute_correct_and_shift(
             domain_name,
             pass1_data,
             record,
-            gpt_subset_native=gpt_subset_native,
-            gpt_keys=gpt_keys,
-            carpark_success_fn=carpark_success_fn,
+            config=config,
         )
         if result is None:
             continue
@@ -393,14 +459,7 @@ def iter_correct_and_shift_samples_for_config(
     Convenience wrapper around :func:`iter_correct_and_shift_samples` that
     accepts a :class:`LoadRowsConfig` instance.
     """
-    return iter_correct_and_shift_samples(
-        files_by_domain,
-        gpt_keys=config.gpt_keys,
-        gpt_subset_native=config.gpt_subset_native,
-        min_step=config.min_step,
-        max_step=config.max_step,
-        carpark_success_fn=config.carpark_success_fn,
-    )
+    return iter_correct_and_shift_samples(files_by_domain, config=config)
 
 
 def _classify_domain_from_dir(dirname_lower: str) -> Optional[str]:
@@ -554,6 +613,7 @@ __all__ = [
     "compute_correct_and_shift",
     "aha_series_for_group",
     "compute_formal_flags_for_group",
+    "build_formal_thresholds_from_args",
     "add_formal_flags_column",
     "iter_pass1_records",
     "build_problem_step_from_samples",

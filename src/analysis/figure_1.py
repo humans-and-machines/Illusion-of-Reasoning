@@ -10,6 +10,7 @@ can be invoked with ``python -m src.analysis.figure_1``.
 
 from __future__ import annotations
 
+
 try:  # pragma: no cover - prefer absolute import when available
     from src.analysis.core.figure_1_components import main as _figure1_main
 except ImportError:  # pragma: no cover - fallback for direct execution

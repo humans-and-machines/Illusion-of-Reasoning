@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+
 try:
     import yaml as _yaml  # type: ignore
 except ImportError:  # pragma: no cover - yaml optional

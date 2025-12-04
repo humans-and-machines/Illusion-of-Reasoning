@@ -1,10 +1,23 @@
+import importlib.util
 import json
 import sys
 from types import SimpleNamespace
 
 import pytest
 
-torch = pytest.importorskip("torch")
+
+try:
+    spec = importlib.util.find_spec("torch")
+except ValueError as exc:  # pragma: no cover - stubbed torch without __spec__
+    pytest.skip(f"torch spec unavailable: {exc}", allow_module_level=True)
+else:
+    if spec is None:  # pragma: no cover
+        pytest.skip("torch unavailable", allow_module_level=True)
+
+try:
+    import torch  # type: ignore
+except Exception as exc:  # pragma: no cover - allow environments where torch import fails
+    pytest.skip(f"torch failed to import: {exc}", allow_module_level=True)
 
 from src.inference.cli import unified_carpark as carpark_cli
 from src.inference.cli import unified_crossword as crossword_cli
@@ -82,7 +95,7 @@ def test_run_math_inference_smoke(tmp_path):
 
     outpath = tmp_path / "step0000_test.jsonl"
     assert outpath.exists()
-    rows = [json.loads(l) for l in outpath.read_text().splitlines() if l.strip()]
+    rows = [json.loads(line) for line in outpath.read_text().splitlines() if line.strip()]
     assert len(rows) == 1
     row = rows[0]
     assert row["problem"] == "2+2?"
@@ -178,3 +191,10 @@ def test_unified_crossword_runner_invokes_inference(monkeypatch, tmp_path):
 
     assert called["run_kwargs"]["split_name"] == "test"
     assert called["run_kwargs"]["batch_size"] == 8
+
+
+def test_fake_tokenizer_convert_tokens_to_ids():
+    tok = FakeTokenizer()
+    assert tok.convert_tokens_to_ids("<|im_end|>") == 97
+    assert tok.convert_tokens_to_ids("<|endoftext|>") == 98
+    assert tok.convert_tokens_to_ids("unknown") is None

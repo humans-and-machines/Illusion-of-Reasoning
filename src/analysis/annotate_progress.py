@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from src.annotate.core.progress import count_progress, main, parse_args
 
+
 __all__ = ["count_progress", "main", "parse_args"]
 
 

@@ -8,6 +8,7 @@ import importlib
 from dataclasses import dataclass
 from typing import Any
 
+
 try:
     torch = importlib.import_module("torch")
 except ImportError as exc:  # pragma: no cover - hard dependency

@@ -28,7 +28,9 @@ import pandas as pd
 from src.analysis.io import iter_records_from_file, scan_jsonl_files
 from src.analysis.utils import coerce_bool, nat_step_from_path
 
-plt.switch_backend("Agg")
+
+if hasattr(plt, "switch_backend"):
+    plt.switch_backend("Agg")
 
 
 def scan_files(root: str, split_substr: Optional[str]) -> List[str]:
@@ -80,10 +82,7 @@ def load_pairs(files: List[str]) -> pd.DataFrame:
             if step is None:
                 continue
             problem_key = (
-                rec.get("problem")
-                or rec.get("clue")
-                or rec.get("row_key")
-                or f"idx:{rec.get('dataset_index')}"
+                rec.get("problem") or rec.get("clue") or rec.get("row_key") or f"idx:{rec.get('dataset_index')}"
             )
             pass1_data = rec.get("pass1") or {}
             pass2_data = rec.get("pass2") or {}
@@ -113,11 +112,15 @@ def load_pairs(files: List[str]) -> pd.DataFrame:
 
 def plot_accuracy_by_step(pairs_df: pd.DataFrame, out_png: str) -> None:
     """Plot PASS-1 and PASS-2 accuracy by training step."""
-    grouped = pairs_df.groupby("step", as_index=False).agg(
-        n=("p1_correct", "size"),
-        acc1=("p1_correct", "mean"),
-        acc2=("p1_correct", "mean"),
-    ).sort_values("step")
+    grouped = (
+        pairs_df.groupby("step", as_index=False)
+        .agg(
+            n=("p1_correct", "size"),
+            acc1=("p1_correct", "mean"),
+            acc2=("p1_correct", "mean"),
+        )
+        .sort_values("step")
+    )
     figure, axes = plt.subplots(figsize=(7.8, 4.6), dpi=140)
     axes.plot(grouped["step"], grouped["acc1"], marker="o", label="PASS-1")
     axes.plot(grouped["step"], grouped["acc2"], marker="o", label="PASS-2")
@@ -133,10 +136,14 @@ def plot_accuracy_by_step(pairs_df: pd.DataFrame, out_png: str) -> None:
 
 def plot_entropy_by_step(pairs_df: pd.DataFrame, out_png: str) -> None:
     """Plot mean PASS-1 and PASS-2 entropy by training step."""
-    grouped = pairs_df.groupby("step", as_index=False).agg(
-        entropy_pass1=("p1_entropy", "mean"),
-        entropy_pass2=("p2_entropy", "mean"),
-    ).sort_values("step")
+    grouped = (
+        pairs_df.groupby("step", as_index=False)
+        .agg(
+            entropy_pass1=("p1_entropy", "mean"),
+            entropy_pass2=("p2_entropy", "mean"),
+        )
+        .sort_values("step")
+    )
     figure, axes = plt.subplots(figsize=(7.8, 4.6), dpi=140)
     axes.plot(
         grouped["step"],
@@ -193,7 +200,7 @@ def plot_heatmap_step_entropy_improve(
         mids.append(0.5 * (category.left + category.right))
     bin_index = {cats[i]: i for i in range(len(cats))}
     sub["bin"] = sub["q"].map(bin_index)
-    grouped_stats = sub.groupby(["step", "bin"], as_index=False).agg(
+    grouped_stats = sub.groupby(["step", "bin"], as_index=False, observed=False).agg(
         rate=("p2_correct", "mean"),
         n=("p2_correct", "size"),
     )

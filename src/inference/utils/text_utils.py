@@ -47,9 +47,7 @@ def find_markers_and_context(
         if not match:
             continue
         markers.append(name)
-        pos_global = (
-            skip_prefix_chars + match.start() if skip_prefix_chars > 0 else match.start()
-        )
+        pos_global = skip_prefix_chars + match.start() if skip_prefix_chars > 0 else match.start()
         if earliest_pos is None or pos_global < earliest_pos:
             earliest_pos = pos_global
 

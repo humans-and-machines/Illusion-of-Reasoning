@@ -5,6 +5,8 @@
 Accuracy overlay helpers for the uncertainty/correctness figures.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
@@ -25,26 +27,70 @@ class AccuracySeriesSpec:
     color: str
 
 
+@dataclass
+class AccuracySeriesData:
+    """Per-bin accuracy arrays for a single series."""
+
+    centers: np.ndarray
+    accuracy: np.ndarray
+    lower_bounds: np.ndarray
+    upper_bounds: np.ndarray
+    num_total: np.ndarray
+    num_correct: np.ndarray
+
+
+def _coerce_accuracy_data(
+    data: AccuracySeriesData | None,
+    legacy_arrays: dict[str, np.ndarray],
+) -> AccuracySeriesData:
+    """
+    Support both dataclass input and legacy array keywords for tests/backfills.
+    """
+    if data is not None:
+        return data
+    required_keys = (
+        "centers",
+        "accuracy",
+        "lower_bounds",
+        "upper_bounds",
+        "num_total",
+        "num_correct",
+    )
+    missing = [key for key in required_keys if key not in legacy_arrays]
+    if missing:
+        raise TypeError("Provide either `data` or per-array keyword arguments.")
+    return AccuracySeriesData(
+        centers=np.asarray(legacy_arrays["centers"], dtype=float),
+        accuracy=np.asarray(legacy_arrays["accuracy"], dtype=float),
+        lower_bounds=np.asarray(legacy_arrays["lower_bounds"], dtype=float),
+        upper_bounds=np.asarray(legacy_arrays["upper_bounds"], dtype=float),
+        num_total=np.asarray(legacy_arrays["num_total"], dtype=int),
+        num_correct=np.asarray(legacy_arrays["num_correct"], dtype=int),
+    )
+
+
 def _build_accuracy_rows(
     *,
     label: str,
-    centers: np.ndarray,
-    accuracy: np.ndarray,
-    lower_bounds: np.ndarray,
-    upper_bounds: np.ndarray,
-    num_total: np.ndarray,
-    num_correct: np.ndarray,
     half_width: float,
+    data: AccuracySeriesData | None = None,
+    **legacy_arrays: np.ndarray,
 ) -> List[Dict[str, Any]]:
-    """Build per-bin summary rows for a single accuracy series."""
+    """
+    Build per-bin summary rows for a single accuracy series.
+
+    Accepts either a bundled :class:`AccuracySeriesData` or legacy keyword
+    arrays (``centers``, ``accuracy``, etc.) for backwards compatibility.
+    """
+    data = _coerce_accuracy_data(data, legacy_arrays)
     rows: List[Dict[str, Any]] = []
     for center, value, lower, upper, correct, total in zip(
-        centers,
-        accuracy,
-        lower_bounds,
-        upper_bounds,
-        num_correct,
-        num_total,
+        data.centers,
+        data.accuracy,
+        data.lower_bounds,
+        data.upper_bounds,
+        data.num_correct,
+        data.num_total,
     ):
         rows.append(
             {
@@ -72,33 +118,32 @@ def _overlay_accuracy_series(
 ) -> List[Dict[str, Any]]:
     """Plot a single accuracy series and return the rows contributed by it."""
     subset = samples.loc[spec.mask]
-    centers, accuracy, lower_bounds, upper_bounds, num_correct, num_total = per_bin_accuracy(
-        subset["uncertainty_std"].to_numpy(),
-        subset["correct"].to_numpy().astype(int),
-        edges,
+    per_bin = AccuracySeriesData(
+        *per_bin_accuracy(
+            subset["uncertainty_std"].to_numpy(),
+            subset["correct"].to_numpy().astype(int),
+            edges,
+        )
     )
     axis.plot(
-        centers,
-        accuracy,
+        per_bin.centers,
+        per_bin.accuracy,
         lw=2.0,
         color=spec.color,
         label=spec.label,
     )
-    axis.fill_between(
-        centers,
-        lower_bounds,
-        upper_bounds,
-        color=spec.color,
-        alpha=0.15,
-    )
+    fill_between = getattr(axis, "fill_between", None)
+    if callable(fill_between):
+        fill_between(
+            per_bin.centers,
+            per_bin.lower_bounds,
+            per_bin.upper_bounds,
+            color=spec.color,
+            alpha=0.15,
+        )
     return _build_accuracy_rows(
         label=spec.label,
-        centers=centers,
-        accuracy=accuracy,
-        lower_bounds=lower_bounds,
-        upper_bounds=upper_bounds,
-        num_total=num_total,
-        num_correct=num_correct,
+        data=per_bin,
         half_width=half_width,
     )
 
@@ -123,9 +168,7 @@ def per_bin_accuracy(
     )
     lower_bounds = np.full_like(acc, np.nan, dtype=float)
     upper_bounds = np.full_like(acc, np.nan, dtype=float)
-    for idx, (correct_count, total_count) in enumerate(
-        zip(counts_correct.astype(int), counts_total.astype(int))
-    ):
+    for idx, (correct_count, total_count) in enumerate(zip(counts_correct.astype(int), counts_total.astype(int))):
         if total_count > 0:
             lower_bounds[idx], upper_bounds[idx] = wilson_ci(correct_count, total_count)
     centers = 0.5 * (edges[:-1] + edges[1:])
@@ -159,18 +202,12 @@ def plot_accuracy_by_bin_overlay(
         AccuracySeriesSpec("LLM", all_samples["aha_gpt"] == 1, "#ff7f0e"),
         AccuracySeriesSpec(
             "Formal",
-            all_samples["aha_formal"] == 1
-            if has_formal
-            else np.zeros(len(all_samples), dtype=bool),
+            all_samples["aha_formal"] == 1 if has_formal else np.zeros(len(all_samples), dtype=bool),
             "#2ca02c",
         ),
     ]
 
-    fig_size = (
-        a4_size_inches(config.a4_orientation)
-        if config.a4_pdf
-        else (12.5, 4.8)
-    )
+    fig_size = a4_size_inches(config.a4_orientation) if config.a4_pdf else (12.5, 4.8)
     fig, axis = plt.subplots(figsize=fig_size, dpi=150)
     rows: List[Dict[str, Any]] = []
     half_width = (edges[1] - edges[0]) / 2.0

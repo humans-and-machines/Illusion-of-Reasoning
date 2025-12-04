@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import random
@@ -12,8 +13,6 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Set, Tuple
-
-import argparse
 
 
 JsonGroups = Dict[str, List[Tuple[int, Optional[int]]]]
@@ -221,8 +220,7 @@ def apply_prune(
 
     if settings.verbose:
         print(
-            f"[DONE] {path} → removed {removed} / {len(lines)}; "
-            f"kept {len(kept_lines)}.",
+            f"[DONE] {path} → removed {removed} / {len(lines)}; kept {len(kept_lines)}.",
         )
     return len(kept_lines), removed
 
@@ -279,9 +277,7 @@ def print_summary(
 ) -> None:
     """Print a short summary of pruning results."""
     print(
-        "\n[SUMMARY] files: "
-        f"{files_count} | lines kept: {kept_total} "
-        f"| lines removed: {removed_total}",
+        f"\n[SUMMARY] files: {files_count} | lines kept: {kept_total} | lines removed: {removed_total}",
     )
     if dry_run:
         print("[NOTE] Dry run only. Re-run without --dry-run to apply changes.")
@@ -332,9 +328,7 @@ def log_found_files(
     if not verbose:
         return
     print(
-        "[INFO] Found "
-        f"{len(files)} files under {root} "
-        f"matching {globs or ['*.jsonl']}",
+        f"[INFO] Found {len(files)} files under {root} matching {globs or ['*.jsonl']}",
     )
 
 

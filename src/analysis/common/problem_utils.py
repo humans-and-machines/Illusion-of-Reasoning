@@ -23,12 +23,7 @@ def resolve_problem_identifier(
       3. Provided fallback string
       4. Literal ``\"unknown\"``
     """
-    problem = (
-        record.get("problem")
-        or record.get("question")
-        or record.get("clue")
-        or record.get("row_key")
-    )
+    problem = record.get("problem") or record.get("question") or record.get("clue") or record.get("row_key")
     if problem is not None:
         return str(problem)
 

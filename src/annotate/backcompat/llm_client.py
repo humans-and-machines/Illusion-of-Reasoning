@@ -14,6 +14,7 @@ from typing import Tuple
 
 from ..infra import llm_client as _infra
 
+
 # Re-export client classes / error type so callers can patch them on this module.
 OpenAI = _infra.OpenAI
 AzureOpenAI = _infra.AzureOpenAI

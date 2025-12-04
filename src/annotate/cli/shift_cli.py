@@ -15,17 +15,17 @@ import logging
 import os
 from pathlib import Path
 
-from src.annotate.core.clean_core import clean_root as _clean_failed_root
-from src.annotate.core.shift_core import (
-    AnnotateOpts,
+from ..core.clean_core import clean_root as _clean_failed_root
+from ..core.progress import count_progress
+from ..core.shift_core import (
     DEFAULT_API_VERSION,
     DEFAULT_DEPLOYMENT,
     DEFAULT_ENDPOINT,
     DEFAULT_USE_V1,
+    AnnotateOpts,
     annotate_file,
     scan_jsonl,
 )
-from src.annotate.core.progress import count_progress
 
 
 def build_argparser() -> argparse.ArgumentParser:
@@ -151,11 +151,7 @@ def main() -> None:
             "use_v1": args.use_v1,
             "deployment": args.deployment,
         },
-        passes=[
-            p.strip()
-            for p in (args.passes or "").split(",")
-            if p.strip()
-        ],
+        passes=[p.strip() for p in (args.passes or "").split(",") if p.strip()],
     )
 
     for path in files:

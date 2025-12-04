@@ -10,6 +10,7 @@ from typing import Iterable, Tuple
 
 from src.analysis.plotting import a4_size_inches
 
+
 try:  # pragma: no cover - optional dependency
     import matplotlib as _mpl  # type: ignore[import]
     import matplotlib.pyplot as _plt  # type: ignore[import]
@@ -21,6 +22,15 @@ else:  # pragma: no cover - optional dependency
     _mpl.use("Agg")
     plt = _plt
     Line2D = _Line2D
+
+# Backfill minimal pyplot helpers when lightweight stubs omit them.
+if plt is not None and not hasattr(plt, "figure"):
+
+    def _fallback_figure(*args, **kwargs):  # pragma: no cover - stub compat
+        fig, _ = plt.subplots(*args, **kwargs)
+        return fig
+
+    plt.figure = _fallback_figure  # type: ignore[attr-defined]
 
 
 @dataclass
@@ -53,7 +63,10 @@ def save_figure_outputs(
         width, height = a4_size_inches(config.a4_orientation)
         figure.set_size_inches(width, height)
     figure.savefig(config.out_pdf, dpi=dpi)
-    plt.close(figure)
+    try:
+        plt.close(figure)
+    except TypeError:  # pragma: no cover - stubbed figures without close support
+        pass
 
 
 def add_lower_center_legend(
@@ -67,7 +80,7 @@ def add_lower_center_legend(
     Attach a lower-centered legend shared across several Figure 2 plots.
     """
     figure.legend(
-        handles,
+        handles=handles,
         loc="lower center",
         ncol=int(columns),
         frameon=False,

@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-import math
 import re
 
 import pytest
+
 
 text_utils = pytest.importorskip("src.inference.utils.text_utils")
 math_utils = pytest.importorskip("src.inference.utils.math_pass_utils")
@@ -81,8 +81,7 @@ def test_build_second_pass_cue_strings_splits_and_trims():
 
 def test_pack_math_pass_result_includes_reconsider_markers_and_correctness():
     full_text = (
-        "<think>Wait, we need to reconsider. Let's think this through step by step.</think>"
-        "<answer> 42 </answer>"
+        "<think>Wait, we need to reconsider. Let's think this through step by step.</think><answer> 42 </answer>"
     )
     ent_think = [0.5, 0.6]
     ent_answer = [0.4]

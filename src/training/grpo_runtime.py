@@ -1,12 +1,8 @@
-"""Thin wrapper around the full GRPO runtime implementation.
-
-This module keeps the public entrypoint name ``training.grpo_runtime`` small
-while delegating the heavy implementation to :mod:`training.grpo_runtime_impl`.
-"""
+"""Backward-compatible alias for the relocated GRPO runtime entrypoint."""
 
 from __future__ import annotations
 
-from .grpo_runtime_impl import main  # re-export for backwards compatibility
+from .runtime.main import main
 
 
 __all__ = ["main"]

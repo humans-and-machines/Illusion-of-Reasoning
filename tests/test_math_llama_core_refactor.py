@@ -14,7 +14,11 @@ import json
 
 import pytest
 
+
 torch = pytest.importorskip("torch")
+# Minimal stubs may lack inference_mode; fall back to no_grad for context manager.
+if not hasattr(torch, "inference_mode"):
+    torch.inference_mode = torch.no_grad  # type: ignore[attr-defined]
 math_llama_core = pytest.importorskip("src.inference.domains.math.math_llama_core")
 
 
@@ -130,11 +134,7 @@ def test_run_inference_on_split_math_llama_smoke(tmp_path):
 
     outpath = outdir / "step0000_test.jsonl"
     assert outpath.exists()
-    rows = [
-        json.loads(line)
-        for line in outpath.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    rows = [json.loads(line) for line in outpath.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(rows) == 1
     row = rows[0]
     assert row["problem"] == "1+1?"

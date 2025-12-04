@@ -58,7 +58,7 @@ SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_math.py}"
 
 # Single step and temperature
 CHECKPOINT_STEPS=(950)
-TEMPS=("0.05")
+TEMPS=("0.1")
 
 # Allow overrides via INFER_STEP / INFER_TEMP env vars so we can sweep without editing the file.
 DEFAULT_STEP="${CHECKPOINT_STEPS[0]}"

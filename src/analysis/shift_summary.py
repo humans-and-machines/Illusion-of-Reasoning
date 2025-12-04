@@ -26,7 +26,7 @@ import argparse
 import os
 from typing import Any, Dict, List, Tuple
 
-from src.analysis.io import scan_jsonl_files, iter_records_from_file
+from src.analysis.io import iter_records_from_file, scan_jsonl_files
 from src.analysis.labels import aha_gpt_canonical
 from src.analysis.metrics import extract_correct
 from src.analysis.utils import add_results_root_and_split_args
@@ -134,13 +134,9 @@ def _build_example_metadata(
     is_correct = extract_correct(pass1, record)
     shift_flag = pass1.get("shift_in_reasoning_v1")
 
-    problem_snippet = (
-        _format_text_snippet(str(problem_raw), 400) if problem_raw else ""
-    )
+    problem_snippet = _format_text_snippet(str(problem_raw), 400) if problem_raw else ""
     output_text = pass1.get("output") or ""
-    reasoning_snippet = (
-        _format_text_snippet(str(output_text), 800) if output_text else ""
-    )
+    reasoning_snippet = _format_text_snippet(str(output_text), 800) if output_text else ""
 
     return {
         "problem_snippet": problem_snippet,
@@ -167,8 +163,7 @@ def _print_shift_examples(
             remaining = len(shift_examples) - max_examples
             if remaining > 0:
                 print(
-                    f"\n[shift_summary] ... truncated "
-                    f"{remaining} additional shift examples.",
+                    f"\n[shift_summary] ... truncated {remaining} additional shift examples.",
                 )
             break
 
@@ -182,8 +177,7 @@ def _print_shift_examples(
             f"endpoint={meta['endpoint']} deployment={meta['deployment']}",
         )
         print(
-            f"is_correct={meta['is_correct']} "
-            f"shift_in_reasoning_v1={meta['shift_flag']}",
+            f"is_correct={meta['is_correct']} shift_in_reasoning_v1={meta['shift_flag']}",
         )
         if meta["problem_snippet"]:
             print("\nProblem:")
@@ -208,8 +202,7 @@ def summarize_root(
     files = scan_jsonl_files(results_root, split_substr=split)
     if not files:
         print(
-            f"[shift_summary] No JSONL files under {results_root!r} "
-            f"(split={split!r}).",
+            f"[shift_summary] No JSONL files under {results_root!r} (split={split!r}).",
         )
         return
 

@@ -5,7 +5,14 @@ from __future__ import annotations
 
 import pytest
 
+
 torch = pytest.importorskip("torch")
+if not getattr(torch, "__file__", None):
+    pytest.skip("torch stub detected; real torch required for these tests", allow_module_level=True)
+# Require the tensor constructor and a usable SymFloat type; some minimal torch
+# stubs expose a non-type SymFloat that breaks isinstance checks inside torch.
+if not hasattr(torch, "tensor") or not isinstance(getattr(torch, "SymFloat", float), type):
+    pytest.skip("torch stub lacks required tensor/SymFloat attributes", allow_module_level=True)
 common = pytest.importorskip("src.inference.utils.common")
 
 

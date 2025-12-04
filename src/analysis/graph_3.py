@@ -22,5 +22,11 @@ def main() -> None:
     _impl_main()
 
 
+# Backwards-compatible alias used by a few external callers/tests.
+graph_3 = main
+
+# Support callers expecting the module-level name to mirror the filename.
+graph_3_impl = main
+
 if __name__ == "__main__":
     main()

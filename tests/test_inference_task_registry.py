@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import pytest
 
+from src.inference.utils.common import OPENR1_PROMPT_TEMPLATE
 from src.inference.utils.task_registry import (
+    MATH_SYSTEM_PROMPT,
     TASK_REGISTRY,
     DatasetSpec,
     TaskSpec,
     _resolve_callable,
-    MATH_SYSTEM_PROMPT,
 )
-from src.inference.utils.common import OPENR1_PROMPT_TEMPLATE
 
 
 def dummy_callable():

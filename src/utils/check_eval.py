@@ -16,8 +16,10 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
+
 try:
     # Package execution: src.utils.check_eval
+    from . import check_dataset
     from .check_helpers import (
         GenerationConfig,
         GenerationRuntime,
@@ -30,8 +32,8 @@ try:
         _token_entropy_stream,
         _token_logprobs_stream,
     )
-    from . import check_dataset
 except ImportError:  # pragma: no cover - running as a stand-alone script
+    import check_dataset  # type: ignore[import-error]
     from check_helpers import (  # type: ignore[import-error]
         GenerationConfig,
         GenerationRuntime,
@@ -44,7 +46,6 @@ except ImportError:  # pragma: no cover - running as a stand-alone script
         _token_entropy_stream,
         _token_logprobs_stream,
     )
-    import check_dataset  # type: ignore[import-error]
 
 logger = logging.getLogger(__name__)
 
@@ -241,25 +242,18 @@ def _group_by_row(
     metrics: Dict[str, List[float]],
 ) -> Dict[str, List[List[Any]]]:
     """Reshape flat per-sample lists back to per-row lists."""
-    grouped_texts = [
-        texts[index * num_samples : (index + 1) * num_samples]
-        for index in range(batch_size)
-    ]
+    grouped_texts = [texts[index * num_samples : (index + 1) * num_samples] for index in range(batch_size)]
     grouped_logsum = [
-        metrics["logsum"][index * num_samples : (index + 1) * num_samples]
-        for index in range(batch_size)
+        metrics["logsum"][index * num_samples : (index + 1) * num_samples] for index in range(batch_size)
     ]
     grouped_logavg = [
-        metrics["logavg"][index * num_samples : (index + 1) * num_samples]
-        for index in range(batch_size)
+        metrics["logavg"][index * num_samples : (index + 1) * num_samples] for index in range(batch_size)
     ]
     grouped_genlen = [
-        metrics["genlen"][index * num_samples : (index + 1) * num_samples]
-        for index in range(batch_size)
+        metrics["genlen"][index * num_samples : (index + 1) * num_samples] for index in range(batch_size)
     ]
     grouped_entavg = [
-        metrics["entropy"][index * num_samples : (index + 1) * num_samples]
-        for index in range(batch_size)
+        metrics["entropy"][index * num_samples : (index + 1) * num_samples] for index in range(batch_size)
     ]
     return {
         "texts": grouped_texts,
@@ -311,9 +305,7 @@ def _sampling_fallback(
     """Retry rows without an answer using sampling (single-sample mode)."""
     args = context.args
     need_retry = [
-        index
-        for index, rows in enumerate(grouped_data["texts"])
-        if not check_dataset.extract_answer_last(rows[0])
+        index for index, rows in enumerate(grouped_data["texts"]) if not check_dataset.extract_answer_last(rows[0])
     ]
     if not need_retry or not args.fallback_sampling:
         return grouped_data
@@ -517,10 +509,7 @@ def _generate_for_batch(
 ) -> Dict[str, List[List[Any]]]:
     """Run generation (with fallbacks) for a single batch."""
     args = context.args
-    dialogs = [
-        check_dataset.build_messages(row["problem"], row["answer"])
-        for row in batch
-    ]
+    dialogs = [check_dataset.build_messages(row["problem"], row["answer"]) for row in batch]
     input_ids, attention = _encode_dialogs_for_batch(context, dialogs)
     torch_mod = context.runtime.torch_mod
 
@@ -536,11 +525,7 @@ def _generate_for_batch(
         [
             StopOnGeneratedSubstring(
                 context.runtime.tokenizer,
-                [
-                    prompt_length
-                    for prompt_length in attention.sum(dim=-1).tolist()
-                    for _ in range(num_samples)
-                ],
+                [prompt_length for prompt_length in attention.sum(dim=-1).tolist() for _ in range(num_samples)],
                 "</answer>",
             )
         ]
@@ -561,16 +546,8 @@ def _generate_for_batch(
                 ban_eos_steps=args.ban_eos_steps,
                 do_sample=num_samples > 1,
                 temperature=args.temperature if num_samples > 1 else None,
-                top_p=(
-                    args.top_p
-                    if (num_samples > 1 and args.top_p not in (None, 0))
-                    else None
-                ),
-                top_k=(
-                    args.top_k
-                    if (num_samples > 1 and args.top_k not in (None, 0))
-                    else None
-                ),
+                top_p=(args.top_p if (num_samples > 1 and args.top_p not in (None, 0)) else None),
+                top_k=(args.top_k if (num_samples > 1 and args.top_k not in (None, 0)) else None),
             ),
         ),
     )
@@ -680,10 +657,7 @@ def _score_single_row(
     }
     artifacts.fout.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
-    if (
-        (score.n_answered == 0 or not score.any_correct)
-        and state.printed_examples < 100
-    ):
+    if (score.n_answered == 0 or not score.any_correct) and state.printed_examples < 100:
         tail = (score.samples[0]["pred_text"] or "")[-300:]
         print("\n--- DEBUG SAMPLE ---")
         print("CLUE:", payload["clue"])
@@ -705,10 +679,7 @@ def _log_batch_summary(
     """Compute and print aggregate batch statistics."""
     flat_logavg = list(itertools.chain.from_iterable(grouped_logavg))
     finite_logavg = [
-        value
-        for value in flat_logavg
-        if not torch_mod.isnan(torch_mod.tensor(value))
-        and value != float("-inf")
+        value for value in flat_logavg if not torch_mod.isnan(torch_mod.tensor(value)) and value != float("-inf")
     ]
     if finite_logavg:
         batch_avg = sum(finite_logavg) / len(finite_logavg)
@@ -764,9 +735,7 @@ def _run_eval_loop(context: EvalContext) -> EvalStats:
 
     with out_path.open("a", encoding="utf-8", buffering=1) as fout:
         for start in range(0, n_total, args.batch_size):
-            batch = dataset.select(
-                range(start, min(n_total, start + args.batch_size))
-            )
+            batch = dataset.select(range(start, min(n_total, start + args.batch_size)))
             grouped_data = _generate_for_batch(
                 context,
                 batch,

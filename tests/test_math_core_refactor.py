@@ -11,11 +11,19 @@ intended to guard behaviour while refactoring math_core.
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 
 import pytest
 
+
 torch = pytest.importorskip("torch")
+if not all(hasattr(torch, attr) for attr in ("tensor", "zeros", "full")):
+    pytest.skip("torch stub lacks required tensor helpers", allow_module_level=True)
+# Some minimal stubs expose no inference_mode; fall back to no_grad.
+if not hasattr(torch, "inference_mode"):
+    torch.inference_mode = torch.no_grad  # type: ignore[attr-defined]
+transformers = pytest.importorskip("transformers")
+if not hasattr(transformers, "AutoTokenizer") or not hasattr(transformers, "AutoModelForCausalLM"):
+    pytest.skip("transformers stub lacks required classes", allow_module_level=True)
 math_core = pytest.importorskip("src.inference.domains.math.math_core")
 
 
@@ -123,16 +131,18 @@ def test_pack_pass_result_extracts_answer_and_tags():
     ent_answer = [2.0]
 
     row = math_core._pack_pass_result(  # type: ignore[attr-defined]
-        problem="1+6",
         full_text=full_text,
         ent_think=ent_think,
         ent_answer=ent_answer,
-        injected_cue=False,
-        canon_gold="7",
-        prev_output=None,
-        cue_prefix_str="",
-        stop_reason_think="eos",
-        stop_reason_answer="eos",
+        meta_args=math_core.MathPassMetaArgs(
+            problem="1+6",
+            canon_gold="7",
+            injected_cue=False,
+            prev_output=None,
+            cue_prefix_str="",
+            stop_reason_think="eos",
+            stop_reason_answer="eos",
+        ),
     )
 
     assert row["pred_answer"] == "7"
@@ -173,11 +183,7 @@ def test_run_inference_on_split_smoke(tmp_path):
 
     outpath = tmp_path / "step0000_test.jsonl"
     assert outpath.exists()
-    rows = [
-        json.loads(line)
-        for line in outpath.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    rows = [json.loads(line) for line in outpath.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(rows) == 1
     row = rows[0]
     assert row["problem"] == "2+2?"

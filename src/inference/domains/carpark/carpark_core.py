@@ -15,17 +15,8 @@ from __future__ import annotations
 from importlib import import_module
 from typing import List, Optional
 
-from .carpark_data import (
-    _canon_rush_generic,
-    _canon_rush_gold,
-    load_rush_dataset,
-)
-from .carpark_solver import (
-    SYSTEM_PROMPT,
-    CarparkInferenceConfig,
-    InferenceContext,
-    run_inference_on_split,
-)
+from .carpark_data import _canon_rush_generic, _canon_rush_gold, load_rush_dataset
+from .carpark_solver import SYSTEM_PROMPT, CarparkInferenceConfig, InferenceContext, run_inference_on_split
 
 
 __all__ = [

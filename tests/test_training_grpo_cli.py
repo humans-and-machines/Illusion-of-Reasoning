@@ -8,12 +8,50 @@ from types import SimpleNamespace
 
 import pytest
 
+
 configs_mod = pytest.importorskip("src.training.configs")
 
 
 def test_grpo_main_wires_trl_parser_and_calls_impl(monkeypatch):
     import importlib
     import sys
+
+    # Provide a minimal torch stub to satisfy optional imports.
+    class FakeTensor:
+        def __init__(self, data=None):
+            self._data = data
+
+        def to(self, *_args, **_kwargs):
+            return self
+
+        def cpu(self):
+            return self
+
+        def numpy(self):
+            return self._data
+
+        @property
+        def shape(self):
+            return getattr(self._data, "shape", ())
+
+    def _tensor(data=None, **_kwargs):
+        return FakeTensor(data)
+
+    fake_torch = SimpleNamespace(
+        tensor=_tensor,
+        zeros=lambda shape=None, **kwargs: FakeTensor(data=[[0] * shape[1]] if isinstance(shape, tuple) else [0]),
+        ones=lambda shape=None, **kwargs: FakeTensor(data=[[1] * shape[1]] if isinstance(shape, tuple) else [1]),
+        full=lambda shape, fill_value=0, **kwargs: FakeTensor(
+            data=[[fill_value] * shape[1]] if isinstance(shape, tuple) else [fill_value]
+        ),
+        inference_mode=lambda *_a, **_k: (lambda fn: fn),
+        no_grad=lambda *_a, **_k: (lambda fn: fn),
+        SymFloat=FakeTensor,
+        utils=SimpleNamespace(data=SimpleNamespace()),
+    )
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    monkeypatch.setitem(sys.modules, "torch.utils", SimpleNamespace(data=SimpleNamespace()))
+    monkeypatch.setitem(sys.modules, "torch.utils.data", SimpleNamespace(DataLoader=object, RandomSampler=object))
 
     # Build a fake trl module with ModelConfig and TrlParser.
     class FakeModelConfig:

@@ -15,17 +15,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.analysis.forced_aha_shared import (
-    summarize_cluster_any,
-    summarize_cluster_mean,
-    summarize_sample_level,
-)
-from src.analysis.plotting_styles import (
-    DEFAULT_COLORS,
-    METRIC_LABELS,
-    cmap_colors,
-    darken_colors,
-)
+from src.analysis.forced_aha_shared import summarize_cluster_any, summarize_cluster_mean, summarize_sample_level
+from src.analysis.plotting_styles import DEFAULT_COLORS, METRIC_LABELS, cmap_colors, darken_colors
+
 
 BAR_SEED_OFFSETS = {"sample": 0, "cluster_any": 1, "cluster_mean": 2}
 BAR_METRICS = ("sample", "cluster_mean", "cluster_any")
@@ -180,10 +172,12 @@ def _draw_overall_delta_bars(out_dir: str, bars: List[OverallDeltaBar]) -> None:
     figure = plt.figure(figsize=(7.0, 4.2))
     axis = figure.add_axes([0.12, 0.16, 0.83, 0.74])
     positions = np.arange(len(bars))
-    error_array = np.array([
-        [spec.error_lower for spec in bars],
-        [spec.error_upper for spec in bars],
-    ])
+    error_array = np.array(
+        [
+            [spec.error_lower for spec in bars],
+            [spec.error_upper for spec in bars],
+        ]
+    )
     axis.bar(
         positions,
         [spec.height for spec in bars],
@@ -285,21 +279,13 @@ def plot_headroom_scatter(out_dir: str, step_df: pd.DataFrame) -> None:
     """
     Plot Δ(any-correct) vs baseline any-correct per step (headroom plot).
     """
-    subset = (
-        step_df[step_df["metric"] == "cluster_any"]
-        .copy()
-        .sort_values("step")
-    )
+    subset = step_df[step_df["metric"] == "cluster_any"].copy().sort_values("step")
     x_values = subset["acc_pass1"].to_numpy(float)
     y_values = subset["delta_pp"].to_numpy(float)
     figure = plt.figure(figsize=(6.0, 4.5))
     axis = figure.add_axes([0.14, 0.14, 0.82, 0.82])
     axis.scatter(x_values, y_values, s=30)
-    if (
-        len(x_values) >= 2
-        and np.isfinite(x_values).all()
-        and np.isfinite(y_values).all()
-    ):
+    if len(x_values) >= 2 and np.isfinite(x_values).all() and np.isfinite(y_values).all():
         slope, intercept = np.polyfit(x_values, y_values, 1)
         x_line = np.linspace(min(x_values), max(x_values), 100)
         axis.plot(x_line, slope * x_line + intercept, ls="--")
@@ -353,9 +339,7 @@ def _bootstrap_bucket_groups(
         indices = np.arange(len(group))
         bootstrap_stats: List[float] = []
         for _ in range(n_boot):
-            sampled = group.iloc[
-                rng.choice(indices, size=len(indices), replace=True)
-            ]
+            sampled = group.iloc[rng.choice(indices, size=len(indices), replace=True)]
             bootstrap_stats.append(aggregate_fn(sampled))
         lower_percentile, upper_percentile = np.percentile(
             bootstrap_stats,
@@ -387,12 +371,8 @@ def _compute_uncertainty_bucket_data(
     df_s["bucket"] = pd.qcut(df_s["entropy_p1"], q=5, labels=False)
     df_c["bucket"] = pd.qcut(df_c["entropy_p1_cluster"], q=5, labels=False)
 
-    sample_groups = [
-        df_s[df_s["bucket"] == bucket_index] for bucket_index in range(5)
-    ]
-    cluster_groups = [
-        df_c[df_c["bucket"] == bucket_index] for bucket_index in range(5)
-    ]
+    sample_groups = [df_s[df_s["bucket"] == bucket_index] for bucket_index in range(5)]
+    cluster_groups = [df_c[df_c["bucket"] == bucket_index] for bucket_index in range(5)]
     return {
         "x": np.arange(5),
         "sample": _bootstrap_bucket_groups(
@@ -506,10 +486,7 @@ def _build_stepwise_series(
         subset = step_df[step_df["metric"] == metric].sort_values("step")
         x_values = subset["step"].to_numpy(int)
         y_values = subset["delta_pp"].to_numpy(float)
-        intervals = [
-            ci_by_metric[metric].get(int(step), (np.nan, np.nan))
-            for step in x_values
-        ]
+        intervals = [ci_by_metric[metric].get(int(step), (np.nan, np.nan)) for step in x_values]
         if intervals:
             lower_array = np.array([pair[0] for pair in intervals], dtype=float)
             upper_array = np.array([pair[1] for pair in intervals], dtype=float)
@@ -728,10 +705,7 @@ def _build_overview_bar_data(
         )
         return delta_point - lower_bound, upper_bound - delta_point
 
-    ci_pairs = [
-        _ci_offsets(metric_key, delta_value)
-        for (metric_key, _, _), delta_value in zip(bar_specs, heights)
-    ]
+    ci_pairs = [_ci_offsets(metric_key, delta_value) for (metric_key, _, _), delta_value in zip(bar_specs, heights)]
     if ci_pairs:
         ci_lowers, ci_uppers = map(list, zip(*ci_pairs))
     else:
@@ -741,9 +715,7 @@ def _build_overview_bar_data(
         cmap_colors(style.palette_name),
         style.darken,
     )
-    bar_colors = [palette_colors[i % len(palette_colors)] for i in (1, 2, 4)][
-        : len(labels)
-    ]
+    bar_colors = [palette_colors[i % len(palette_colors)] for i in (1, 2, 4)][: len(labels)]
 
     return {
         "labels": labels,
@@ -773,10 +745,7 @@ def _compute_waterfall_data(
         ((clusters_df["any_p1"] == 1) & (clusters_df["any_p2"] == 1)).sum(),
     )
     total = max(
-        num_incorrect_incorrect
-        + num_incorrect_correct
-        + num_correct_incorrect
-        + num_correct_correct,
+        num_incorrect_incorrect + num_incorrect_correct + num_correct_incorrect + num_correct_correct,
         1,
     )
 
@@ -911,39 +880,21 @@ def _bootstrap_delta(
     idx = np.arange(len(pass_pairs))
     if metric == "sample":
         for _ in range(n_boot):
-            bootstrap_sample = pass_pairs.iloc[
-                rng.choice(idx, size=len(idx), replace=True)
-            ]
+            bootstrap_sample = pass_pairs.iloc[rng.choice(idx, size=len(idx), replace=True)]
             deltas.append(
-                (
-                    bootstrap_sample["correct2"].mean()
-                    - bootstrap_sample["correct1"].mean()
-                )
-                * 100.0,
+                (bootstrap_sample["correct2"].mean() - bootstrap_sample["correct1"].mean()) * 100.0,
             )
     elif metric == "cluster_any":
         for _ in range(n_boot):
-            bootstrap_sample = pass_pairs.iloc[
-                rng.choice(idx, size=len(idx), replace=True)
-            ]
+            bootstrap_sample = pass_pairs.iloc[rng.choice(idx, size=len(idx), replace=True)]
             deltas.append(
-                (
-                    bootstrap_sample["any_p2"].mean()
-                    - bootstrap_sample["any_p1"].mean()
-                )
-                * 100.0,
+                (bootstrap_sample["any_p2"].mean() - bootstrap_sample["any_p1"].mean()) * 100.0,
             )
     elif metric == "cluster_mean":
         for _ in range(n_boot):
-            bootstrap_sample = pass_pairs.iloc[
-                rng.choice(idx, size=len(idx), replace=True)
-            ]
+            bootstrap_sample = pass_pairs.iloc[rng.choice(idx, size=len(idx), replace=True)]
             deltas.append(
-                (
-                    bootstrap_sample["acc_p2"].mean()
-                    - bootstrap_sample["acc_p1"].mean()
-                )
-                * 100.0,
+                (bootstrap_sample["acc_p2"].mean() - bootstrap_sample["acc_p1"].mean()) * 100.0,
             )
     if not deltas:
         return (np.nan, np.nan)

@@ -5,19 +5,20 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Any, Dict, Tuple
 
-import os
-
 import numpy as np
 import pandas as pd
+
 
 try:  # pragma: no cover - optional dependency
     import statsmodels.api as sm
     import statsmodels.formula.api as smf
     from statsmodels.stats.multitest import multipletests
     from statsmodels.tools.sm_exceptions import PerfectSeparationError
+
     _STATS_MODELS_IMPORT_ERROR = None
 except ImportError as exc:  # pragma: no cover
     sm = smf = None  # type: ignore[assignment]
@@ -96,10 +97,7 @@ def _fit_glm_with_ridge_if_needed(
     used = "none"
     try:
         res = model.fit(cov_type="HC1")
-        aha_unstable = (
-            "aha" in res.params.index
-            and abs(res.params["aha"]) > 10
-        )
+        aha_unstable = "aha" in res.params.index and abs(res.params["aha"]) > 10
         if not np.isfinite(res.params).all() or aha_unstable:
             raise RuntimeError("Unstable MLE; switching to ridge.")
     except (np.linalg.LinAlgError, ValueError, PerfectSeparationError):
@@ -216,12 +214,8 @@ def _balance_row(step_value: int, step_df: pd.DataFrame) -> Dict[str, Any]:
         "n": len(step_df),
         "n_aha0": int(len(aha0_df)),
         "n_aha1": int(len(aha1_df)),
-        "mean_unc_aha0": (
-            float(aha0_df["uncertainty"].mean()) if len(aha0_df) else np.nan
-        ),
-        "mean_unc_aha1": (
-            float(aha1_df["uncertainty"].mean()) if len(aha1_df) else np.nan
-        ),
+        "mean_unc_aha0": (float(aha0_df["uncertainty"].mean()) if len(aha0_df) else np.nan),
+        "mean_unc_aha1": (float(aha1_df["uncertainty"].mean()) if len(aha1_df) else np.nan),
         "aha_ratio": float(step_df["aha"].mean()),
     }
 
@@ -310,40 +304,41 @@ def _regression_row_with_model(
     record = _init_regression_record(step_value, step_df, used_penalty)
     coeffs, std_errors, p_values = _extract_glm_statistics(res)
 
-    record.update({
-        "aha_coef": float(coeffs["aha"]),
-        "unc_coef": float(coeffs["unc"]),
-        "inter_coef": float(coeffs["inter"]),
-        "aha_se": float(std_errors["aha"]),
-        "unc_se": float(std_errors["unc"]),
-        "inter_se": float(std_errors["inter"]),
-        "aha_z": (
-            float(coeffs["aha"] / std_errors["aha"])
-            if np.isfinite(std_errors["aha"]) and std_errors["aha"]
-            else np.nan
-        ),
-        "unc_z": (
-            float(coeffs["unc"] / std_errors["unc"])
-            if np.isfinite(std_errors["unc"]) and std_errors["unc"]
-            else np.nan
-        ),
-        "inter_z": (
-            float(coeffs["inter"] / std_errors["inter"])
-            if np.isfinite(std_errors["inter"]) and std_errors["inter"]
-            else np.nan
-        ),
-        "aha_p": float(p_values["aha"]),
-        "unc_p": float(p_values["unc"]),
-        "inter_p": float(p_values["inter"]),
-    })
+    record.update(
+        {
+            "aha_coef": float(coeffs["aha"]),
+            "unc_coef": float(coeffs["unc"]),
+            "inter_coef": float(coeffs["inter"]),
+            "aha_se": float(std_errors["aha"]),
+            "unc_se": float(std_errors["unc"]),
+            "inter_se": float(std_errors["inter"]),
+            "aha_z": (
+                float(coeffs["aha"] / std_errors["aha"])
+                if np.isfinite(std_errors["aha"]) and std_errors["aha"]
+                else np.nan
+            ),
+            "unc_z": (
+                float(coeffs["unc"] / std_errors["unc"])
+                if np.isfinite(std_errors["unc"]) and std_errors["unc"]
+                else np.nan
+            ),
+            "inter_z": (
+                float(coeffs["inter"] / std_errors["inter"])
+                if np.isfinite(std_errors["inter"]) and std_errors["inter"]
+                else np.nan
+            ),
+            "aha_p": float(p_values["aha"]),
+            "unc_p": float(p_values["unc"]),
+            "inter_p": float(p_values["inter"]),
+        }
+    )
 
     record["aha_ame"] = _ame_at_mean_uncertainty(res, model, step_df)
     ame_lo, ame_hi = _bootstrap_ame_interval(step_df, formula, config)
     record["aha_ame_lo"] = float(ame_lo)
     record["aha_ame_hi"] = float(ame_hi)
     record["naive_delta"] = float(
-        step_df.loc[step_df["aha"] == 1, "correct"].mean()
-        - step_df.loc[step_df["aha"] == 0, "correct"].mean()
+        step_df.loc[step_df["aha"] == 1, "correct"].mean() - step_df.loc[step_df["aha"] == 0, "correct"].mean()
     )
     return record
 

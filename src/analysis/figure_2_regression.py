@@ -344,7 +344,7 @@ def _extend_rows_for_csv(
                 "lo": low1,
                 "hi": high1,
             },
-    )
+        )
 
 
 def _plot_variant_axis(
@@ -400,11 +400,7 @@ def plot_regression_curves(
     fig, axes = plt.subplots(
         1,
         3,
-        figsize=(
-            a4_size_inches(config.output.a4_orientation)
-            if config.output.a4_pdf
-            else (16.5, 4.8)
-        ),
+        figsize=(a4_size_inches(config.output.a4_orientation) if config.output.a4_pdf else (16.5, 4.8)),
         dpi=150,
         sharey=True,
     )

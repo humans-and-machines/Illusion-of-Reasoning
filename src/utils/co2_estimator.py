@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''
+"""
 CO2e estimator (Luccioni/Lacoste-style)
 ---------------------------------------
 Compute rough carbon emissions for ML experiments using:
@@ -49,11 +49,13 @@ Notes
   global-average-like figure.
 - All results are rough, order-of-magnitude estimates — document your chosen
   parameters and assumptions.
-'''
+"""
+
 import argparse
 import json
 import sys
 from typing import Dict, List, Optional
+
 
 GPU_TYPE_DEFAULT_kW = {
     # Approximate under-load board powers; **override** with --per-gpu-kw for your setup.
@@ -62,17 +64,18 @@ GPU_TYPE_DEFAULT_kW = {
     "H100-80GB": 0.35,
     "A100-80GB": 0.30,
     "A100-40GB": 0.25,
-    "L40S":      0.35,
+    "L40S": 0.35,
     "V100-16GB": 0.25,
-    "T4":        0.07,
-    "RTX4090":   0.45,
-    "RTX3090":   0.35,
+    "T4": 0.07,
+    "RTX4090": 0.45,
+    "RTX3090": 0.35,
 }
 
+
 def parse_run_arg(run_arg: str) -> Dict[str, float]:
-    '''
+    """
     Parse --run 'gpus=8,hours=10' into {'gpus': 8.0, 'hours': 10.0}.
-    '''
+    """
     parts = run_arg.split(",")
     data = {}
     for part in parts:
@@ -84,17 +87,16 @@ def parse_run_arg(run_arg: str) -> Dict[str, float]:
         try:
             data[key] = float(value)
         except ValueError as exc:
-            raise ValueError(
-                f"Value for {key} must be numeric, got '{value}'."
-            ) from exc
+            raise ValueError(f"Value for {key} must be numeric, got '{value}'.") from exc
     if "gpus" not in data or "hours" not in data:
         raise ValueError(f"--run requires keys gpus and hours, got: {data}")
     return data
 
+
 def load_runs_jsonl(path: str) -> List[Dict[str, float]]:
-    '''
+    """
     Load run specifications from a JSONL file into a list of {gpus, hours} dicts.
-    '''
+    """
     runs = []
     with open(path, "r", encoding="utf-8") as file_handle:
         for line_index, line in enumerate(file_handle, 1):
@@ -104,47 +106,41 @@ def load_runs_jsonl(path: str) -> List[Dict[str, float]]:
             try:
                 obj = json.loads(stripped)
             except json.JSONDecodeError as exc:
-                raise ValueError(
-                    f"Invalid JSON on line {line_index} of {path}: {exc}"
-                ) from exc
+                raise ValueError(f"Invalid JSON on line {line_index} of {path}: {exc}") from exc
             if not isinstance(obj, dict):
-                raise ValueError(
-                    f"Line {line_index} must be a JSON object with 'gpus' and 'hours'."
-                )
+                raise ValueError(f"Line {line_index} must be a JSON object with 'gpus' and 'hours'.")
             if "gpus" not in obj or "hours" not in obj:
-                raise ValueError(
-                    f"Line {line_index} missing 'gpus' and/or 'hours'. Got: {obj}"
-                )
+                raise ValueError(f"Line {line_index} missing 'gpus' and/or 'hours'. Got: {obj}")
             runs.append({"gpus": float(obj["gpus"]), "hours": float(obj["hours"])})
     return runs
 
-def estimate_energy_kwh_from_runs(
-    runs: List[Dict[str, float]], per_gpu_kw: float, pue: float
-) -> float:
-    '''
+
+def estimate_energy_kwh_from_runs(runs: List[Dict[str, float]], per_gpu_kw: float, pue: float) -> float:
+    """
     Energy (kWh) = [sum over runs of (gpus * hours * per_gpu_kw)] * PUE.
-    '''
-    raw_kwh = sum(
-        r["gpus"] * r["hours"] * per_gpu_kw for r in runs
-    )
+    """
+    raw_kwh = sum(r["gpus"] * r["hours"] * per_gpu_kw for r in runs)
     return raw_kwh * pue
 
+
 def estimate_energy_kwh_from_gpu_hours(gpu_hours: float, per_gpu_kw: float, pue: float) -> float:
-    '''
+    """
     Energy (kWh) = (total GPU-hours * per_gpu_kw) * PUE
-    '''
+    """
     return gpu_hours * per_gpu_kw * pue
 
+
 def estimate_co2e_kg(energy_kwh: float, kg_per_kwh: float) -> float:
-    '''
+    """
     Compute CO2e in kilograms from energy and grid intensity.
-    '''
+    """
     return energy_kwh * kg_per_kwh
 
+
 def format_kg(kilograms: float, rounding_increment: float = 1.0) -> str:
-    '''
+    """
     Format a kilogram value with optional rounding to a given increment.
-    '''
+    """
     if rounding_increment and rounding_increment > 0:
         kilograms = round(kilograms / rounding_increment) * rounding_increment
     if abs(kilograms - int(kilograms)) < 1e-9:
@@ -153,9 +149,9 @@ def format_kg(kilograms: float, rounding_increment: float = 1.0) -> str:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    '''
+    """
     Build and return the CLI argument parser for the CO2e estimator.
-    '''
+    """
     parser = argparse.ArgumentParser(description="Rough CO2e estimator for ML experiments.")
     mode_group = parser.add_mutually_exclusive_group(required=True)
     mode_group.add_argument(
@@ -198,8 +194,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=str,
         choices=sorted(GPU_TYPE_DEFAULT_kW.keys()),
         help=(
-            "Lookup a typical per-GPU kW (board power under load). "
-            "Consider using --per-gpu-kw to include overhead."
+            "Lookup a typical per-GPU kW (board power under load). Consider using --per-gpu-kw to include overhead."
         ),
     )
     parser.add_argument(
@@ -223,10 +218,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--show-range",
         action="store_true",
-        help=(
-            "Also compute a sensitivity range using --pue-min/--pue-max "
-            "and --kg-per-kwh-min/--kg-per-kwh-max."
-        ),
+        help=("Also compute a sensitivity range using --pue-min/--pue-max and --kg-per-kwh-min/--kg-per-kwh-max."),
     )
     parser.add_argument("--pue-min", type=float, default=1.1)
     parser.add_argument("--pue-max", type=float, default=1.4)
@@ -236,9 +228,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def resolve_per_gpu_kw(args) -> float:
-    '''
+    """
     Determine the effective per-GPU kW value from CLI arguments.
-    '''
+    """
     if args.per_gpu_kw is not None:
         return args.per_gpu_kw
     if args.gpu_type:
@@ -247,9 +239,9 @@ def resolve_per_gpu_kw(args) -> float:
 
 
 def collect_runs(args) -> List[Dict[str, float]]:
-    '''
+    """
     Collect all run specifications from JSONL files and --run arguments.
-    '''
+    """
     runs: List[Dict[str, float]] = []
     if args.runs_jsonl:
         runs.extend(load_runs_jsonl(args.runs_jsonl))
@@ -259,10 +251,10 @@ def collect_runs(args) -> List[Dict[str, float]]:
 
 
 def compute_energy_kwh(args, per_gpu_kw: float, runs: List[Dict[str, float]]) -> Optional[float]:
-    '''
+    """
     Compute total energy usage in kWh from CLI arguments and resolved runs.
     Returns None when no GPU-hours information is available.
-    '''
+    """
     if args.gpu_hours is not None and args.combine == "prefer_gpu_hours":
         return estimate_energy_kwh_from_gpu_hours(args.gpu_hours, per_gpu_kw, args.pue)
 
@@ -276,12 +268,10 @@ def compute_energy_kwh(args, per_gpu_kw: float, runs: List[Dict[str, float]]) ->
     return estimate_energy_kwh_from_gpu_hours(total_gpu_hours, per_gpu_kw, args.pue)
 
 
-def print_summary(
-    args, per_gpu_kw: float, energy_kwh: float, co2e_kg: float, rounded_kg: str
-) -> None:
-    '''
+def print_summary(args, per_gpu_kw: float, energy_kwh: float, co2e_kg: float, rounded_kg: str) -> None:
+    """
     Print a human-readable summary of the CO2e estimation.
-    '''
+    """
     print("=== CO2e Estimate (Luccioni/Lacoste-style) ===")
     print(f"per_gpu_kw (effective): {per_gpu_kw:.3f} kW")
     print(f"PUE:                    {args.pue:.2f}")
@@ -291,9 +281,9 @@ def print_summary(
 
 
 def print_sensitivity_range(args, per_gpu_kw: float, runs: List[Dict[str, float]]) -> None:
-    '''
+    """
     Print a simple sensitivity analysis range over PUE and grid intensity.
-    '''
+    """
     if args.gpu_hours is not None:
         base_gpu_hours = args.gpu_hours
     else:
@@ -311,12 +301,12 @@ def print_sensitivity_range(args, per_gpu_kw: float, runs: List[Dict[str, float]
 
 
 def main(argv=None) -> int:
-    '''
+    """
     Entry point for the CO2e estimator CLI.
 
     Parses command-line arguments, computes total energy usage and emissions,
     and prints a human-readable summary.
-    '''
+    """
     parser = build_arg_parser()
     args = parser.parse_args(argv)
 
@@ -338,5 +328,6 @@ def main(argv=None) -> int:
         print_sensitivity_range(args, per_gpu_kw, runs)
     return 0
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     raise SystemExit(main())

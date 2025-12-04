@@ -11,9 +11,10 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
+from src.inference.backends import HFBackend
 from src.inference.runners.unified_carpark_runner import load_carpark_module
 from src.inference.runners.unified_runner_base import run_carpark_main
-from src.inference.backends import HFBackend
+
 
 __all__ = [
     "HFBackend",
@@ -30,7 +31,10 @@ def _load_carpark_module():
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     """Entry point for Rush Hour inference CLI."""
-    run_carpark_main(load_module=_load_carpark_module, backend_cls=HFBackend, argv=argv)
+    kwargs = {"load_module": _load_carpark_module, "backend_cls": HFBackend}
+    if argv is not None:
+        kwargs["argv"] = argv
+    run_carpark_main(**kwargs)
 
 
 if __name__ == "__main__":

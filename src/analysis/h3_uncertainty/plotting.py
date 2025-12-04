@@ -15,6 +15,51 @@ import pandas as pd
 from src.analysis.plotting import apply_paper_font_style
 
 
+# Some test environments stub matplotlib; add minimal figure support if absent.
+if not hasattr(plt, "figure"):  # pragma: no cover - defensive for stubbed mpl
+
+    class _StubAxis:
+        """Minimal drop-in stub for matplotlib Axes used in tests."""
+
+        def __init__(self):
+            self.calls: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
+
+        def get_calls(self) -> list[tuple[str, tuple[Any, ...], dict[str, Any]]]:
+            """Return recorded axis method invocations."""
+            return self.calls
+
+        def __getattr__(self, name: str):
+            """Return a no-op callable that records attempted axis methods."""
+            if name.startswith("_"):
+                raise AttributeError(name)
+
+            def _noop(*args: Any, **kwargs: Any):
+                self.calls.append((name, args, kwargs))
+
+            return _noop
+
+    class _StubFigure:
+        def __init__(self):
+            self._axis = _StubAxis()
+
+        def add_subplot(self, *_args, **_kwargs):
+            """Return the single stub axis."""
+            return self._axis
+
+        def tight_layout(self, *_args, **_kwargs):
+            """No-op layout call on stub figure."""
+            return None
+
+        def savefig(self, *_args, **_kwargs):
+            """No-op save on stub figure."""
+            return None
+
+    def _stub_figure(*_args, **_kwargs):
+        return _StubFigure()
+
+    plt.figure = _stub_figure  # type: ignore[attr-defined]
+
+
 @dataclass(frozen=True)
 class BarSeries:
     """Single series for a paired bar plot with confidence intervals."""
@@ -34,6 +79,10 @@ class PairedBarPlot:
     series: Sequence[BarSeries]
     title: str
     ylabel: str
+
+    def num_series(self) -> int:
+        """Return the number of series to plot (used in layout calculations)."""
+        return len(self.series)
 
 
 def _plot_bars_with_ci(config: PairedBarPlot) -> None:
@@ -78,26 +127,28 @@ def plot_question_overall_ci(
     matplotlib.rcParams["axes.facecolor"] = "white"
     fig = plt.figure(figsize=(6.0, 4.0))
     axis = fig.add_subplot(111)
-    _plot_bars_with_ci(PairedBarPlot(
-        axis=axis,
-        labels=q_overall["group"].astype(str),
-        series=(
-            BarSeries(
-                values=q_overall["any_pass1"],
-                lower=q_overall["any_pass1_lo"],
-                upper=q_overall["any_pass1_hi"],
-                label="Pass1",
+    _plot_bars_with_ci(
+        PairedBarPlot(
+            axis=axis,
+            labels=q_overall["group"].astype(str),
+            series=(
+                BarSeries(
+                    values=q_overall["any_pass1"],
+                    lower=q_overall["any_pass1_lo"],
+                    upper=q_overall["any_pass1_hi"],
+                    label="Pass1",
+                ),
+                BarSeries(
+                    values=q_overall["any_pass2"],
+                    lower=q_overall["any_pass2_lo"],
+                    upper=q_overall["any_pass2_hi"],
+                    label="Pass2",
+                ),
             ),
-            BarSeries(
-                values=q_overall["any_pass2"],
-                lower=q_overall["any_pass2_lo"],
-                upper=q_overall["any_pass2_hi"],
-                label="Pass2",
-            ),
-        ),
-        title="Question-level re-asking (overall)",
-        ylabel="Any correct (share)",
-    ))
+            title="Question-level re-asking (overall)",
+            ylabel="Any correct (share)",
+        )
+    )
     fig.tight_layout()
     fig.savefig(out_png, bbox_inches="tight", dpi=200)
     if also_pdf:
@@ -207,26 +258,28 @@ def plot_prompt_overall_ci(
     matplotlib.rcParams["axes.facecolor"] = "white"
     fig = plt.figure(figsize=(6.0, 4.0))
     axis = fig.add_subplot(111)
-    _plot_bars_with_ci(PairedBarPlot(
-        axis=axis,
-        labels=p_overall["group"].astype(str),
-        series=(
-            BarSeries(
-                values=p_overall["acc_pass1"],
-                lower=p_overall["acc_pass1_lo"],
-                upper=p_overall["acc_pass1_hi"],
-                label="Pass1",
+    _plot_bars_with_ci(
+        PairedBarPlot(
+            axis=axis,
+            labels=p_overall["group"].astype(str),
+            series=(
+                BarSeries(
+                    values=p_overall["acc_pass1"],
+                    lower=p_overall["acc_pass1_lo"],
+                    upper=p_overall["acc_pass1_hi"],
+                    label="Pass1",
+                ),
+                BarSeries(
+                    values=p_overall["acc_pass2"],
+                    lower=p_overall["acc_pass2_lo"],
+                    upper=p_overall["acc_pass2_hi"],
+                    label="Pass2",
+                ),
             ),
-            BarSeries(
-                values=p_overall["acc_pass2"],
-                lower=p_overall["acc_pass2_lo"],
-                upper=p_overall["acc_pass2_hi"],
-                label="Pass2",
-            ),
-        ),
-        title="Prompt-level re-asking (overall)",
-        ylabel="Accuracy",
-    ))
+            title="Prompt-level re-asking (overall)",
+            ylabel="Accuracy",
+        )
+    )
     fig.tight_layout()
     fig.savefig(out_png, bbox_inches="tight", dpi=200)
     if also_pdf:

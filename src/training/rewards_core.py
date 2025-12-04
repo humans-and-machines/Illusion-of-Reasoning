@@ -58,15 +58,16 @@ Notes:
 
 """
 
-
 from __future__ import annotations
 
 # ----------------------------- config ------------------------------
 import re
 import unicodedata
+from dataclasses import dataclass
 from typing import Any, List, Sequence
 
 from .rush_rewards import rush_solution_exact, rush_solution_shaped
+
 
 __all__ = [
     "crossword_accuracy_reward",
@@ -80,14 +81,24 @@ __all__ = [
 
 # ----------------------------- config ------------------------------
 
-MIN_TOKENS_DEFAULT = 25     # crossword shaping: 0 at <= this many tokens
-MAX_FULL_LEN_DEFAULT = 80   # crossword shaping: 1 at >= this many tokens
+MIN_TOKENS_DEFAULT = 25  # crossword shaping: 0 at <= this many tokens
+MAX_FULL_LEN_DEFAULT = 80  # crossword shaping: 1 at >= this many tokens
 
 # Treat “letter” as Unicode letters (no digits/underscore) for word isolation.
 LETTER = r"[^\W\d_]"  # letters only (Unicode)
 
 # Tags used to score formatting/structure.
 TAGS = ("<think>", "</think>", "<answer>", "</answer>")
+
+
+# Immutable bundle for crossword scoring knobs.
+@dataclass(frozen=True)
+class _CrosswordScoreConfig:
+    min_tokens: int
+    max_full_len: int
+    contains_mode: str
+    scaled: bool
+
 
 # ----------------------------- regexes -----------------------------
 
@@ -98,6 +109,7 @@ _format_pat = re.compile(r"(?si)<think>.*?</think>.*?<answer>.*?</answer>")
 _answer_pat = re.compile(r"(?si)<answer>\s*(.*?)\s*</answer>")
 
 # ---------------------------- helpers ------------------------------
+
 
 def _extract_content(comp: Any) -> str:
     """
@@ -153,6 +165,7 @@ def _canon_crossword_letters(text: str) -> str:
 def _count_tokens_whitespace(text: str) -> int:
     return len(re.findall(r"\S+", text or ""))
 
+
 # --------------------------- rewards -------------------------------
 
 
@@ -183,7 +196,9 @@ def _normalize_for_word_match(text: str) -> str:
     )
     return normalized.replace("&", "AND")
 
+
 # --------------------------- rewards -------------------------------
+
 
 def _has_gold_in_completion(
     gold_canon: str,
@@ -200,8 +215,7 @@ def _has_gold_in_completion(
 
     normalized_text = _normalize_for_word_match(raw_completion)
     tokens = [
-        _canon_crossword_letters(token)
-        for token in re.findall(fr"{LETTER}+", normalized_text, flags=re.UNICODE)
+        _canon_crossword_letters(token) for token in re.findall(rf"{LETTER}+", normalized_text, flags=re.UNICODE)
     ]
     if contains_mode == "word":
         return any(token == gold_canon for token in tokens)
@@ -223,31 +237,32 @@ def _score_single_crossword(
     completion: Any,
     gold: str,
     *,
-    min_tokens: int,
-    max_full_len: int,
-    contains_mode: str,
-    scaled: bool,
+    config: _CrosswordScoreConfig,
 ) -> float:
     """Score a single completion/gold pair for crossword-style accuracy."""
     raw_completion = _extract_content(completion) or ""
     text_lower = raw_completion.lower()
 
     present_tags = sum(1 for tag in TAGS if tag in text_lower)
-    tag_factor = present_tags / 4.0 if scaled else 1.0
+    tag_factor = present_tags / 4.0 if config.scaled else 1.0
 
     gold_canon = _canon_crossword_letters(gold)
-    has_gold = _has_gold_in_completion(gold_canon, raw_completion, contains_mode)
+    has_gold = _has_gold_in_completion(gold_canon, raw_completion, config.contains_mode)
 
-    if not scaled:
+    if not config.scaled:
         return 1.0 if has_gold else 0.0
 
-    length_factor = _length_ramp_factor(raw_completion, min_tokens, max_full_len)
+    length_factor = _length_ramp_factor(
+        raw_completion,
+        config.min_tokens,
+        config.max_full_len,
+    )
     return (1.0 if has_gold else 0.0) * length_factor * tag_factor
 
 
 def crossword_accuracy_reward(
     completions: List[Any],
-    answer:      List[str],
+    answer: List[str],
     **kwargs,
 ) -> List[float]:
     """
@@ -268,19 +283,18 @@ def crossword_accuracy_reward(
       - max_full_len (int, default 80)
       - contains_mode (str, default "any"): "any" | "contiguous" | "word"
     """
-    min_tokens = int(kwargs.get("min_tokens", MIN_TOKENS_DEFAULT))
-    max_full_len = int(kwargs.get("max_full_len", MAX_FULL_LEN_DEFAULT))
-    contains_mode = str(kwargs.get("contains_mode", "any")).lower()
-    scaled = bool(kwargs.get("scaled", False))  # default: no scaling (tests expect full credit)
+    config = _CrosswordScoreConfig(
+        min_tokens=int(kwargs.get("min_tokens", MIN_TOKENS_DEFAULT)),
+        max_full_len=int(kwargs.get("max_full_len", MAX_FULL_LEN_DEFAULT)),
+        contains_mode=str(kwargs.get("contains_mode", "any")).lower(),
+        scaled=bool(kwargs.get("scaled", False)),  # default: no scaling (tests expect full credit)
+    )
 
     return [
         _score_single_crossword(
             comp,
             gold,
-            min_tokens=min_tokens,
-            max_full_len=max_full_len,
-            contains_mode=contains_mode,
-            scaled=scaled,
+            config=config,
         )
         for comp, gold in zip(completions, answer)
     ]
@@ -288,11 +302,7 @@ def crossword_accuracy_reward(
 
 def _expected_length(length_spec: dict[str, Any]) -> int | None:
     """Compute the total expected length given enumeration kwargs."""
-    expected = (
-        length_spec.get("expected_len")
-        or length_spec.get("n_letters")
-        or length_spec.get("length")
-    )
+    expected = length_spec.get("expected_len") or length_spec.get("n_letters") or length_spec.get("length")
     if expected is None and "lengths" in length_spec:
         try:
             expected = sum(int(str(x)) for x in length_spec["lengths"])
@@ -320,9 +330,7 @@ def _score_single_pure(
     gold_text = (gold or "").strip()
 
     # Tag factor (¼ per present tag; applies to tiny bonus).
-    tag_factor = (
-        sum(1 for tag in TAGS if tag in completion_text.lower()) / 4.0
-    )
+    tag_factor = sum(1 for tag in TAGS if tag in completion_text.lower()) / 4.0
 
     # ---- WORD-LEVEL partial credit (no cross-space) ----
     gold_letters = _canon_crossword_letters(gold_text)
@@ -376,9 +384,7 @@ def pure_accuracy_reward(
     """
     contains_bonus = float(kwargs.get("contains_bonus", 0.02))
     length_kwargs: dict[str, Any] = {
-        name: kwargs[name]
-        for name in ("expected_len", "n_letters", "length", "lengths")
-        if name in kwargs
+        name: kwargs[name] for name in ("expected_len", "n_letters", "length", "lengths") if name in kwargs
     }
 
     outs: List[float] = [
@@ -438,9 +444,10 @@ def _canon_math(text: str) -> str:
 
     return text
 
+
 def pure_accuracy_reward_math(
     completions: List[Any],
-    answer:      List[str],
+    answer: List[str],
     **_unused_kwargs,
 ) -> List[float]:
     """
@@ -464,13 +471,14 @@ def pure_accuracy_reward_math(
             continue
 
         pred = match.group(1)
-        is_correct_match = (_canon_math(pred) == _canon_math(gold))
+        is_correct_match = _canon_math(pred) == _canon_math(gold)
         outs.append(1.0 if is_correct_match else 0.0)
 
     return outs
 
 
 # --------------------------- crossword-format helpers -------------------------------
+
 
 def _extract_answer_letters(comp: Any) -> str:
     """Pull the inner <answer>…</answer> text and canon to LETTERS-ONLY A–Z."""

@@ -63,25 +63,31 @@ from src.analysis.forced_aha_shared import (
     summarize_sample_level,
 )
 from src.analysis.io import iter_records_from_file, scan_jsonl_files
-from src.analysis.plotting_styles import (
-    DEFAULT_COLORS,
-    METRIC_LABELS,
-    parse_color_overrides,
-)
+from src.analysis.plotting_styles import DEFAULT_COLORS, METRIC_LABELS, parse_color_overrides
 from src.analysis.utils import nat_step_from_path
 
+
 # ===================== Matplotlib (Times everywhere) =====================
-# Force Times / Times New Roman across all figures
-matplotlib.rcParams.update({
-    "pdf.fonttype": 42, "ps.fonttype": 42,            # embed TrueType (editable text in PDF)
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "Times", "Nimbus Roman", "TeX Gyre Termes", "DejaVu Serif"],
-    "mathtext.fontset": "stix",                        # Times-like math without usetex
-    "font.size": 12,
-    "axes.titlesize": 12, "axes.labelsize": 12,
-    "xtick.labelsize": 12, "ytick.labelsize": 12,
-    "legend.fontsize": 12, "figure.titlesize": 12,
-})
+# Force Times / Times New Roman across all figures, but degrade gracefully
+# when a lightweight matplotlib stub is used in tests.
+_rc_params = getattr(matplotlib, "rcParams", None)
+if isinstance(_rc_params, dict):
+    _rc_params.update(
+        {
+            "pdf.fonttype": 42,
+            "ps.fonttype": 42,  # embed TrueType (editable text in PDF)
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "Times", "Nimbus Roman", "TeX Gyre Termes", "DejaVu Serif"],
+            "mathtext.fontset": "stix",  # Times-like math without usetex
+            "font.size": 12,
+            "axes.titlesize": 12,
+            "axes.labelsize": 12,
+            "xtick.labelsize": 12,
+            "ytick.labelsize": 12,
+            "legend.fontsize": 12,
+            "figure.titlesize": 12,
+        }
+    )
 
 # ===================== loaders =====================
 
@@ -93,15 +99,11 @@ def _maybe_int(value: Any, default: int = -1) -> int:
     except (TypeError, ValueError):
         return default
 
+
 def _common_fields(rec: Dict[str, Any], step_from_name: Optional[int]) -> Dict[str, Any]:
     dataset = rec.get("dataset")
     model = rec.get("model")
-    problem = (
-        rec.get("problem")
-        or rec.get("question")
-        or rec.get("row_key")
-        or "unknown"
-    )
+    problem = rec.get("problem") or rec.get("question") or rec.get("row_key") or "unknown"
     step = rec.get("step", step_from_name if step_from_name is not None else None)
     split = rec.get("split")
     return {
@@ -143,6 +145,7 @@ def _build_sample_row(
         )
     return row
 
+
 def load_samples_from_root(
     root: str,
     split_value: Optional[str],
@@ -165,11 +168,7 @@ def load_samples_from_root(
             step_from_name=step_from_name,
         )
         for rec in iter_records_from_file(path):
-            if (
-                split_value is not None
-                and str(rec.get("split", "")).lower()
-                != str(split_value).lower()
-            ):
+            if split_value is not None and str(rec.get("split", "")).lower() != str(split_value).lower():
                 continue
             pass_result = pass_with_correctness(
                 rec,
@@ -189,6 +188,7 @@ def load_samples_from_root(
             )
     return pd.DataFrame(rows)
 
+
 def load_samples_from_single_root_with_both(
     root: str,
     split_value: Optional[str],
@@ -207,23 +207,21 @@ def load_samples_from_single_root_with_both(
     for path in files:
         step_from_name = nat_step_from_path(path)
         for rec in iter_records_from_file(path):
-            if (
-                split_value is not None
-                and str(rec.get("split", "")).lower()
-                != str(split_value).lower()
-            ):
+            if split_value is not None and str(rec.get("split", "")).lower() != str(split_value).lower():
                 continue
             meta = _common_fields(rec, step_from_name)
             pass1_obj = first_nonempty(rec, PASS1_KEYS)
             if pass1_obj:
                 correct_pass1 = extract_correct_flag(pass1_obj)
                 if correct_pass1 is not None:
-                    rows1.append({
-                        **meta,
-                        "sample_idx": extract_sample_idx(rec, pass1_obj),
-                        "correct": int(correct_pass1),
-                        "entropy_p1": extract_entropy(pass1_obj, preferred=entropy_field),
-                    })
+                    rows1.append(
+                        {
+                            **meta,
+                            "sample_idx": extract_sample_idx(rec, pass1_obj),
+                            "correct": int(correct_pass1),
+                            "entropy_p1": extract_entropy(pass1_obj, preferred=entropy_field),
+                        }
+                    )
             if pass2_key:
                 pass2_obj = rec.get(pass2_key) or {}
             else:
@@ -231,14 +229,18 @@ def load_samples_from_single_root_with_both(
             if pass2_obj:
                 correct_pass2 = extract_correct_flag(pass2_obj)
                 if correct_pass2 is not None:
-                    rows2.append({
-                        **meta,
-                        "sample_idx": extract_sample_idx(rec, pass2_obj),
-                        "correct": int(correct_pass2),
-                    })
+                    rows2.append(
+                        {
+                            **meta,
+                            "sample_idx": extract_sample_idx(rec, pass2_obj),
+                            "correct": int(correct_pass2),
+                        }
+                    )
     return pd.DataFrame(rows1), pd.DataFrame(rows2)
 
+
 # ===================== pairing helpers =====================
+
 
 def _choose_merge_keys(df_left: pd.DataFrame, df_right: pd.DataFrame) -> List[str]:
     keys: List[str] = []
@@ -255,6 +257,7 @@ def _choose_merge_keys(df_left: pd.DataFrame, df_right: pd.DataFrame) -> List[st
         raise SystemExit("No common non-null keys to merge on. Need at least 'problem'.")
     return keys
 
+
 def _fill_missing_id_cols(
     frame: pd.DataFrame,
     cols: List[str],
@@ -268,7 +271,9 @@ def _fill_missing_id_cols(
         if col in frame.columns:
             frame[col] = frame[col].fillna("(missing)")
 
+
 # ===================== pairing =====================
+
 
 def pair_samples(
     df_pass1: pd.DataFrame,
@@ -293,6 +298,7 @@ def pair_samples(
     print(f"[info] Sample-level pairing on keys: {keys}  (pairs={len(pairs)})")
     return pairs, keys
 
+
 def build_clusters(samples_df: pd.DataFrame, label: str) -> pd.DataFrame:
     """
     Aggregate sample-level rows into per-problem clusters for one pass.
@@ -300,11 +306,7 @@ def build_clusters(samples_df: pd.DataFrame, label: str) -> pd.DataFrame:
     The ``label`` is used as a suffix for count/accuracy fields (for example, ``p1`` or ``p2``).
     """
     samples_df = samples_df.copy()
-    keys = [
-        col
-        for col in ["dataset", "model", "split", "problem", "step"]
-        if col in samples_df.columns
-    ]
+    keys = [col for col in ["dataset", "model", "split", "problem", "step"] if col in samples_df.columns]
     if "problem" not in keys:
         raise SystemExit("Cluster build requires at least 'problem' in records.")
     aggregations = {
@@ -317,6 +319,7 @@ def build_clusters(samples_df: pd.DataFrame, label: str) -> pd.DataFrame:
     clustered[f"acc_{label}"] = clustered[f"k_{label}"] / clustered[f"n_{label}"]
     clustered[f"any_{label}"] = (clustered[f"k_{label}"] > 0).astype(int)
     return clustered
+
 
 def pair_clusters(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     """
@@ -334,7 +337,9 @@ def pair_clusters(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     print(f"[info] Cluster-level pairing on keys: {keys}  (clusters={len(merged)})")
     return merged
 
+
 # ===================== bootstrapping helpers =====================
+
 
 def rng(seed: int) -> None:
     """
@@ -363,6 +368,7 @@ class PlotArtifacts:
 
 
 # ===================== main helpers =====================
+
 
 @dataclass
 class McNemarCounts:
@@ -480,8 +486,12 @@ def _build_stepwise_effect_table(
             },
         )
 
-    step_df = pd.DataFrame(step_rows).sort_values(["metric", "step"]).reset_index(
-        drop=True,
+    step_df = (
+        pd.DataFrame(step_rows)
+        .sort_values(["metric", "step"])
+        .reset_index(
+            drop=True,
+        )
     )
     return step_df
 
@@ -493,12 +503,7 @@ def _verdict_for_binary_metric(result_row: Dict[str, Any], label: str) -> str:
     delta_pp = result_row["delta_pp"]
     num_units = result_row["n_units"]
     p_mcnemar = result_row.get("p_mcnemar")
-    has_effect = (
-        np.isfinite(delta_pp)
-        and delta_pp > 0
-        and (p_mcnemar is not None)
-        and p_mcnemar < 0.05
-    )
+    has_effect = np.isfinite(delta_pp) and delta_pp > 0 and (p_mcnemar is not None) and p_mcnemar < 0.05
     maybe_effect = np.isfinite(delta_pp) and delta_pp > 0
     verdict = "YES" if has_effect else ("MAYBE" if maybe_effect else "NO")
     p_text = f"{p_mcnemar:.4g}" if p_mcnemar is not None else "nan"
@@ -516,10 +521,7 @@ def _verdict_for_mean_metric(result_row: Dict[str, Any], label: str) -> str:
     num_units = result_row["n_units"]
     p_ttest = result_row.get("p_ttest")
     p_wilcoxon = result_row.get("p_wilcoxon")
-    is_significant = (
-        (p_ttest is not None and p_ttest < 0.05)
-        or (p_wilcoxon is not None and p_wilcoxon < 0.05)
-    )
+    is_significant = (p_ttest is not None and p_ttest < 0.05) or (p_wilcoxon is not None and p_wilcoxon < 0.05)
     has_effect = np.isfinite(delta_pp) and delta_pp > 0 and is_significant
     maybe_effect = np.isfinite(delta_pp) and delta_pp > 0
     verdict = "YES" if has_effect else ("MAYBE" if maybe_effect else "NO")
@@ -567,36 +569,24 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--colors",
         default=None,
-        help=(
-            "Overrides for overview/waterfall palette, e.g. "
-            "'gain:#009E73,loss:#D55E00'"
-        ),
+        help=("Overrides for overview/waterfall palette, e.g. 'gain:#009E73,loss:#D55E00'"),
     )
 
     parser.add_argument(
         "--entropy_field",
         default="entropy_answer",
-        help=(
-            'Entropy source for buckets (default: "entropy_answer"; '
-            'fallback to "entropy").'
-        ),
+        help=('Entropy source for buckets (default: "entropy_answer"; fallback to "entropy").'),
     )
     parser.add_argument(
         "--series_palette",
         default="Dark2",
-        help=(
-            "Qualitative colormap for uncertainty/stepwise series "
-            "(default: Pastel1)."
-        ),
+        help=("Qualitative colormap for uncertainty/stepwise series (default: Pastel1)."),
     )
     parser.add_argument(
         "--darken",
         type=float,
         default=0.80,
-        help=(
-            "Darken factor for series colors (0.0–1.0, lower = darker, "
-            "default 0.80)."
-        ),
+        help=("Darken factor for series colors (0.0–1.0, lower = darker, default 0.80)."),
     )
     return parser
 
@@ -669,6 +659,7 @@ def _run_plots_if_requested(
 
 # ===================== main =====================
 
+
 def main() -> None:
     """
     CLI entry point for forced Aha effect analysis and plotting.
@@ -727,6 +718,7 @@ def main() -> None:
         print("Sample-level paired on keys:", ", ".join(key_cols))
     else:
         print("Sample-level pairing not available; reported only cluster metrics.")
+
 
 if __name__ == "__main__":
     main()

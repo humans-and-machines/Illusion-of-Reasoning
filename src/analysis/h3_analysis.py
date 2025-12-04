@@ -50,10 +50,10 @@ Notes
 - Robust to missing fields; pairs without both passes are dropped from modeling.
 """
 
-import os
 import argparse
 import importlib
-from typing import List, Dict, Any, Tuple
+import os
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -75,13 +75,14 @@ def _get_pyplot():
         pyplot_mod = importlib.import_module("matplotlib.pyplot")
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise RuntimeError(
-            "matplotlib is required for H3 plots; "
-            "install it with 'pip install matplotlib'.",
+            "matplotlib is required for H3 plots; install it with 'pip install matplotlib'.",
         ) from exc
     pyplot_mod.switch_backend("Agg")
     return pyplot_mod
 
+
 # -------------------------- data loading -------------------------
+
 
 def load_pairs(files: List[str], uncertainty_field: str = "entropy") -> pd.DataFrame:
     """
@@ -96,16 +97,10 @@ def load_pairs(files: List[str], uncertainty_field: str = "entropy") -> pd.DataF
 
     for path, step_from_name, record in iter_pass1_records(files):
         # Identify the "problem" robustly across runners
-        problem_key = (
-            record.get("problem")
-            or record.get("clue")
-            or record.get("row_key")
-        )
+        problem_key = record.get("problem") or record.get("clue") or record.get("row_key")
         if problem_key is None:
             problem_key = (
-                f"idx:{record.get('dataset_index')}"
-                if record.get("dataset_index") is not None
-                else "unknown"
+                f"idx:{record.get('dataset_index')}" if record.get("dataset_index") is not None else "unknown"
             )
 
         step = record.get(
@@ -145,9 +140,11 @@ def load_pairs(files: List[str], uncertainty_field: str = "entropy") -> pd.DataF
 
     pairs_df = pd.DataFrame(rows)
     if pairs_df.empty:
-        raise RuntimeError("No pairs found with both PASS-1 and PASS-2. "
-                           "Check --split, paths, or that pass2 exists in logs.")
+        raise RuntimeError(
+            "No pairs found with both PASS-1 and PASS-2. Check --split, paths, or that pass2 exists in logs."
+        )
     return pairs_df
+
 
 def pairs_to_long(
     df_pairs: pd.DataFrame,
@@ -175,9 +172,7 @@ def pairs_to_long(
                     "step": int(row["step"]),
                     "pair_id": pair_id,
                     "phase": phase,  # 0=P1, 1=P2
-                    "correct": int(
-                        row["correct_p2"] if phase == 1 else row["correct_p1"]
-                    ),
+                    "correct": int(row["correct_p2"] if phase == 1 else row["correct_p1"]),
                     "uncertainty": float(row["unc1"]),
                 },
             )
@@ -186,9 +181,7 @@ def pairs_to_long(
     # Standardize uncertainty
     mean_uncertainty = long_df["uncertainty"].mean()
     std_uncertainty = long_df["uncertainty"].std(ddof=0)
-    long_df["uncertainty_std"] = (
-        long_df["uncertainty"] - mean_uncertainty
-    ) / (std_uncertainty + 1e-8)
+    long_df["uncertainty_std"] = (long_df["uncertainty"] - mean_uncertainty) / (std_uncertainty + 1e-8)
 
     # Buckets based on PASS-1 uncertainty distribution (shared across phases)
     # Compute on unique pairs to avoid double-counting
@@ -241,7 +234,9 @@ def pairs_to_long(
 
     return df_pairs_model, long_df
 
+
 # --------------------------- modeling -----------------------------
+
 
 def _compute_phase_ame(result, data_frame: pd.DataFrame) -> float:
     """Compute the AME of toggling phase from 0→1."""
@@ -391,15 +386,15 @@ def _bucket_effect_row(
         "ame_phase": ame,
     }
 
+
 # -------------------------- visualization ------------------------
+
 
 def plot_acc_by_bucket(long_df: pd.DataFrame, out_png: str):
     """
     Accuracy by bucket for phase 0 vs 1.
     """
-    agg = (long_df
-           .groupby(["bucket", "phase"], as_index=False)
-           .agg(acc=("correct","mean"), n=("correct","size")))
+    agg = long_df.groupby(["bucket", "phase"], as_index=False).agg(acc=("correct", "mean"), n=("correct", "size"))
     buckets = sorted(agg["bucket"].unique())
 
     plt_mod = _get_pyplot()
@@ -422,6 +417,7 @@ def plot_acc_by_bucket(long_df: pd.DataFrame, out_png: str):
     fig.savefig(out_png)
     plt_mod.close(fig)
 
+
 def plot_ame_by_bucket(bucket_df: pd.DataFrame, out_png: str):
     """
     Per-bucket AME of phase toggle (probability units).
@@ -439,7 +435,9 @@ def plot_ame_by_bucket(bucket_df: pd.DataFrame, out_png: str):
     fig.savefig(out_png)
     plt_mod.close(fig)
 
+
 # ----------------------------- main ------------------------------
+
 
 def main() -> None:
     """CLI entrypoint for H3 pass-1 uncertainty vs. second-pass effect analysis."""
@@ -525,13 +523,20 @@ def main() -> None:
     print(f"Wrote plots: {acc_png} and {ame_png}\n")
 
     print("Key pooled effects (log-odds, robust SE):")
-    print(f"  β_phase           = {pooled_stats['b_phase']:.4f} "
-          f"(se={pooled_stats['se_phase']:.4f}, p={pooled_stats['p_phase']:.3g})")
-    print(f"  β_uncertainty     = {pooled_stats['b_unc']:.4f} "
-          f"(se={pooled_stats['se_unc']:.4f}, p={pooled_stats['p_unc']:.3g})")
-    print(f"  β_phase×uncertainty = {pooled_stats['b_phase_x_unc']:.4f} "
-          f"(se={pooled_stats['se_phase_x_unc']:.4f}, p={pooled_stats['p_phase_x_unc']:.3g})")
+    print(
+        f"  β_phase           = {pooled_stats['b_phase']:.4f} "
+        f"(se={pooled_stats['se_phase']:.4f}, p={pooled_stats['p_phase']:.3g})"
+    )
+    print(
+        f"  β_uncertainty     = {pooled_stats['b_unc']:.4f} "
+        f"(se={pooled_stats['se_unc']:.4f}, p={pooled_stats['p_unc']:.3g})"
+    )
+    print(
+        f"  β_phase×uncertainty = {pooled_stats['b_phase_x_unc']:.4f} "
+        f"(se={pooled_stats['se_phase_x_unc']:.4f}, p={pooled_stats['p_phase_x_unc']:.3g})"
+    )
     print(f"  AME(phase 0→1)    = {pooled_stats['ame_phase']:.4f}")
+
 
 if __name__ == "__main__":
     main()

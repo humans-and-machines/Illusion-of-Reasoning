@@ -65,10 +65,7 @@ def count_progress(path: Path, require_shift_flag: bool = False) -> Tuple[int, i
     for rec in _iter_records(path):
         total += 1
         if require_shift_flag:
-            if any(
-                rec.get(f"pass2{k}", {}).get("shift_in_reasoning_v1")
-                for k in ("a", "b", "c")
-            ):
+            if any(rec.get(f"pass2{k}", {}).get("shift_in_reasoning_v1") for k in ("a", "b", "c")):
                 seen += 1
         else:
             if _has_judge_tag(rec):

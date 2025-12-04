@@ -1,12 +1,8 @@
 # src/tests/test_rewards.py
 
-import pytest
-from training.rewards_core import (
-    crossword_accuracy_reward,
-    crossword_format_reward,
-    crossword_length_reward,
-    formating,
-)
+
+from training.rewards_core import crossword_accuracy_reward, crossword_format_reward, crossword_length_reward
+
 
 def make_comp(ans: str, think: str = None):
     content = ""
@@ -15,16 +11,19 @@ def make_comp(ans: str, think: str = None):
     content += f"<answer>{ans}</answer>"
     return [[{"content": content}]]
 
+
 def make_prompt(clue: str):
     return [
         {"role": "system", "content": ""},
-        {"role": "user",   "content": clue},
+        {"role": "user", "content": clue},
     ]
+
 
 def test_accuracy_exact_match_and_mismatch():
     c = make_comp("FOO")
     assert crossword_accuracy_reward([c], ["foo"]) == [1.0]
     assert crossword_accuracy_reward([c], ["bar"]) == [0.0]
+
 
 def test_formatting_and_uppercase_bonus():
     gold = ["RIGHT"]
@@ -37,6 +36,7 @@ def test_formatting_and_uppercase_bonus():
     # correct answer → 0
     c3 = make_comp("RIGHT", think="x")
     assert crossword_format_reward([c3], gold, [make_prompt("clue (5)")]) == [0.0]
+
 
 def test_length_reward():
     c = make_comp("FOUR", think="x")

@@ -11,23 +11,19 @@ from __future__ import annotations
 
 import argparse
 
-from src.annotate.core.clean_core import clean_root
+from ..core.clean_core import clean_root
 
 
 def main() -> None:
     """CLI entrypoint for cleaning fallback shift labels."""
     parser = argparse.ArgumentParser(
         description=(
-            "Strip fallback shift_in_reasoning_v1 annotations from JSONL results "
-            "under a given root directory."
+            "Strip fallback shift_in_reasoning_v1 annotations from JSONL results under a given root directory."
         ),
     )
     parser.add_argument(
         "results_root",
-        help=(
-            "Root directory containing step*/.../*.jsonl "
-            "(e.g., artifacts/results/gpt4o-math-portkey-temp005)."
-        ),
+        help=("Root directory containing step*/.../*.jsonl (e.g., artifacts/results/gpt4o-math-portkey-temp005)."),
     )
     args = parser.parse_args()
 

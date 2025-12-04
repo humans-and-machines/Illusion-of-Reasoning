@@ -1,4 +1,4 @@
-﻿# Copyright 2025 The HuggingFace Team. All rights reserved.
+# Copyright 2025 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
 
 """Utilities for building and running distilabel-based generation pipelines."""
 
-from dataclasses import dataclass, field
 import importlib
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -55,8 +55,7 @@ def _require_distilabel_deps():
         tasks_mod = importlib.import_module("distilabel.steps.tasks")
     except ImportError as exc:  # pragma: no cover - runtime-only dependency
         raise RuntimeError(
-            "This script requires the 'distilabel' package. "
-            "Install it with `pip install distilabel`.",
+            "This script requires the 'distilabel' package. Install it with `pip install distilabel`.",
         ) from exc
 
     return (
@@ -112,11 +111,7 @@ def build_distilabel_pipeline(
                 generation_kwargs=generation_kwargs,
             ),
             template=config.prompt_template,
-            input_mappings=(
-                {"instruction": config.prompt_column}
-                if config.prompt_column is not None
-                else {}
-            ),
+            input_mappings=({"instruction": config.prompt_column} if config.prompt_column is not None else {}),
             input_batch_size=config.input_batch_size,
             num_generations=config.generation.num_generations,
             group_generations=True,
@@ -133,16 +128,13 @@ if __name__ == "__main__":
         datasets_module = importlib.import_module("datasets")
     except ImportError as datasets_import_error:  # pragma: no cover - runtime-only dependency
         raise RuntimeError(
-            "This script requires the 'datasets' package. "
-            "Install it with `pip install datasets`.",
+            "This script requires the 'datasets' package. Install it with `pip install datasets`.",
         ) from datasets_import_error
 
     load_dataset = datasets_module.load_dataset
 
     parser = argparse.ArgumentParser(
-        description=(
-            "Run distilabel pipeline for generating responses with DeepSeek R1"
-        ),
+        description=("Run distilabel pipeline for generating responses with DeepSeek R1"),
     )
     parser.add_argument(
         "--hf-dataset",
@@ -251,9 +243,7 @@ if __name__ == "__main__":
     print()
 
     print(
-        f"Loading '{args.hf_dataset}' "
-        f"(config: {args.hf_dataset_config}, split: {args.hf_dataset_split}) "
-        "dataset...",
+        f"Loading '{args.hf_dataset}' (config: {args.hf_dataset_config}, split: {args.hf_dataset_split}) dataset...",
     )
     dataset = load_dataset(
         args.hf_dataset,

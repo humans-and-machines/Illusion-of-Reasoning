@@ -10,6 +10,7 @@ import re
 from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
+
 # Single-move token: piece letter + direction + steps (dir accepts v or V)
 TOKEN_RE = re.compile(r"^\s*([A-Za-z])([<>^vV])(\d+)\s*$")
 
@@ -131,9 +132,7 @@ def _canon_rush_gold(gold: Any) -> set[str]:
     output: set[str] = set()
     if gold is None:
         return output
-    if isinstance(gold, str) or (
-        isinstance(gold, list) and all(isinstance(token, str) for token in gold)
-    ):
+    if isinstance(gold, str) or (isinstance(gold, list) and all(isinstance(token, str) for token in gold)):
         canon = _canon_rush_generic(gold)
         if _is_valid_rush(canon):
             output.add(canon)
@@ -164,9 +163,7 @@ def _compute_pos_exact(pred_tokens: List[str], gold_tokens: List[str], gold_len:
     limit = min(len(pred_tokens), len(gold_tokens))
     if gold_len == 0 or limit == 0:
         return 0.0
-    exact_matches = sum(
-        1 for index in range(limit) if pred_tokens[index] == gold_tokens[index]
-    )
+    exact_matches = sum(1 for index in range(limit) if pred_tokens[index] == gold_tokens[index])
     return exact_matches / gold_len
 
 
@@ -235,7 +232,7 @@ def _score_rush_pair(
 
     length_delta = abs(len(pred_tokens) - len(gold_tokens))
     components["length_delta"] = length_delta
-    components["length_penalty"] = length_penalty_base ** length_delta
+    components["length_penalty"] = length_penalty_base**length_delta
 
     base_score = (
         weights["prefix"] * components["prefix"]
@@ -247,7 +244,6 @@ def _score_rush_pair(
     )
     score = max(0.0, min(1.0, base_score * components["length_penalty"]))
     return float(score), components
-
 
 
 def rush_soft_match_reward(

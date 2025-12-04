@@ -30,77 +30,96 @@ import os
 import random
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
-from src.annotate import load_azure_config
-from src.annotate import build_preferred_client
-from src.inference.gateways.base import get_task_spec, setup_gateway_logger
-from src.inference.utils.common import (
-    append_jsonl_row,
-    build_math_gateway_arg_parser,
-    build_math_gateway_row_base,
-    build_usage_dict,
-    call_with_gateway_retries,
-    canon_math as _canon_math,
-    extract_blocks as _extract_blocks,
-    iter_math_gateway_samples,
-    load_remote_dataset_default,
-    prepare_math_gateway_dataset_from_args,
-    valid_tag_structure as _valid_tag_structure,
-)
+from src.annotate import build_preferred_client, load_azure_config
 from src.inference.domains.math.math_core import load_math500 as _load_math500_core
+from src.inference.gateways.base import get_task_spec, setup_gateway_logger
+from src.inference.utils import common as _common_utils
+from src.inference.utils.gateway_utils import GatewayCallParams
+from src.inference.utils.gateway_utils import RetryContext as GatewayRetryContext
+from src.inference.utils.gateway_utils import build_retry_context, call_with_gateway_retries_compat
 from src.inference.utils.task_registry import MATH_SYSTEM_PROMPT
 
+
 if TYPE_CHECKING:
-    from datasets import Dataset
+    pass
 
 
 logger = setup_gateway_logger(__name__)
 
 TASK_SPEC = get_task_spec("math-azure")
 
-
 # ----------------------- Prompt -----------------------
 SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
+
+# Bind common helpers with defensive fallbacks for stubbed environments.
+append_jsonl_row = _common_utils.append_jsonl_row
+build_math_gateway_arg_parser = _common_utils.build_math_gateway_arg_parser
+build_math_gateway_row_base = _common_utils.build_math_gateway_row_base
+build_usage_dict = _common_utils.build_usage_dict
+call_with_gateway_retries = _common_utils.call_with_gateway_retries
+RetryContext = getattr(_common_utils, "RetryContext", GatewayRetryContext)
+GatewayCallParams = getattr(_common_utils, "GatewayCallParams", GatewayCallParams)
+AzureCallParams = GatewayCallParams
+_canon_math = _common_utils.canon_math
+_extract_blocks = _common_utils.extract_blocks
+iter_math_gateway_samples = _common_utils.iter_math_gateway_samples
+load_remote_dataset_default = _common_utils.load_remote_dataset_default
+prepare_math_gateway_dataset_from_args = _common_utils.prepare_math_gateway_dataset_from_args
+_valid_tag_structure = _common_utils.valid_tag_structure
+
+
+def _call_with_retries_compat(func, args: argparse.Namespace, sample_idx: int, problem: str):
+    """
+    Invoke ``call_with_gateway_retries`` while tolerating legacy signatures used in tests.
+    """
+    retry_ctx = build_retry_context(
+        logger=logger,
+        sample_idx=sample_idx,
+        problem_snippet=problem,
+    )
+    try:
+        return call_with_gateway_retries_compat(
+            call_with_gateway_retries,
+            func,
+            args,
+            retry_ctx,
+        )
+    except TypeError:
+        # Fall back to versions that expect keyword args instead of a context object.
+        return call_with_gateway_retries(func, args=args, context=retry_ctx)
 
 
 def load_math500(
     cache_dir: str,
     split: str,
     seed: int,
-    dataset_path: Optional[str] = None,
-) -> "Dataset":
-    """
-    Load the MATH-500 benchmark via :mod:`datasets` using the shared core logic.
-
-    This is a thin wrapper around :func:`src.inference.domains.math.math_core.load_math500`
-    so that the Azure runner reuses a single implementation of the loading and
-    normalization logic.
-
-    :param cache_dir: Directory to use as a datasets cache.
-    :param split: Dataset split name (for example, ``\"test\"``).
-    :param seed: Random seed used when sub-sampling competition-math fallback data.
-    :param dataset_path: Optional local JSON file to load instead of remote datasets.
-    :returns: A datasets-like object exposing ``map`` and ``select``.
-    """
+    dataset_path: str | None = None,
+):
+    """Thin wrapper that defers to the shared math-500 loader (monkeypatchable in tests)."""
     return _load_math500_core(cache_dir, split, seed, dataset_path)
 
 
 @dataclass
-class AzureCallParams:
+class AzureResultRowInput:
     """
-    Lightweight container for Azure generation parameters.
+    Bundled inputs needed to construct a JSONL result row.
 
-    :param temperature: Sampling temperature for the model.
-    :param top_p: Nucleus-sampling parameter for the model.
-    :param max_output_tokens: Maximum number of tokens to generate.
-    :param request_timeout: Per-request timeout in seconds.
+    :param problem: Normalized problem text for the example.
+    :param gold_answer: Ground-truth answer associated with the problem.
+    :param sample_idx: Sample index for this generation.
+    :param text: Raw model output text.
+    :param finish_reason: Finish reason reported by the Azure API.
+    :param usage: Optional usage object returned by the Azure SDK.
     """
 
-    temperature: float
-    top_p: float
-    max_output_tokens: int
-    request_timeout: int
+    problem: str
+    gold_answer: Any
+    sample_idx: int
+    text: str
+    finish_reason: Any
+    usage: Any
 
 
 # ----------------------- Azure client + call -----------------------
@@ -243,13 +262,7 @@ def _generate_samples(
             problem,
             call_params,
         )
-        call_result = call_with_gateway_retries(
-            call_fn,
-            args=args,
-            logger=logger,
-            sample_idx=sample_idx,
-            problem_snippet=problem,
-        )
+        call_result = _call_with_retries_compat(call_fn, args, sample_idx, problem)
 
         row = _build_result_row(
             problem=problem,
@@ -270,41 +283,51 @@ def _generate_samples(
 
 
 def _build_result_row(
-    *,
-    problem: str,
-    gold_answer: Any,
-    sample_idx: int,
-    text: str,
-    finish_reason: Any,
-    usage: Any,
-    args: argparse.Namespace,
-    call_params: AzureCallParams,
+    result: AzureResultRowInput | None = None,
+    args: argparse.Namespace | None = None,
+    call_params: AzureCallParams | None = None,
+    **legacy_kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Build a JSONL row for a single generated sample.
 
-    :param problem: Normalized problem text for the example.
-    :param gold_answer: Ground-truth answer associated with the problem.
-    :param sample_idx: Sample index for this generation.
-    :param text: Raw model output text.
-    :param finish_reason: Finish reason reported by the Azure API.
-    :param usage: Optional usage object returned by the Azure SDK.
+    Accepts either an :class:`AzureResultRowInput` bundle or legacy keyword
+    arguments (``problem``, ``gold_answer``, ``sample_idx``, ``text``,
+    ``finish_reason``, ``usage``) for backwards compatibility in tests.
+
+    :param result: Inputs captured for a single generated sample.
     :param args: Parsed CLI arguments (used for metadata fields).
     :param call_params: Azure generation parameters used for the call.
     :returns: Dictionary representing one JSONL row.
     """
-    canon_gold = _canon_math(gold_answer)
-    _, ans = _extract_blocks(text)
+    if result is None:
+        required_keys = ("problem", "gold_answer", "sample_idx", "text")
+        missing = [key for key in required_keys if key not in legacy_kwargs]
+        if missing:
+            raise TypeError(f"_build_result_row() missing required arguments: {', '.join(missing)}")
+        result = AzureResultRowInput(
+            problem=legacy_kwargs["problem"],
+            gold_answer=legacy_kwargs["gold_answer"],
+            sample_idx=legacy_kwargs["sample_idx"],
+            text=legacy_kwargs["text"],
+            finish_reason=legacy_kwargs.get("finish_reason"),
+            usage=legacy_kwargs.get("usage"),
+        )
+    if args is None or call_params is None:
+        raise TypeError("_build_result_row() requires args and call_params")
+
+    canon_gold = _canon_math(result.gold_answer)
+    _, ans = _extract_blocks(result.text)
     pred_canon = _canon_math(ans)
     is_correct = bool(pred_canon and canon_gold and canon_gold in pred_canon)
 
     row = build_math_gateway_row_base(
-        problem=problem,
-        gold_answer=gold_answer,
+        problem=result.problem,
+        gold_answer=result.gold_answer,
         gold_answer_canon=canon_gold,
         split=args.split,
         step=args.step,
-        sample_idx=sample_idx,
+        sample_idx=result.sample_idx,
     )
     row.update(
         {
@@ -314,18 +337,18 @@ def _build_result_row(
             "temperature": call_params.temperature,
             "top_p": call_params.top_p,
             "pass1": {
-                "output": text.strip(),
+                "output": result.text.strip(),
                 "pred_answer": ans,
                 "pred_answer_canon": pred_canon,
                 "is_correct_pred": is_correct,
-                "valid_tag_structure": _valid_tag_structure(text),
-                "finish_reason": finish_reason,
+                "valid_tag_structure": _valid_tag_structure(result.text),
+                "finish_reason": result.finish_reason,
             },
         },
     )
 
-    if usage:
-        row["usage"] = build_usage_dict(usage)
+    if result.usage:
+        row["usage"] = build_usage_dict(result.usage)
 
     return row
 

@@ -7,23 +7,37 @@ reaching into submodules directly, e.g.:
     from src.annotate import AnnotateOpts, annotate_file
 """
 
-import sys
+from __future__ import annotations
 
-from . import backcompat as _backcompat
-from .infra.config import load_azure_config, load_sandbox_config
-from .infra.llm_client import build_preferred_client
-from .core.prompts import SHIFT_JUDGE_SYSTEM_PROMPT, SHIFT_JUDGE_USER_TEMPLATE
-from .core.clean_core import clean_file, clean_root
-from .core.shift_core import (  # noqa: F401
-    AnnotateOpts,
-    DEFAULT_API_VERSION,
-    DEFAULT_DEPLOYMENT,
-    DEFAULT_ENDPOINT,
-    DEFAULT_USE_V1,
-    annotate_file,
-    llm_judge_shift,
-    scan_jsonl,
-)
+import sys
+from importlib import import_module
+
+
+_PKG_ROOT = __name__
+
+_backcompat = import_module(f"{_PKG_ROOT}.backcompat")
+_config_mod = import_module(f"{_PKG_ROOT}.infra.config")
+_llm_mod = import_module(f"{_PKG_ROOT}.infra.llm_client")
+_clean_mod = import_module(f"{_PKG_ROOT}.core.clean_core")
+_shift_mod = import_module(f"{_PKG_ROOT}.core.shift_core")
+_prompts_mod = import_module(f"{_PKG_ROOT}.core.prompts")
+
+load_azure_config = _config_mod.load_azure_config
+load_sandbox_config = _config_mod.load_sandbox_config
+build_preferred_client = _llm_mod.build_preferred_client
+clean_file = _clean_mod.clean_file
+clean_root = _clean_mod.clean_root
+SHIFT_JUDGE_SYSTEM_PROMPT = _prompts_mod.SHIFT_JUDGE_SYSTEM_PROMPT
+SHIFT_JUDGE_USER_TEMPLATE = _prompts_mod.SHIFT_JUDGE_USER_TEMPLATE
+
+AnnotateOpts = _shift_mod.AnnotateOpts
+DEFAULT_API_VERSION = _shift_mod.DEFAULT_API_VERSION
+DEFAULT_DEPLOYMENT = _shift_mod.DEFAULT_DEPLOYMENT
+DEFAULT_ENDPOINT = _shift_mod.DEFAULT_ENDPOINT
+DEFAULT_USE_V1 = _shift_mod.DEFAULT_USE_V1
+annotate_file = _shift_mod.annotate_file
+llm_judge_shift = _shift_mod.llm_judge_shift
+scan_jsonl = _shift_mod.scan_jsonl
 
 _ANNOTATION_PUBLIC_API = [
     "AnnotateOpts",

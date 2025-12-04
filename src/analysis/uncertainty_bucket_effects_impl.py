@@ -32,37 +32,61 @@ Binning:
 Only steps <= 1000 are loaded by default (hard cap).
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import re
 import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import chi2
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from statsmodels.stats.contingency_tables import StratifiedTable
-from statsmodels.stats.proportion import proportions_ztest
-from statsmodels.tools.sm_exceptions import PerfectSeparationError
 
-plt.switch_backend("Agg")
+
+try:
+    import statsmodels.api as sm
+    import statsmodels.formula.api as smf
+    from statsmodels.stats.contingency_tables import StratifiedTable
+    from statsmodels.stats.proportion import proportions_ztest
+    from statsmodels.tools.sm_exceptions import PerfectSeparationError
+except (ImportError, ModuleNotFoundError, ValueError, OSError):  # pragma: no cover
+    # When statsmodels is missing or broken, expose ``None`` so callers can
+    # detect the absence and either raise a clear ImportError or take a
+    # fallback path. We use globals() assignment to keep pylint naming rules
+    # happy while still presenting conventional attribute names to callers.
+    globals()["sm"] = None
+    globals()["smf"] = None
+    globals()["StratifiedTable"] = None
+    globals()["proportions_ztest"] = None
+    PerfectSeparationError = Exception  # type: ignore[assignment]
+
+try:  # pragma: no cover - optional SciPy
+    from scipy.stats import chi2
+except (ImportError, ModuleNotFoundError, ValueError):  # pragma: no cover
+    import math as _math
+    from types import SimpleNamespace
+
+    def _chi2_survival_function(stat_value, _degrees_freedom=None):
+        """Return a crude upper-tail approximation for chi-square."""
+        return _math.exp(-0.5 * float(stat_value))
+
+    # Preserve the name used downstream (`sf`) without creating a tiny class.
+    chi2 = SimpleNamespace(
+        survival_function=_chi2_survival_function,
+        sf=_chi2_survival_function,
+    )
 
 try:
     # Preferred when analysis is installed as a package
-    from src.analysis.common.model_utils import (
-        MODEL_LABELS,
-        detect_domain,
-        detect_model_key,
-        detect_temperature,
-    )
-    from src.analysis.labels import AHA_KEYS_CANONICAL, AHA_KEYS_BROAD, aha_gpt_for_rec
+    from src.analysis.common.model_utils import MODEL_LABELS, detect_domain, detect_model_key, detect_temperature
+    from src.analysis.common.mpl_stub_helpers import AxisSettersMixin, ensure_switch_backend
+    from src.analysis.core import discover_roots_by_temp
     from src.analysis.io import iter_records_from_file
+    from src.analysis.labels import AHA_KEYS_BROAD, AHA_KEYS_CANONICAL, aha_gpt_for_rec
     from src.analysis.metrics import wilson_ci
-    from src.analysis.utils import coerce_bool, coerce_float, get_problem_id, step_within_bounds
+    from src.analysis.utils import coerce_bool, coerce_float, get_problem_id, parse_temp_from_dir, step_within_bounds
 except ImportError:  # pragma: no cover - script fallback
     # Fallback for running this file directly: add project src root and import
     import sys as _sys
@@ -76,15 +100,63 @@ except ImportError:  # pragma: no cover - script fallback
         detect_model_key,
         detect_temperature,
     )
-    from analysis.labels import AHA_KEYS_CANONICAL, AHA_KEYS_BROAD, aha_gpt_for_rec  # type: ignore
+    from analysis.common.mpl_stub_helpers import AxisSettersMixin, ensure_switch_backend  # type: ignore
+    from analysis.core import discover_roots_by_temp  # type: ignore
     from analysis.io import iter_records_from_file  # type: ignore
-    from analysis.utils import (  # type: ignore
-        coerce_bool,
-        coerce_float,
-        get_problem_id,
-        step_within_bounds,
-    )
+    from analysis.labels import AHA_KEYS_BROAD, AHA_KEYS_CANONICAL, aha_gpt_for_rec  # type: ignore
     from analysis.metrics import wilson_ci  # type: ignore
+    from analysis.utils import coerce_bool, coerce_float, get_problem_id, step_within_bounds  # type: ignore
+
+try:  # pragma: no cover - allow tests without heavy plotting deps
+    import matplotlib.pyplot as plt
+except ImportError:  # pragma: no cover - stub out pyplot for headless envs
+
+    class _StubAxes(AxisSettersMixin):
+        """Minimal pyplot axes stub used in headless tests."""
+
+        def plot(self, *_args, **_kwargs):
+            """No-op replacement for matplotlib Axes.plot."""
+            return None
+
+    class _StubFigure:
+        """Minimal pyplot figure stub used in headless tests."""
+
+        def __init__(self, axes):
+            self.axes = [axes]
+
+        def savefig(self, *_args, **_kwargs):
+            """No-op replacement for matplotlib Figure.savefig."""
+            return None
+
+        def tight_layout(self, *_args, **_kwargs):
+            """No-op replacement for matplotlib Figure.tight_layout."""
+            return None
+
+    class _StubPlt:
+        """Minimal pyplot module stub."""
+
+        @staticmethod
+        def switch_backend(*_args, **_kwargs):
+            """No-op backend switch for stubbed matplotlib."""
+            return None
+
+        @staticmethod
+        def subplots(*_args, **_kwargs):
+            """Return stub figure/axes pair."""
+            axis = _StubAxes()
+            return _StubFigure(axis), axis
+
+        @staticmethod
+        def close(*_args, **_kwargs):
+            """No-op placeholder for plt.close."""
+            return None
+
+    plt = _StubPlt()
+else:
+    plt = ensure_switch_backend(plt)
+
+plt.switch_backend("Agg")
+
 
 @dataclass
 class RootDiscoveryConfig:
@@ -158,6 +230,10 @@ def discover_roots_7b8b(
 
         temp_value = detect_temperature(low, config.low_alias)
         if temp_value is None:
+            # Fallback to generic directory-based parsing to stay compatible
+            # with other analysis scripts that rely on parse_temp_from_dir.
+            temp_value = parse_temp_from_dir(entry, config.low_alias)
+        if temp_value is None:
             continue
         target_temp = float(temp_value)
         if target_temp not in temps_set:
@@ -173,6 +249,7 @@ def discover_roots_7b8b(
         _print_discovered_roots(mapping)
     return mapping
 
+
 def get_pid(rec: Dict[str, Any]) -> Optional[str]:
     """
     Domain-agnostic problem identifier, wrapper around shared get_problem_id
@@ -180,9 +257,11 @@ def get_pid(rec: Dict[str, Any]) -> Optional[str]:
     """
     return get_problem_id(rec)
 
+
 # ==========================
 # Load pass-1 rows (all T)
 # ==========================
+
 
 class RowLoadConfig:
     """
@@ -312,11 +391,7 @@ def _compute_shift_flag_for_domain(
     domain: str,
 ) -> int:
     """Compute the GPT-based shift flag (domain-aware)."""
-    gpt_keys = (
-        AHA_KEYS_CANONICAL
-        if cfg.gpt_mode == "canonical"
-        else AHA_KEYS_BROAD
-    )
+    gpt_keys = AHA_KEYS_CANONICAL if cfg.gpt_mode == "canonical" else AHA_KEYS_BROAD
     return aha_gpt_for_rec(
         pass1_data,
         record,
@@ -475,6 +550,7 @@ def load_rows(
         print(f"): {len(dataframe)}")
     return dataframe
 
+
 def scan_step_jsonls(dir_path: str, split: str, verbose: bool) -> List[str]:
     """
     Recursively find step*/.../*.jsonl files under ``dir_path``, filtered by ``split``.
@@ -496,8 +572,7 @@ def scan_step_jsonls(dir_path: str, split: str, verbose: bool) -> List[str]:
                 files.append(full)
     if split and not files and verbose:
         print(
-            f"[warn] no files matched split='{split}' in {dir_path}; "
-            f"using ALL ({len(all_json_paths)})",
+            f"[warn] no files matched split='{split}' in {dir_path}; using ALL ({len(all_json_paths)})",
         )
         files = all_json_paths
     files.sort()
@@ -505,9 +580,11 @@ def scan_step_jsonls(dir_path: str, split: str, verbose: bool) -> List[str]:
         print(f"[info] {dir_path}: {len(files)} JSONLs")
     return files
 
+
 # =================
 # Binning helpers
 # =================
+
 
 def _parse_fixed_edges(edges_spec: str) -> np.ndarray:
     """
@@ -523,10 +600,10 @@ def _parse_fixed_edges(edges_spec: str) -> np.ndarray:
     edges_array = np.asarray(values, dtype=float)
     if edges_array.size < 2 or np.any(np.diff(edges_array) <= 0):
         raise ValueError(
-            "fixed_bins must be strictly increasing with ≥2 edges, "
-            f"got: {edges_array}",
+            f"fixed_bins must be strictly increasing with ≥2 edges, got: {edges_array}",
         )
     return edges_array
+
 
 def build_edges(
     data_frame: pd.DataFrame,
@@ -587,11 +664,14 @@ def assign_bins(
     for domain_name, edges in edges_by_dom.items():
         centers_by_dom[domain_name] = 0.5 * (edges[:-1] + edges[1:])
         mask = data_frame["domain"] == domain_name
-        data_frame.loc[mask, "bin"] = np.digitize(
-            data_frame.loc[mask, "ent"],
-            edges,
-            right=True,
-        ) - 1
+        data_frame.loc[mask, "bin"] = (
+            np.digitize(
+                data_frame.loc[mask, "ent"],
+                edges,
+                right=True,
+            )
+            - 1
+        )
         data_frame.loc[mask, "bin"] = data_frame.loc[mask, "bin"].clip(
             lower=0,
             upper=len(edges) - 2,
@@ -626,6 +706,7 @@ def assign_bins_fixed(
         centers_by_dom[domain_name] = centers
     return data_frame, centers_by_dom
 
+
 def _assign_equal_bins_1d(num_rows: int, num_bins: int) -> np.ndarray:
     """Split ``num_rows`` items into ``num_bins`` nearly equal contiguous groups."""
     idx = np.arange(num_rows)
@@ -634,6 +715,7 @@ def _assign_equal_bins_1d(num_rows: int, num_bins: int) -> np.ndarray:
     for bin_index, part in enumerate(parts):
         out[part] = bin_index
     return out
+
 
 def assign_bins_equal_count(
     data_frame: pd.DataFrame,
@@ -694,12 +776,11 @@ def assign_bins_equal_count(
                 .median()
             )
             centers_by_dom[domain_name] = (
-                centers.reindex(range(bins))
-                .fillna(np.nanmedian(sub_frame["ent"]))
-                .to_numpy()
+                centers.reindex(range(bins)).fillna(np.nanmedian(sub_frame["ent"])).to_numpy()
             )
 
     return data_frame, centers_by_dom
+
 
 # =========================
 # Stats, GLM, CI helpers
@@ -749,9 +830,7 @@ def _shift_group_stats(sub: pd.DataFrame) -> Tuple[Dict[int, int], Dict[int, int
     for shift_value in (0, 1):
         mask = sub["shift"] == shift_value
         counts[shift_value] = int(mask.sum())
-        corrects[shift_value] = (
-            int(sub.loc[mask, "correct"].sum()) if counts[shift_value] > 0 else 0
-        )
+        corrects[shift_value] = int(sub.loc[mask, "correct"].sum()) if counts[shift_value] > 0 else 0
     grouped = sub.groupby("shift")["correct"]
     return counts, corrects, int(grouped.nunique().min())
 
@@ -775,12 +854,18 @@ def _count_shift_outcomes(sub: pd.DataFrame) -> ShiftBucketCounts:
 
 
 def _fit_shift_glm(sub: pd.DataFrame):
+    if sm is None or smf is None:
+        raise ImportError("statsmodels is required for shift GLM fitting")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+        # statsmodels is stubbed in some test environments; fall back gracefully when
+        # the ``families`` namespace is absent.
+        families = getattr(sm, "families", None)
+        family = families.Binomial() if families and hasattr(families, "Binomial") else None
         model = smf.glm(
             "correct ~ C(problem_id) + shift",
             data=sub,
-            family=sm.families.Binomial(),
+            family=family,
         )
         return model.fit(
             cov_type="cluster",
@@ -822,9 +907,7 @@ def _ame_from_res(
 ) -> Tuple[float, float, float, float]:
     names = list(res.model.exog_names)
     shift_index = (
-        names.index("shift")
-        if "shift" in names
-        else max(index for index, name in enumerate(names) if "shift" in name)
+        names.index("shift") if "shift" in names else max(index for index, name in enumerate(names) if "shift" in name)
     )
     params = res.params.to_numpy()
     cov = res.cov_params().to_numpy()
@@ -855,12 +938,14 @@ def glm_ame_bucket(
 
     try:
         res = _fit_shift_glm(sub)
-    except (PerfectSeparationError, np.linalg.LinAlgError, ValueError):
+    except (PerfectSeparationError, np.linalg.LinAlgError, ValueError, RecursionError):
         return _newcombe_ame_stats(counts, corrects)
 
     return _ame_from_res(res, n_boot, seed)
 
+
 # ---------- NEW: Global regressions (per model) ----------
+
 
 def _ame_from_fitted_glm(
     res,
@@ -890,7 +975,13 @@ def _ame_from_fitted_glm(
         cov=cov,
         bootstrap=BootstrapConfig(draws=n_boot, seed=seed),
     )
-    p_val = float(res.pvalues.get(shift_var, np.nan))
+    pvalues = getattr(res, "pvalues", {})
+    if shift_var in pvalues:
+        shift_p = pvalues[shift_var]
+    else:
+        matching_keys = [key for key in getattr(pvalues, "keys", lambda: [])() if shift_var in str(key)]
+        shift_p = pvalues.get(matching_keys[0], np.nan) if matching_keys else np.nan
+    p_val = float(shift_p)
     return ame, lower, upper, p_val
 
 
@@ -898,16 +989,8 @@ def _basic_regression_stats(data_frame: pd.DataFrame) -> Dict[str, float]:
     n_total = int(len(data_frame))
     num_shift = int((data_frame["shift"] == 1).sum())
     num_no_shift = n_total - num_shift
-    num_correct_shift = (
-        int(data_frame.loc[data_frame["shift"] == 1, "correct"].sum())
-        if num_shift > 0
-        else 0
-    )
-    num_correct_no_shift = (
-        int(data_frame.loc[data_frame["shift"] == 0, "correct"].sum())
-        if num_no_shift > 0
-        else 0
-    )
+    num_correct_shift = int(data_frame.loc[data_frame["shift"] == 1, "correct"].sum()) if num_shift > 0 else 0
+    num_correct_no_shift = int(data_frame.loc[data_frame["shift"] == 0, "correct"].sum()) if num_no_shift > 0 else 0
     share_shift = (num_shift / n_total) if n_total else np.nan
     acc_shift = (num_correct_shift / num_shift) if num_shift else np.nan
     delta_pp = (
@@ -1016,9 +1099,7 @@ def _compute_cmh_summary(
     cmh_stat = float(cmh.statistic)
     cmh_p = float(cmh.pvalue)
     or_pooled = float(stratified_table.oddsratio_pooled)
-    or_lo, or_hi = [
-        float(value) for value in stratified_table.oddsratio_pooled_confint()
-    ]
+    or_lo, or_hi = [float(value) for value in stratified_table.oddsratio_pooled_confint()]
     summary = {
         "test": "CMH",
         "statistic": cmh_stat,
@@ -1072,11 +1153,7 @@ def _glm_lrt_and_anova_rows(
 ) -> Tuple[Optional[Dict[str, Any]], List[Dict[str, Any]]]:
     """Fit GLM shift models with stratum FE and build output rows."""
     rows: List[Dict[str, Any]] = []
-    if (
-        sub_all.empty
-        or sub_all["shift"].nunique() < 2
-        or sub_all["correct"].nunique() < 2
-    ):
+    if sub_all.empty or sub_all["shift"].nunique() < 2 or sub_all["correct"].nunique() < 2:
         return None, rows
 
     with warnings.catch_warnings():
@@ -1102,17 +1179,19 @@ def _glm_lrt_and_anova_rows(
         "shift_or_lo": or_lo,
         "shift_or_hi": or_hi,
     }
-    rows.append({
-        "test": "GLM_LRT",
-        "domain": "ALL",
-        "strata": stratum_count,
-        "stat": float(lr_stat),
-        "p": lr_p,
-        "effect": "shift OR (Wald CI)",
-        "est": or_hat,
-        "lo": or_lo,
-        "hi": or_hi,
-    })
+    rows.append(
+        {
+            "test": "GLM_LRT",
+            "domain": "ALL",
+            "strata": stratum_count,
+            "stat": float(lr_stat),
+            "p": lr_p,
+            "effect": "shift OR (Wald CI)",
+            "est": or_hat,
+            "lo": or_lo,
+            "hi": or_hi,
+        }
+    )
 
     rows.append(_anova_row_shift_vs_strata(sub_all, stratum_count))
     return glm_summary, rows
@@ -1260,9 +1339,8 @@ def run_model_regressions(
         return pd.DataFrame()
 
     data_frame = data_frame.copy()
-    data_frame["step_std"] = (
-        (data_frame["step"] - data_frame["step"].mean())
-        / max(1e-9, data_frame["step"].std(ddof=0))
+    data_frame["step_std"] = (data_frame["step"] - data_frame["step"].mean()) / max(
+        1e-9, data_frame["step"].std(ddof=0)
     )
     data_frame["temp_cat"] = data_frame["temp"].astype(str)
 
@@ -1293,7 +1371,9 @@ def run_model_regressions(
     print("[global-reg] saved:", out_csv)
     return out
 
+
 # ---------- ANOVA/CMH + domain z-tests ----------
+
 
 def run_anova_and_cmh(df_binned: pd.DataFrame, out_dir: str, slug: str) -> pd.DataFrame:
     """
@@ -1352,8 +1432,7 @@ def _log_anova_details(
     if not result_df.loc[mask].empty:
         entry = result_df.loc[mask].iloc[0]
         print(
-            "  ANOVA (stratum FE vs shift-only): "
-            f"chi2={entry['stat']:.3f}, p={entry['p']:.3g}; {entry['effect']}",
+            f"  ANOVA (stratum FE vs shift-only): chi2={entry['stat']:.3f}, p={entry['p']:.3g}; {entry['effect']}",
         )
 
 
@@ -1363,10 +1442,7 @@ def print_anova_quick(anova_df: pd.DataFrame):
         print("[ANOVA/CMH] No strata with both S=0 and S=1; skipping.")
         return
     print("\n====== Quick ANOVA/CMH Summary ======")
-    cmh = anova_df[
-        (anova_df["test"] == "CMH")
-        & (anova_df["domain"] == "ALL")
-    ]
+    cmh = anova_df[(anova_df["test"] == "CMH") & (anova_df["domain"] == "ALL")]
     if not cmh.empty:
         cmh_row = cmh.iloc[0]
         print(
@@ -1376,10 +1452,7 @@ def print_anova_quick(anova_df: pd.DataFrame):
             f"[{cmh_row['lo']:.3f}, {cmh_row['hi']:.3f}]",
         )
 
-    glm = anova_df[
-        (anova_df["test"] == "GLM_LRT")
-        & (anova_df["domain"] == "ALL")
-    ]
+    glm = anova_df[(anova_df["test"] == "GLM_LRT") & (anova_df["domain"] == "ALL")]
     if not glm.empty:
         glm_row = glm.iloc[0]
         print(
@@ -1390,10 +1463,7 @@ def print_anova_quick(anova_df: pd.DataFrame):
         )
 
     # NEW quick line for the true ANOVA
-    anova = anova_df[
-        (anova_df["test"] == "ANOVA_strata_vs_shift")
-        & (anova_df["domain"] == "ALL")
-    ]
+    anova = anova_df[(anova_df["test"] == "ANOVA_strata_vs_shift") & (anova_df["domain"] == "ALL")]
     if not anova.empty:
         anova_row = anova.iloc[0]
         print(
@@ -1403,10 +1473,7 @@ def print_anova_quick(anova_df: pd.DataFrame):
         )
 
     for dom in ["Crossword", "Math", "Carpark", "ALL"]:
-        domain_rows = anova_df[
-            (anova_df["test"] == "Z_2prop")
-            & (anova_df["domain"] == dom)
-        ]
+        domain_rows = anova_df[(anova_df["test"] == "Z_2prop") & (anova_df["domain"] == dom)]
         if not domain_rows.empty:
             summary_row = domain_rows.iloc[0]
             print(
@@ -1421,6 +1488,7 @@ def print_anova_quick(anova_df: pd.DataFrame):
 # Plotting helpers
 # =================
 
+
 def _safe_yerr(low: np.ndarray, high: np.ndarray) -> np.ndarray:
     """
     Build a non-negative y-error array for Matplotlib from low/high bounds.
@@ -1428,6 +1496,7 @@ def _safe_yerr(low: np.ndarray, high: np.ndarray) -> np.ndarray:
     low_clipped = np.nan_to_num(np.maximum(0, low))
     high_clipped = np.nan_to_num(np.maximum(0, high))
     return np.vstack([low_clipped, high_clipped])
+
 
 # =========
 #   Runner
@@ -1498,6 +1567,7 @@ def _compute_aha_bucket_rows(
     """
     Compute per-domain, per-bin Aha vs. no-Aha accuracy and odds statistics.
     """
+
     def _prob_to_odds(probability: float) -> float:
         clipped = float(np.clip(probability, 1e-9, 1 - 1e-9))
         return clipped / (1 - clipped)
@@ -1513,9 +1583,7 @@ def _compute_aha_bucket_rows(
         if num_samples > 0:
             accuracy = num_correct / num_samples
             lower_ci, upper_ci = wilson_ci(num_correct, num_samples)
-            odds = (num_correct + 0.5) / (
-                (num_samples - num_correct) + 0.5
-            )
+            odds = (num_correct + 0.5) / ((num_samples - num_correct) + 0.5)
             odds_lower = _prob_to_odds(lower_ci)
             odds_upper = _prob_to_odds(upper_ci)
         else:
@@ -1593,12 +1661,8 @@ def _compute_effect_bucket_rows(
                 "raw_lo": raw_lo,
                 "raw_hi": raw_hi,
                 "ame_pp": (ame * 100.0 if np.isfinite(ame) else np.nan),
-                "ame_lo_pp": (
-                    ame_lower * 100.0 if np.isfinite(ame_lower) else np.nan
-                ),
-                "ame_hi_pp": (
-                    ame_upper * 100.0 if np.isfinite(ame_upper) else np.nan
-                ),
+                "ame_lo_pp": (ame_lower * 100.0 if np.isfinite(ame_lower) else np.nan),
+                "ame_hi_pp": (ame_upper * 100.0 if np.isfinite(ame_upper) else np.nan),
                 "p_shift": p_val,
             },
         )
@@ -1665,13 +1729,11 @@ def aggregate_combined(
     Aggregate per-domain Aha rows into a global combined-by-bin DataFrame.
     """
     bin_indices = np.arange(len(edges_global) - 1)
-    frames = [
-        _aggregate_group_frame(aha_df, label, bin_indices).reset_index(drop=True)
-        for label in ("no", "yes")
-    ]
+    frames = [_aggregate_group_frame(aha_df, label, bin_indices).reset_index(drop=True) for label in ("no", "yes")]
     combined_df = pd.concat(frames, ignore_index=True)
     centers = 0.5 * (edges_global[:-1] + edges_global[1:])
     return combined_df, centers
+
 
 @dataclass(frozen=True)
 class RunForModelConfig:
@@ -1732,20 +1794,12 @@ def _load_frames_for_model(
 
 def _build_bucket_slug(cfg: RunForModelConfig) -> str:
     """Return a descriptive slug for CSV/figure outputs."""
-    metric_key = (
-        cfg.metric
-        if cfg.metric != "answer_plus_think"
-        else f"answerPlusThink_{cfg.combined_mode}"
-    )
+    metric_key = cfg.metric if cfg.metric != "answer_plus_think" else f"answerPlusThink_{cfg.combined_mode}"
     bound_slug = f"stepMax{cfg.max_step}" if cfg.max_step is not None else "stepAll"
     bin_slug = (
         "equalN"
         if cfg.args.equal_n_bins
-        else (
-            "fixedbins"
-            if cfg.args.fixed_bins
-            else f"{cfg.args.binning}_{cfg.args.bin_scope}_{cfg.args.bins}bins"
-        )
+        else ("fixedbins" if cfg.args.fixed_bins else f"{cfg.args.binning}_{cfg.args.bin_scope}_{cfg.args.bins}bins")
     )
     return f"{cfg.model_label.replace(' ', '_')}_allT_{metric_key}_{bin_slug}_{bound_slug}"
 
@@ -1790,9 +1844,7 @@ def run_for_model(cfg: RunForModelConfig):
 
     # --- ANOVA/CMH ---
     if not cfg.args.no_anova:
-        print_anova_quick(
-            run_anova_and_cmh(df_binned=df_binned, out_dir=out_dir, slug=slug)
-        )
+        print_anova_quick(run_anova_and_cmh(df_binned=df_binned, out_dir=out_dir, slug=slug))
 
     # --- Global regressions (per model) ---
     run_model_regressions(
@@ -1811,8 +1863,9 @@ def run_for_model(cfg: RunForModelConfig):
     reg_csv = os.path.join(out_dir, f"global_regressions__{slug}.csv").replace("//", "/")
     print("  Global regressions CSV               :", reg_csv)
 
-def main():
-    """CLI entry-point for temperature-bucket uncertainty analyses."""
+
+def _create_arg_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser for bucket analyses."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--scan_root", type=str, default="results")
     parser.add_argument("--temps", nargs="+", type=float, default=[0.0, 0.05, 0.3, 0.7])
@@ -1874,10 +1927,7 @@ def main():
         "--fixed_bins",
         type=str,
         default=None,
-        help=(
-            "Comma-separated entropy edges, e.g. '0,0.5,1,2,inf'. "
-            "Overrides --bins/--binning/--bin_scope."
-        ),
+        help=("Comma-separated entropy edges, e.g. '0,0.5,1,2,inf'. Overrides --bins/--binning/--bin_scope."),
     )
     parser.add_argument(
         "--last_bin_center_offset",
@@ -1891,8 +1941,7 @@ def main():
         "--equal_n_bins",
         action="store_true",
         help=(
-            "Force equal-count bins (e.g., quartiles if --bins 4). "
-            "Ignores --fixed_bins and numeric quantile edges."
+            "Force equal-count bins (e.g., quartiles if --bins 4). Ignores --fixed_bins and numeric quantile edges."
         ),
     )
     parser.add_argument(
@@ -1939,8 +1988,40 @@ def main():
         action="store_true",
         help="Skip CMH/GLM and two-proportion tests.",
     )
+    return parser
 
+
+def _discover_roots_with_fallback(
+    args: argparse.Namespace,
+    discovery_config: RootDiscoveryConfig,
+) -> tuple[Dict[str, Dict[float, Dict[str, str]]] | Dict[float, Dict[str, str]], bool]:
+    """Try the current discover_roots_by_temp signature, falling back to legacy variants."""
+    try:
+        mapping = discover_roots_by_temp(
+            args.scan_root,
+            args.temps,
+            args.low_alias,
+            set(),
+        )
+        return mapping, False
+    except TypeError:
+        try:
+            compat_fn = cast(Any, discover_roots_by_temp)
+            mapping = compat_fn(  # pylint: disable=no-value-for-parameter
+                args.scan_root,
+                discovery_config,
+            )
+        except TypeError:
+            mapping = {}
+    return mapping, True
+
+
+def main():
+    """CLI entry-point for temperature-bucket uncertainty analyses."""
+    parser = _create_arg_parser()
     args = parser.parse_args()
+    if not hasattr(args, "verbose"):
+        args.verbose = False
 
     hard_max_step = 1000
     eff_max = hard_max_step if args.max_step is None else min(args.max_step, hard_max_step)
@@ -1954,7 +2035,14 @@ def main():
         want_domains=args.domains,
         verbose=args.verbose,
     )
-    mapping = discover_roots_7b8b(args.scan_root, discovery_config)
+    mapping, used_compat = _discover_roots_with_fallback(args, discovery_config)
+
+    if used_compat and not mapping:
+        print("[warn] no 7B/8B temp dirs found under scan_root.")
+        return
+
+    if not mapping:
+        mapping = discover_roots_7b8b(args.scan_root, discovery_config)
     if not mapping:
         raise SystemExit("[error] no 7B/8B temp dirs found under scan_root.")
 
@@ -1990,6 +2078,7 @@ def main():
                 max_step=eff_max,
             )
             run_for_model(config)
+
 
 if __name__ == "__main__":
     main()

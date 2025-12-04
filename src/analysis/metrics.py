@@ -194,16 +194,8 @@ def shift_conditional_counts(data_frame: pd.DataFrame) -> tuple[int, float, floa
     total_count = int(len(data_frame))
     n_shift = int((data_frame["shift"] == 1).sum())
     n_noshift = total_count - n_shift
-    k_shift = (
-        int(data_frame.loc[data_frame["shift"] == 1, "correct"].sum())
-        if n_shift > 0
-        else 0
-    )
-    k_noshift = (
-        int(data_frame.loc[data_frame["shift"] == 0, "correct"].sum())
-        if n_noshift > 0
-        else 0
-    )
+    k_shift = int(data_frame.loc[data_frame["shift"] == 1, "correct"].sum()) if n_shift > 0 else 0
+    k_noshift = int(data_frame.loc[data_frame["shift"] == 0, "correct"].sum()) if n_noshift > 0 else 0
     p_shift = (k_shift / n_shift) if n_shift > 0 else np.nan
     p_noshift = (k_noshift / n_noshift) if n_noshift > 0 else np.nan
     share = (n_shift / total_count) if total_count > 0 else np.nan
@@ -236,10 +228,7 @@ def wilson_ci(num_success: int, num_trials: int) -> tuple[float, float]:
     proportion = num_success / num_trials
     denom = 1.0 + (z_score * z_score) / num_trials
     centre = proportion + (z_score * z_score) / (2.0 * num_trials)
-    adj = z_score * (
-        (proportion * (1.0 - proportion) + (z_score * z_score) / (4.0 * num_trials))
-        / num_trials
-    ) ** 0.5
+    adj = z_score * ((proportion * (1.0 - proportion) + (z_score * z_score) / (4.0 * num_trials)) / num_trials) ** 0.5
     lower = (centre - adj) / denom
     upper = (centre + adj) / denom
     return (max(0.0, lower), min(1.0, upper))
@@ -276,12 +265,20 @@ def cond_counts(rows_df: pd.DataFrame) -> Tuple[int, float, float, float]:
     total_count = int(len(rows_df))
     n_shift = int((rows_df["shift"] == 1).sum())
     n_no_shift = total_count - n_shift
-    correct_shift = int(
-        rows_df.loc[rows_df["shift"] == 1, "correct"].sum(),
-    ) if n_shift > 0 else 0
-    correct_no_shift = int(
-        rows_df.loc[rows_df["shift"] == 0, "correct"].sum(),
-    ) if n_no_shift > 0 else 0
+    correct_shift = (
+        int(
+            rows_df.loc[rows_df["shift"] == 1, "correct"].sum(),
+        )
+        if n_shift > 0
+        else 0
+    )
+    correct_no_shift = (
+        int(
+            rows_df.loc[rows_df["shift"] == 0, "correct"].sum(),
+        )
+        if n_no_shift > 0
+        else 0
+    )
     p_shift = (correct_shift / n_shift) if n_shift > 0 else np.nan
     p_no_shift = (correct_no_shift / n_no_shift) if n_no_shift > 0 else np.nan
     share = (n_shift / total_count) if total_count > 0 else np.nan
@@ -338,11 +335,7 @@ def glm_fit_with_covariance(
     try:
         result = model.fit(cov_type=cov_type, cov_kwds=(cov_kwds or {}))
     except TypeError:
-        minimal_kw = (
-            {"groups": cov_kwds.get("groups")}
-            if cov_kwds and "groups" in cov_kwds
-            else {}
-        )
+        minimal_kw = {"groups": cov_kwds.get("groups")} if cov_kwds and "groups" in cov_kwds else {}
         result = model.fit(cov_type=cov_type, cov_kwds=minimal_kw)
     return result, cov_type, cov_kwds
 

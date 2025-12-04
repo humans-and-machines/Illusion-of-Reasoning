@@ -26,6 +26,7 @@ Example usage:
 """
 
 from __future__ import annotations
+
 import os
 import random
 import sys
@@ -33,27 +34,30 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, Dict
 
+from src.inference.domains.math.math_core import load_math500
 from src.inference.gateways.base import setup_gateway_logger
 from src.inference.utils.common import (
+    GatewayCallParams,
     append_jsonl_row,
     build_math_gateway_arg_parser,
     build_math_gateway_messages,
     build_math_gateway_row_base,
     build_usage_dict,
-    canon_math as _canon_math,
-    extract_blocks as _extract_blocks,
+)
+from src.inference.utils.common import canon_math as _canon_math
+from src.inference.utils.common import extract_blocks as _extract_blocks
+from src.inference.utils.common import (
     extract_problem_and_answer,
     parse_openai_chat_response,
     prepare_math_gateway_dataset_from_args,
     require_datasets,
     setup_hf_cache_dir_env,
-    valid_tag_structure as _valid_tag_structure,
 )
-from src.inference.domains.math.math_core import load_math500
+from src.inference.utils.common import valid_tag_structure as _valid_tag_structure
 from src.inference.utils.task_registry import MATH_SYSTEM_PROMPT
 
 
-_DatasetType, load_dataset = require_datasets()
+DATASET_TYPE, load_dataset = require_datasets()
 logger = setup_gateway_logger(__name__)
 
 
@@ -62,21 +66,7 @@ SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
 
 
 # ----------------------- Portkey client + call -----------------------
-@dataclass
-class PortkeyCallParams:
-    """
-    Lightweight container for Portkey generation parameters.
-
-    :param temperature: Sampling temperature for the model.
-    :param top_p: Nucleus-sampling parameter for the model.
-    :param max_output_tokens: Maximum number of tokens to generate.
-    :param request_timeout: Per-request timeout in seconds.
-    """
-
-    temperature: float
-    top_p: float
-    max_output_tokens: int
-    request_timeout: int
+PortkeyCallParams = GatewayCallParams
 
 
 @dataclass
@@ -187,7 +177,7 @@ def _call_model(
     return parse_openai_chat_response(resp)
 
 
-def _iter_examples(dataset, num_examples: int | None):
+def _iter_examples(dataset: DATASET_TYPE, num_examples: int | None):
     """
     Yield at most ``num_examples`` examples from a dataset (or all if ``None``).
 
@@ -214,11 +204,7 @@ def _build_portkey_row(
     :returns: Dictionary representing one JSONL row.
     """
     pred_canon = _canon_math(result.answer)
-    is_correct = bool(
-        pred_canon
-        and example.canon_gold
-        and example.canon_gold in pred_canon
-    )
+    is_correct = bool(pred_canon and example.canon_gold and example.canon_gold in pred_canon)
 
     row: Dict[str, Any] = build_math_gateway_row_base(
         problem=example.problem,
@@ -274,11 +260,7 @@ def run_portkey_math_inference(
         if not problem or gold_answer is None:
             continue
 
-        todo_indices = [
-            idx
-            for idx in range(config.num_samples)
-            if idx not in existing.get(problem, set())
-        ]
+        todo_indices = [idx for idx in range(config.num_samples) if idx not in existing.get(problem, set())]
         if not todo_indices:
             continue
 

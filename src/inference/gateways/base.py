@@ -10,6 +10,7 @@ from typing import Optional
 from src.inference.utils.common import setup_script_logger
 from src.inference.utils.task_registry import TASK_REGISTRY, TaskSpec
 
+
 __all__ = ["get_task_spec", "setup_gateway_logger"]
 
 

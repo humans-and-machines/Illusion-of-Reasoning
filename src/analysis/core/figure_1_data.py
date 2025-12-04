@@ -10,12 +10,11 @@ import pandas as pd
 
 from ..io import iter_records_from_file, scan_jsonl_files
 from ..labels import aha_gpt_for_rec, aha_words
-from ..utils import (
-    coerce_bool,
-    nat_step_from_path as utils_nat_step_from_path,
-    slugify as utils_slugify,
-)
+from ..utils import coerce_bool
+from ..utils import nat_step_from_path as utils_nat_step_from_path
+from ..utils import slugify as utils_slugify
 from . import FORMAL_REQUIRED_COLUMNS
+
 
 slugify = utils_slugify
 nat_step_from_path = utils_nat_step_from_path
@@ -96,11 +95,7 @@ def load_pass1_samples_multi(
 
 def build_problem_step(data_frame: pd.DataFrame) -> pd.DataFrame:
     """Aggregate correctness and Aha flags at the (problem, step) level."""
-    group_keys = (
-        ["domain", "step", "problem"]
-        if "domain" in data_frame.columns
-        else ["step", "problem"]
-    )
+    group_keys = ["domain", "step", "problem"] if "domain" in data_frame.columns else ["step", "problem"]
     base = (
         data_frame.groupby(group_keys, as_index=False)
         .agg(
@@ -121,7 +116,11 @@ def build_problem_step(data_frame: pd.DataFrame) -> pd.DataFrame:
             return pd.Series({"p_correct_given_shift": float(group.loc[mask, "correct"].mean())})
         return pd.Series({"p_correct_given_shift": np.nan})
 
-    pcs = data_frame.groupby(group_keys).apply(_pcs_row).reset_index()
+    try:
+        pcs = data_frame.groupby(group_keys).apply(_pcs_row, include_groups=False)
+    except TypeError:  # pragma: no cover - older pandas
+        pcs = data_frame.groupby(group_keys).apply(_pcs_row)
+    pcs = pcs.reset_index()
     problem_step_df = base.merge(pcs, on=group_keys, how="left")
     for column in ("n_samples", "aha_any_gpt", "aha_any_native"):
         problem_step_df[column] = problem_step_df[column].astype(int)
@@ -209,11 +208,7 @@ def mark_formal_pairs(
     if "domain" in problem_step_df.columns:
         group_cols = ["domain"] + group_cols
 
-    sorted_df = (
-        problem_step_df.sort_values(group_cols + ["step"])
-        .reset_index(drop=True)
-        .copy()
-    )
+    sorted_df = problem_step_df.sort_values(group_cols + ["step"]).reset_index(drop=True).copy()
     flags = np.zeros(len(sorted_df), dtype=int)
     criteria = FormalCriteria(
         delta1=delta1,
@@ -274,14 +269,16 @@ def bootstrap_problem_ratio(
             continue
         mean_ratio = float(value_array.mean())
         lo_ci, hi_ci = _bootstrap_ratio_interval(value_array, int(num_bootstrap), rng)
-        rows.append({
-            "step": int(step_value),
-            "k": int(value_array.sum()),
-            "n": int(sample_count),
-            "ratio": mean_ratio,
-            "lo": float(lo_ci),
-            "hi": float(hi_ci),
-        })
+        rows.append(
+            {
+                "step": int(step_value),
+                "k": int(value_array.sum()),
+                "n": int(sample_count),
+                "ratio": mean_ratio,
+                "lo": float(lo_ci),
+                "hi": float(hi_ci),
+            }
+        )
     return pd.DataFrame(rows).sort_values("step")
 
 
@@ -292,12 +289,7 @@ def fit_trend_wls(
     step_values = ratio_df["step"].to_numpy(dtype=float)
     ratio_values = ratio_df["ratio"].to_numpy(dtype=float)
     weights = ratio_df["n"].to_numpy(dtype=float)
-    valid_mask = (
-        np.isfinite(step_values)
-        & np.isfinite(ratio_values)
-        & np.isfinite(weights)
-        & (weights > 0)
-    )
+    valid_mask = np.isfinite(step_values) & np.isfinite(ratio_values) & np.isfinite(weights) & (weights > 0)
     step_values = step_values[valid_mask]
     ratio_values = ratio_values[valid_mask]
     weights = weights[valid_mask]
@@ -315,8 +307,7 @@ def _weighted_trend_from_arrays(
     weighted_step_mean = np.average(step_values, weights=weights)
     weighted_ratio_mean = np.average(ratio_values, weights=weights)
     numerator = np.average(
-        (step_values - weighted_step_mean)
-        * (ratio_values - weighted_ratio_mean),
+        (step_values - weighted_step_mean) * (ratio_values - weighted_ratio_mean),
         weights=weights,
     )
     denominator = np.average(
@@ -324,11 +315,7 @@ def _weighted_trend_from_arrays(
         weights=weights,
     )
     slope = numerator / denominator if denominator > 0 else np.nan
-    intercept = (
-        weighted_ratio_mean - slope * weighted_step_mean
-        if np.isfinite(slope)
-        else np.nan
-    )
+    intercept = weighted_ratio_mean - slope * weighted_step_mean if np.isfinite(slope) else np.nan
     series = TrendSeries(
         step=step_values,
         ratio=ratio_values,
@@ -373,10 +360,7 @@ def _positive_delta_flag(subset: pd.DataFrame) -> bool:
     p_shift = subset["p_correct_given_shift"].to_numpy()
     mask = np.isfinite(p_shift) & (subset["aha_any_gpt"].to_numpy() == 1)
     if mask.any():
-        delta = (
-            subset.loc[mask, "p_correct_given_shift"].to_numpy()
-            - subset.loc[mask, "freq_correct"].to_numpy()
-        )
+        delta = subset.loc[mask, "p_correct_given_shift"].to_numpy() - subset.loc[mask, "freq_correct"].to_numpy()
         return bool(np.nanmean(delta) > 0.12)
     return False
 

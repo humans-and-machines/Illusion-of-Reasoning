@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
+
 torch = pytest.importorskip("torch")
 router = pytest.importorskip("src.training.grpo_rewards_router")
 
@@ -219,4 +220,3 @@ def test_reward_router_routes_to_rush_scores(monkeypatch):
     assert len(calls) == 2
     assert all(call["board_str"] == "BOARD" for call in calls)
     assert all(call["N"] == 6 for call in calls)
-

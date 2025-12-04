@@ -43,6 +43,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+
 try:
     import matplotlib as mpl  # type: ignore[import-error]
 
@@ -52,42 +53,21 @@ except ImportError:  # pragma: no cover - optional plotting dependency
     mpl = None
     plt = None
 
-try:
-    # Package imports
-    from .io import build_files_by_domain_for_args, iter_records_from_file
-    from .labels import aha_gpt_for_rec
-    from .metrics import carpark_success_from_soft_reward
-    from .utils import (
-        add_carpark_threshold_args,
-        add_gpt_mode_arg,
-        add_split_and_out_dir_args,
-        add_standard_domain_root_args,
-        coerce_bool,
-        coerce_float,
-        get_problem_id,
-        gpt_keys_for_mode,
-        nat_step_from_path,
-    )
-except ImportError:  # pragma: no cover - script fallback
-    import sys
+from src.analysis.io import build_files_by_domain_for_args, iter_records_from_file
+from src.analysis.labels import aha_gpt_for_rec
+from src.analysis.metrics import carpark_success_from_soft_reward
+from src.analysis.utils import (
+    add_carpark_threshold_args,
+    add_gpt_mode_arg,
+    add_split_and_out_dir_args,
+    add_standard_domain_root_args,
+    coerce_bool,
+    coerce_float,
+    get_problem_id,
+    gpt_keys_for_mode,
+    nat_step_from_path,
+)
 
-    _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if _ROOT not in sys.path:
-        sys.path.append(_ROOT)
-    from analysis.io import build_files_by_domain_for_args, iter_records_from_file  # type: ignore
-    from analysis.labels import aha_gpt_for_rec  # type: ignore
-    from analysis.metrics import carpark_success_from_soft_reward  # type: ignore
-    from analysis.utils import (  # type: ignore
-        add_carpark_threshold_args,
-        add_gpt_mode_arg,
-        add_split_and_out_dir_args,
-        add_standard_domain_root_args,
-        coerce_bool,
-        coerce_float,
-        get_problem_id,
-        gpt_keys_for_mode,
-        nat_step_from_path,
-    )
 
 # ---------- Style (Times-like) ----------
 STYLE_PARAMS = {
@@ -108,6 +88,7 @@ STYLE_PARAMS = {
     "mathtext.fontset": "stix",
 }
 mpl.rcParams.update(STYLE_PARAMS)
+
 
 # ---------- Carpark success policy ----------
 def _extract_soft_reward(
@@ -284,6 +265,7 @@ def load_rows(
                     rows.append(row)
     return pd.DataFrame(rows)
 
+
 # ---------- Binning and aggregation ----------
 def make_bins(series: pd.Series, n_bins: int, mode: str) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -334,11 +316,7 @@ def _bin_group_stats(tmp: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     cnt = grouped["correct"].size().rename("n").reset_index()
     merged = acc.merge(cnt, on=["_bin", "aha"], how="outer")
     piv_acc = merged.pivot(index="_bin", columns="aha", values="acc")
-    piv_cnt = (
-        merged.pivot(index="_bin", columns="aha", values="n")
-        .fillna(0)
-        .astype(int)
-    )
+    piv_cnt = merged.pivot(index="_bin", columns="aha", values="n").fillna(0).astype(int)
     return piv_acc, piv_cnt
 
 
@@ -414,6 +392,7 @@ def aggregate_bins(
     rows = _rows_from_pivots(metric_col, piv_acc, piv_cnt)
     return pd.DataFrame(rows)
 
+
 # ---------- Plotting ----------
 METRIC_CONFIGS = [
     ("entropy_think", "Think entropy"),
@@ -482,10 +461,7 @@ def plot_domain_panels(
             alpha=0.85,
         )
 
-        labels = [
-            f"[{left:.2f},{right:.2f}]"
-            for left, right in zip(stat["bin_left"], stat["bin_right"])
-        ]
+        labels = [f"[{left:.2f},{right:.2f}]" for left, right in zip(stat["bin_left"], stat["bin_right"])]
         axis.set_xticks(positions, labels, rotation=45, ha="right")
         axis.grid(axis="y", linestyle=":", alpha=0.4)
 
@@ -496,6 +472,7 @@ def plot_domain_panels(
     fig.savefig(out_path_png.replace(".png", ".pdf"), bbox_inches="tight")
     plt.close(fig)
 
+
 # ---------- Main ----------
 def _build_arg_parser() -> argparse.ArgumentParser:
     """Construct the CLI argument parser for entropy histograms."""
@@ -504,9 +481,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     add_standard_domain_root_args(parser)
     add_split_and_out_dir_args(
         parser,
-        out_dir_help=(
-            "Base output directory (default: <first_root>/entropy_histograms)."
-        ),
+        out_dir_help=("Base output directory (default: <first_root>/entropy_histograms)."),
     )
     parser.add_argument("--dataset_name", default="MIXED")
     parser.add_argument("--model_name", default="Qwen2.5-1.5B")

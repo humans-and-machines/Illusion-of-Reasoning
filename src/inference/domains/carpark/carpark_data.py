@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from src.inference.utils.common import iter_jsonl_objects, require_datasets
@@ -50,12 +51,7 @@ def norm_fields(
     try:
         messages = _ensure_messages(messages)
     except ValueError:
-        problem = (
-            example.get("problem")
-            or example.get("board")
-            or example.get("prompt")
-            or ""
-        )
+        problem = example.get("problem") or example.get("board") or example.get("prompt") or ""
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": str(problem)},
@@ -80,15 +76,21 @@ def load_existing_example_index(outpath: str) -> Dict[str, set[int]]:
     return existing_by_example
 
 
+@dataclass
+class BatchRangeConfig:
+    """Configuration describing how to build batch items for a dataset slice."""
+
+    prompt_col: str
+    solution_col: str
+    num_samples: int
+    existing_by_example: Dict[str, set[int]]
+
+
 def build_batch_items_for_range(
     examples,
     start_idx: int,
     batch_size: int,
-    *,
-    prompt_col: str,
-    solution_col: str,
-    num_samples: int,
-    existing_by_example: Dict[str, set[int]],
+    config: BatchRangeConfig,
 ) -> List[Dict[str, Any]]:
     """
     Construct ``batch_items`` for a contiguous range of examples.
@@ -101,14 +103,14 @@ def build_batch_items_for_range(
     ):
         messages_and_solution = norm_fields(
             raw_example,
-            prompt_col,
-            solution_col,
+            config.prompt_col,
+            config.solution_col,
         )
         example_id = str(raw_example.get("id", f"idx_{start_idx + offset}"))
         missing = [
             sample_idx
-            for sample_idx in range(num_samples)
-            if sample_idx not in existing_by_example.get(example_id, set())
+            for sample_idx in range(config.num_samples)
+            if sample_idx not in config.existing_by_example.get(example_id, set())
         ]
         if not missing:
             continue
@@ -150,8 +152,7 @@ def load_rush_dataset(
     columns = set(dataset.column_names)
     if prompt_col not in columns or solution_col not in columns:
         raise ValueError(
-            f"Dataset missing required columns: {prompt_col}, {solution_col}. "
-            f"Found: {sorted(columns)}",
+            f"Dataset missing required columns: {prompt_col}, {solution_col}. Found: {sorted(columns)}",
         )
     return dataset
 

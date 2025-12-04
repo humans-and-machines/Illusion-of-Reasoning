@@ -14,13 +14,15 @@ import gzip
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from .utils import (
-    extract_pass1_and_step,
-    nat_step_from_path,
-    step_within_bounds,
-)
+# Import the shared JSONL scanner from the top-level ``common`` package.
+# Using an explicit src-prefixed import keeps pylint happy when run from repo root.
+from src.common.jsonl_utils import scan_jsonl_files as _scan_jsonl_files
+
+from .utils import extract_pass1_and_step, nat_step_from_path, step_within_bounds
+
 
 # ---------------------------------------------------------------------------
 # Scanning patterns
@@ -40,6 +42,7 @@ STEP_FILE_PAT = re.compile(r"^(?:step|global[_-]?step|checkpoint)[-_]?\d{1,5}", 
 # Scanning helpers
 # ---------------------------------------------------------------------------
 
+
 def _normalize_skip(skip_substrings: Optional[Iterable[str]]) -> List[str]:
     if skip_substrings is None:
         return sorted(SKIP_DIR_DEFAULT)
@@ -55,16 +58,7 @@ def scan_jsonl_files(root: str, split_substr: Optional[str] = None) -> List[str]
         (for example, ``\"train\"`` or ``\"test\"``).
     :returns: Sorted list of matching ``.jsonl`` file paths.
     """
-    out: List[str] = []
-    for dirpath, _, filenames in os.walk(root):
-        for filename in filenames:
-            if not filename.endswith(".jsonl"):
-                continue
-            if split_substr and split_substr not in filename:
-                continue
-            out.append(os.path.join(dirpath, filename))
-    out.sort()
-    return out
+    return _scan_jsonl_files(root, split_substr)
 
 
 def scan_files_step_only(
@@ -178,8 +172,6 @@ def build_jsonl_files_by_domain(
     return files_by_domain, first_root
 
 
-
-
 def collect_jsonl_files_for_domains(
     domain_roots: Dict[str, Optional[str]],
     split_substr: Optional[str],
@@ -277,11 +269,7 @@ def scan_files_with_steps_or_meta(
             continue
         for filename in filenames:
             low = filename.lower()
-            if not (
-                low.endswith(".jsonl")
-                or low.endswith(".jsonl.gz")
-                or low.endswith(".json")
-            ):
+            if not (low.endswith(".jsonl") or low.endswith(".jsonl.gz") or low.endswith(".json")):
                 continue
             if split_substr and split_substr not in filename:
                 continue
@@ -296,6 +284,7 @@ def scan_files_with_steps_or_meta(
 # ---------------------------------------------------------------------------
 # Record iteration
 # ---------------------------------------------------------------------------
+
 
 def _iter_json_from_text(text: str) -> Iterable[Dict[str, Any]]:
     """
@@ -343,7 +332,7 @@ def _iter_json_lines(handle) -> Iterable[Dict[str, Any]]:
             yield record
 
 
-def iter_records_from_file(path: str) -> Iterable[Dict[str, Any]]:
+def iter_records_from_file(path: str | Path) -> Iterable[Dict[str, Any]]:
     """
     Yield JSON records from a ``.jsonl``, ``.jsonl.gz``, or ``.json`` file.
 
@@ -351,10 +340,11 @@ def iter_records_from_file(path: str) -> Iterable[Dict[str, Any]]:
     scripts: it tolerates either newline-delimited JSON or a single JSON
     list/dict in ``.json`` files.
 
-    :param path: Path to a JSON/JSONL/JSONL.GZ file on disk.
+    :param path: Path (string or ``Path``) to a JSON/JSONL/JSONL.GZ file on disk.
     :returns: Iterator over JSON objects (dictionaries) parsed from the file.
     """
-    if path.endswith(".jsonl.gz"):
+    path_str = str(path)
+    if path_str.endswith(".jsonl.gz"):
         opener = gzip.open
         mode = "rt"
     else:
@@ -362,8 +352,8 @@ def iter_records_from_file(path: str) -> Iterable[Dict[str, Any]]:
         mode = "r"
 
     try:
-        with opener(path, mode, encoding="utf-8") as file_handle:  # type: ignore[arg-type]
-            if path.endswith(".json"):
+        with opener(path_str, mode, encoding="utf-8") as file_handle:  # type: ignore[arg-type]
+            if path_str.endswith(".json"):
                 text = file_handle.read()
                 yield from _iter_json_from_text(text)
             else:

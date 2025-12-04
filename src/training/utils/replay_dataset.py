@@ -22,11 +22,7 @@ class ReplayMixDataset:
 
         # Quick sanity check only if already tokenised
         if "input_ids" in item:
-            last_user = next(
-                message
-                for message in reversed(item["prompt"])
-                if message["role"] == "user"
-            )
+            last_user = next(message for message in reversed(item["prompt"]) if message["role"] == "user")
             decoded = self.tokenizer.decode(item["input_ids"])
             assert last_user["content"] in decoded, "⛔ clue missing from encoded prompt!"
 

@@ -50,6 +50,7 @@ import logging
 import sys
 from pathlib import Path
 
+
 try:
     # Package execution: src.utils.check
     from . import check_eval
@@ -113,10 +114,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--force_answer",
         action="store_true",
-        help=(
-            "Second-stage patch if no </answer> "
-            "(only used when num_samples==1)."
-        ),
+        help=("Second-stage patch if no </answer> (only used when num_samples==1)."),
     )
 
     # Sampling knobs (used when num_samples>1, or in fallback sampling)
@@ -148,8 +146,7 @@ def main() -> None:
     stats, out_path = check_eval.run(args)
     final_accuracy = 100.0 * stats.correct / max(1, stats.seen)
     print(
-        f"Done. Wrote {stats.seen} rows → {out_path}  "
-        f"(final acc={final_accuracy:.2f}%).",
+        f"Done. Wrote {stats.seen} rows → {out_path}  (final acc={final_accuracy:.2f}%).",
     )
 
 

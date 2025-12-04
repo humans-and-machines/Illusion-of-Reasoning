@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING
 
 from ..configs import GRPOConfig, SFTConfig
 
+
 if TYPE_CHECKING:
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizer
+    from transformers import AutoModelForCausalLM, PreTrainedTokenizer
+
     from trl import ModelConfig
 
 
@@ -52,9 +54,7 @@ def _build_model_kwargs(
     get_kbit_device_map = getattr(trl_mod, "get_kbit_device_map")
 
     quantization_config = get_quantization_config(model_args)
-    device_map = (
-        get_kbit_device_map() if quantization_config is not None else None
-    )
+    device_map = get_kbit_device_map() if quantization_config is not None else None
 
     return {
         "revision": model_args.model_revision,

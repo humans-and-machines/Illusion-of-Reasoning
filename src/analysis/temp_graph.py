@@ -34,6 +34,9 @@ from src.analysis.core import LoadRowsConfig, discover_roots_for_temp_args
 from src.analysis.io import build_files_by_domain, iter_records_from_file
 from src.analysis.labels import aha_gpt_for_rec
 from src.analysis.metrics import extract_correct, make_carpark_success_fn, shift_conditional_counts
+
+# ---- Matplotlib (Times New Roman, 14pt, 5" wide figure) ----
+from src.analysis.plotting import apply_default_style
 from src.analysis.utils import (
     add_gpt_step_and_carpark_args,
     add_temp_scan_args,
@@ -43,8 +46,6 @@ from src.analysis.utils import (
     nat_step_from_path,
 )
 
-# ---- Matplotlib (Times New Roman, 14pt, 5" wide figure) ----
-from src.analysis.plotting import apply_default_style
 
 apply_default_style(
     {
@@ -80,20 +81,16 @@ def per_temp_delta(df_temp_domain: pd.DataFrame) -> Tuple[float, float, int, int
     _, _, p_shift, p_no_shift = shift_conditional_counts(df_temp_domain)
     num_shift = int((df_temp_domain["shift"] == 1).sum())
     num_no_shift = int((df_temp_domain["shift"] == 0).sum())
-    if (
-        not (np.isfinite(p_shift) and np.isfinite(p_no_shift))
-        or num_shift == 0
-        or num_no_shift == 0
-    ):
+    if not (np.isfinite(p_shift) and np.isfinite(p_no_shift)) or num_shift == 0 or num_no_shift == 0:
         return (np.nan, np.nan, num_shift, num_no_shift, p_shift, p_no_shift)
     delta = (p_shift - p_no_shift) * 100.0
     se_pp = 100.0 * float(
         np.sqrt(
-            (p_shift * (1 - p_shift)) / num_shift
-            + (p_no_shift * (1 - p_no_shift)) / num_no_shift,
+            (p_shift * (1 - p_shift)) / num_shift + (p_no_shift * (1 - p_no_shift)) / num_no_shift,
         ),
     )
     return (delta, se_pp, num_shift, num_no_shift, p_shift, p_no_shift)
+
 
 # ---------- loading ----------
 def _iter_rows_for_domain(
@@ -113,12 +110,7 @@ def _iter_rows_for_domain(
             if not isinstance(pass1_obj, dict):
                 pass1_obj = {}
 
-            raw_step = (
-                rec.get("step")
-                or rec.get("global_step")
-                or rec.get("training_step")
-                or step_from_name
-            )
+            raw_step = rec.get("step") or rec.get("global_step") or rec.get("training_step") or step_from_name
             try:
                 step_int = int(raw_step) if raw_step is not None else 0
             except (TypeError, ValueError):
@@ -199,21 +191,21 @@ def load_rows(
     for dom, domain_skip_counts in skips.items():
         total = sum(domain_skip_counts.values())
         if total:
-            parts = ", ".join(
-                f"{key}={value}" for key, value in sorted(domain_skip_counts.items())
-            )
+            parts = ", ".join(f"{key}={value}" for key, value in sorted(domain_skip_counts.items()))
             print(f"[debug] skips[{dom}]: {parts}")
     return pd.DataFrame(rows)
+
 
 # ---------- plotting ----------
 _SERIES_ORDER = ["Crossword", "Math", "Math2", "Math3", "Carpark"]
 _SERIES_STYLE = {
     "Crossword": {"color": "C0", "marker": "o"},
-    "Math": {"color": "C2", "marker": "o"},       # green
-    "Math2": {"color": "C4", "marker": "s"},      # Qwen-7B
-    "Math3": {"color": "#2ca02c", "marker": "^"}, # Llama-8B = same green
+    "Math": {"color": "C2", "marker": "o"},  # green
+    "Math2": {"color": "C4", "marker": "s"},  # Qwen-7B
+    "Math3": {"color": "#2ca02c", "marker": "^"},  # Llama-8B = same green
     "Carpark": {"color": "C3", "marker": "o"},
 }
+
 
 @dataclass
 class PlotIOConfig:
@@ -276,6 +268,7 @@ def make_plot(
     figure.savefig(io_config.png_path, dpi=io_config.dpi, bbox_inches="tight")
     figure.savefig(io_config.pdf_path, dpi=io_config.dpi, bbox_inches="tight")
     plt.close(figure)
+
 
 # ---------- main ----------
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -433,8 +426,7 @@ def _load_rows_for_temp(
         print(f"[warn] T={temp_value}: no rows loaded after parsing/gating.")
         for domain_name, file_list in files_by_domain.items():
             print(
-                f"    files[{domain_name}]={len(file_list)} under "
-                f"{domain_paths.get(domain_name)}",
+                f"    files[{domain_name}]={len(file_list)} under {domain_paths.get(domain_name)}",
             )
         return None
 
@@ -496,8 +488,12 @@ def _save_outputs(
 
     # Save per-temperature CSV
     pertemp_df = pertemp_df.copy()
-    pertemp_df["domain"] = pertemp_df["domain_key"].map(label_map).fillna(
-        pertemp_df["domain_key"],
+    pertemp_df["domain"] = (
+        pertemp_df["domain_key"]
+        .map(label_map)
+        .fillna(
+            pertemp_df["domain_key"],
+        )
     )
     pertemp_df = pertemp_df.sort_values(["domain_key", "temp"])
     pertemp_df.to_csv(out_csv, index=False)
@@ -507,9 +503,7 @@ def _save_outputs(
     if args.make_plot:
         png_path = os.path.join(out_dir, f"raw_effects_plot__{slug}.png")
         pdf_path = os.path.join(out_dir, f"raw_effects_plot__{slug}.pdf")
-        present_keys = [
-            key for key in _SERIES_ORDER if key in set(pertemp_df["domain_key"])
-        ]
+        present_keys = [key for key in _SERIES_ORDER if key in set(pertemp_df["domain_key"])]
         if not present_keys:
             print("[warn] Nothing to plot.")
         else:
@@ -589,6 +583,7 @@ def main() -> None:
     )
     label_map = _build_label_map(args)
     _save_outputs(args, out_dir, pertemp_df, x_temps_sorted, label_map)
+
 
 if __name__ == "__main__":
     main()

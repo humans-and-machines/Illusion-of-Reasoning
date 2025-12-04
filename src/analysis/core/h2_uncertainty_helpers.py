@@ -13,23 +13,18 @@ import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from ..common.problem_utils import resolve_problem_identifier
-from ..common.uncertainty import standardize_uncertainty
-from ..io import iter_records_from_file
-from ..labels import aha_words
-from ..metrics import wilson_ci
-from ..utils import (
-    choose_uncertainty,
-    coerce_bool,
-    get_aha_gpt_flag,
-    nat_step_from_path,
-)
-from . import (
+from src.analysis.common.problem_utils import resolve_problem_identifier
+from src.analysis.common.uncertainty import standardize_uncertainty
+from src.analysis.core import (
+    build_formal_thresholds_from_args,
     build_problem_step_from_samples,
-    make_formal_thresholds,
     mark_formal_pairs_with_gain,
 )
-from .plotting_helpers import aha_histogram_legend_handles
+from src.analysis.core.plotting_helpers import aha_histogram_legend_handles
+from src.analysis.io import iter_records_from_file
+from src.analysis.labels import aha_words
+from src.analysis.metrics import wilson_ci
+from src.analysis.utils import choose_uncertainty, coerce_bool, get_aha_gpt_flag, nat_step_from_path
 
 
 def _aha_gpt_eff(
@@ -146,8 +141,7 @@ def label_formal_samples(
     labeled_df = samples_df.copy()
     aha_gpt_flags = labeled_df["aha_gpt"].astype(int)
     labeled_df["aha_formal"] = [
-        int((key in formal_step_keys) and (gpt_flag == 1))
-        for key, gpt_flag in zip(sample_keys, aha_gpt_flags)
+        int((key in formal_step_keys) and (gpt_flag == 1)) for key, gpt_flag in zip(sample_keys, aha_gpt_flags)
     ]
     return labeled_df
 
@@ -158,11 +152,17 @@ def _make_uncertainty_buckets(
 ) -> pd.DataFrame:
     """Standardize uncertainty and assign quantile buckets."""
     bucket_df = standardize_uncertainty(samples_df)
-    bucket_df["unc_bucket"] = pd.qcut(
-        bucket_df["uncertainty_std"],
-        q=int(max(3, n_buckets)),
-        duplicates="drop",
-    )
+    bucket_count = int(max(3, n_buckets))
+    bucket_count = min(bucket_count, len(bucket_df))
+
+    # Use ranks to avoid duplicate bin edges on small/degenerate inputs.
+    ranks = bucket_df["uncertainty_std"].rank(method="first")
+    buckets = pd.qcut(ranks, q=bucket_count, duplicates="drop")
+    if buckets.cat.categories.size < bucket_count:
+        # Fallback to equally spaced bins if qcut collapsed categories.
+        buckets = pd.cut(ranks, bins=bucket_count, duplicates="drop")
+
+    bucket_df["unc_bucket"] = buckets
     bucket_df["bucket_id"] = bucket_df["unc_bucket"].cat.codes
     bucket_df["bucket_label"] = bucket_df["unc_bucket"].astype(str)
     return bucket_df
@@ -205,9 +205,9 @@ def plot_uncertainty_buckets_three(
     """Plot three-panel uncertainty buckets figure for Words, GPT, and Formal Aha."""
     figure, axes = plt.subplots(1, 3, figsize=(16.5, 4.8), dpi=150, sharey=True)
     items = [
-        ("Words of \"Aha!\"", _aggregate_buckets(d_words, "aha_words")),
-        ("LLM-Detected \"Aha!\"", _aggregate_buckets(d_gpt, "aha_gpt")),
-        ("Formal \"Aha!\"", _aggregate_buckets(d_formal, "aha_formal")),
+        ('Words of "Aha!"', _aggregate_buckets(d_words, "aha_words")),
+        ('LLM-Detected "Aha!"', _aggregate_buckets(d_gpt, "aha_gpt")),
+        ('Formal "Aha!"', _aggregate_buckets(d_formal, "aha_formal")),
     ]
     for axis, (title, table) in zip(axes, items):
         axis.plot(
@@ -424,8 +424,7 @@ def _plot_uncertainty_hist_figure(
     axis_right.set_ylabel("Aha count per bin")
     axis_left.grid(True, alpha=0.3)
     axis_left.set_title(
-        f"Uncertainty histogram (bins={num_bins}) "
-        f"with Aha counts\n{title_suffix}",
+        f"Uncertainty histogram (bins={num_bins}) with Aha counts\n{title_suffix}",
     )
 
     axis_left.legend(
@@ -465,7 +464,7 @@ def make_all3_uncertainty_buckets_figure(
         include_native=True,
         native_col="aha_words",
     )
-    formal_thresholds = make_formal_thresholds(
+    formal_thresholds = build_formal_thresholds_from_args(
         delta1=float(args.delta1),
         delta2=float(args.delta2),
         min_prior_steps=int(args.min_prior_steps),

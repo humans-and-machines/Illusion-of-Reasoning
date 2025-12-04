@@ -12,6 +12,7 @@ one uniform interface for "give me generations for these prompts".
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -23,9 +24,10 @@ from src.inference.utils.common import (
     move_inputs_to_device,
 )
 
+
 try:  # pragma: no cover - optional Azure dependency
-    from src.annotate import load_azure_config as _load_azure_config
     from src.annotate import build_preferred_client as _build_preferred_client
+    from src.annotate import load_azure_config as _load_azure_config
 except ImportError:  # pragma: no cover - environments without Azure support
     _load_azure_config = None
     _build_preferred_client = None
@@ -34,43 +36,61 @@ load_azure_config = _load_azure_config
 build_preferred_client = _build_preferred_client
 
 
-def _load_torch_and_transformers() -> Tuple[Any, Any, Any, Any]:
+def _load_torch_and_transformers(
+    *,
+    require_transformers: bool = True,
+) -> Tuple[Any, Any, Any, Any]:
     """
     Lazily import torch and key transformers classes used by the HF backend.
 
-    This keeps heavy optional dependencies out of module import time so that
-    code paths that do not require HF models can still import this module.
+    ``require_transformers`` can be set to ``False`` for test helpers that only
+    need ``StoppingCriteriaList``-like behavior (a lightweight stub is returned
+    if transformers is unavailable).
     """
     torch_mod = import_module("torch")
-    transformers_mod = import_module("transformers")
-    auto_tokenizer_cls = getattr(transformers_mod, "AutoTokenizer")
-    auto_model_cls = getattr(transformers_mod, "AutoModelForCausalLM")
-    stopping_criteria_list_cls = getattr(transformers_mod, "StoppingCriteriaList")
-    return torch_mod, auto_tokenizer_cls, auto_model_cls, stopping_criteria_list_cls
+    if not hasattr(torch_mod, "inference_mode"):  # pragma: no cover - lightweight stubs
+        fallback_ctx = getattr(torch_mod, "no_grad", nullcontext)
+        torch_mod.inference_mode = fallback_ctx  # type: ignore[attr-defined]
+    try:
+        transformers_mod = import_module("transformers")
+        auto_tokenizer_cls = getattr(transformers_mod, "AutoTokenizer")
+        auto_model_cls = getattr(transformers_mod, "AutoModelForCausalLM")
+        stopping_criteria_list_cls = getattr(transformers_mod, "StoppingCriteriaList")
+        return torch_mod, auto_tokenizer_cls, auto_model_cls, stopping_criteria_list_cls
+    except ImportError:
+        if require_transformers:
+            raise
+
+        class _StoppingCriteriaListStub(list):
+            """Lightweight stub when transformers is unavailable."""
+
+            def __call__(self, criteria):
+                return self.__class__(criteria or [])
+
+        return torch_mod, None, None, _StoppingCriteriaListStub
 
 
 def _load_hf_tokenizer(
     auto_tokenizer_cls,
     tok_src: str,
-    revision: Optional[str],
-    trust_remote_code: bool,
-    cache_dir: Optional[str],
+    load_cfg: Optional["HFBackendLoadConfig"] = None,
+    **legacy_kwargs,
 ):
     """
     Load and configure a HuggingFace tokenizer for causal LM inference.
 
     :param auto_tokenizer_cls: ``transformers.AutoTokenizer``-compatible class.
     :param tok_src: Model or tokenizer identifier to load.
-    :param revision: Optional model revision or commit hash.
-    :param trust_remote_code: Whether to allow custom code from the repository.
-    :param cache_dir: Optional cache directory for downloaded artifacts.
+    :param load_cfg: Configuration describing revision, trust, and cache options.
+    :param legacy_kwargs: Backwards-compatible overrides (revision, cache_dir, trust_remote_code).
     :returns: A tokenizer configured for left-padding and truncation.
     """
+    load_cfg = _normalize_hf_load_config(load_cfg, **legacy_kwargs)
     tokenizer = auto_tokenizer_cls.from_pretrained(
         tok_src,
-        revision=revision,
-        trust_remote_code=trust_remote_code,
-        cache_dir=cache_dir,
+        revision=load_cfg.revision,
+        trust_remote_code=load_cfg.trust_remote_code,
+        cache_dir=load_cfg.cache_dir,
     )
     tokenizer.padding_side = "left"
     tokenizer.pad_token = tokenizer.pad_token or tokenizer.eos_token
@@ -78,17 +98,57 @@ def _load_hf_tokenizer(
     return tokenizer
 
 
+@dataclass
+class HFBackendLoadConfig:
+    """
+    Model/tokenizer load configuration for :class:`HFBackend`.
+
+    Grouped to keep helper signatures small for linting while preserving clarity.
+    """
+
+    revision: Optional[str] = None
+    cache_dir: Optional[str] = None
+    dtype: str = "float16"
+    device_map: str = "auto"
+    attn_implementation: Optional[str] = None
+    trust_remote_code: bool = True
+
+
+def _normalize_hf_load_config(
+    load_config: Optional[HFBackendLoadConfig],
+    **overrides,
+) -> HFBackendLoadConfig:
+    """
+    Merge an explicit :class:`HFBackendLoadConfig` with legacy keyword overrides.
+    """
+    if load_config is not None and overrides:
+        raise TypeError("HFBackend.from_pretrained() cannot mix load_config with keyword overrides.")
+
+    allowed_keys = {
+        "revision",
+        "cache_dir",
+        "dtype",
+        "device_map",
+        "attn_implementation",
+        "trust_remote_code",
+    }
+    unexpected = set(overrides).difference(allowed_keys)
+    if unexpected:
+        bad_keys = ", ".join(sorted(unexpected))
+        raise TypeError(f"Unexpected HFBackend load kwargs: {bad_keys}")
+
+    if load_config is not None:
+        return load_config
+
+    return HFBackendLoadConfig(**overrides)
+
+
 def _load_hf_model(
     auto_model_cls,
     torch_mod,
     model_name_or_path: str,
-    *,
-    revision: Optional[str],
-    trust_remote_code: bool,
-    cache_dir: Optional[str],
-    dtype: str,
-    device_map: str,
-    attn_implementation: Optional[str],
+    load_cfg: Optional[HFBackendLoadConfig] = None,
+    **legacy_kwargs,
 ):
     """
     Load a HuggingFace causal LM with the requested dtype and device map.
@@ -96,23 +156,20 @@ def _load_hf_model(
     :param auto_model_cls: ``transformers.AutoModelForCausalLM``-compatible class.
     :param torch_mod: Imported :mod:`torch` module.
     :param model_name_or_path: Name or path of the model to load.
-    :param revision: Optional model revision or commit hash.
-    :param trust_remote_code: Whether to allow custom code from the repository.
-    :param cache_dir: Optional cache directory for downloaded artifacts.
-    :param dtype: String alias for the desired torch dtype (``\"float16\"`` or ``\"bfloat16\"``).
-    :param device_map: Device mapping passed to ``from_pretrained`` (for example, ``\"auto\"``).
-    :param attn_implementation: Optional attention implementation override.
+    :param load_cfg: Configuration describing dtype, device, and revision options.
+    :param legacy_kwargs: Backwards-compatible overrides (dtype, device_map, etc.).
     :returns: A causal language model set to evaluation mode.
     """
-    torch_dtype = torch_mod.bfloat16 if dtype == "bfloat16" else torch_mod.float16
+    load_cfg = _normalize_hf_load_config(load_cfg, **legacy_kwargs)
+    torch_dtype = torch_mod.bfloat16 if load_cfg.dtype == "bfloat16" else torch_mod.float16
     model = auto_model_cls.from_pretrained(
         model_name_or_path,
-        revision=revision,
-        trust_remote_code=trust_remote_code,
-        cache_dir=cache_dir,
+        revision=load_cfg.revision,
+        trust_remote_code=load_cfg.trust_remote_code,
+        cache_dir=load_cfg.cache_dir,
         torch_dtype=torch_dtype,
-        device_map=device_map,
-        attn_implementation=attn_implementation,
+        device_map=load_cfg.device_map,
+        attn_implementation=load_cfg.attn_implementation,
     )
     return model.eval()
 
@@ -221,46 +278,34 @@ class HFBackend:
         cls,
         model_name_or_path: str,
         *,
-        revision: Optional[str] = None,
-        cache_dir: Optional[str] = None,
-        dtype: str = "float16",
-        device_map: str = "auto",
-        attn_implementation: Optional[str] = None,
-        trust_remote_code: bool = True,
         tokenizer_path: Optional[str] = None,
+        load_config: Optional[HFBackendLoadConfig] = None,
+        **load_kwargs,
     ) -> "HFBackend":
         """
         Load a tokenizer and causal LM from HuggingFace and wrap them in HFBackend.
 
         :param model_name_or_path: Name or path of the model to load.
-        :param revision: Optional model revision or commit hash.
-        :param cache_dir: Optional cache directory for downloaded artifacts.
-        :param dtype: String alias for the desired torch dtype (for example ``\"float16\"``).
-        :param device_map: Device mapping passed to ``from_pretrained``.
-        :param attn_implementation: Optional attention implementation override.
-        :param trust_remote_code: Whether to allow custom model/tokenizer code.
         :param tokenizer_path: Optional alternate path or identifier for the tokenizer.
+        :param load_config: Optional structured configuration for model/tokenizer loading.
+        :param load_kwargs: Legacy keyword overrides (for example ``dtype``, ``device_map``).
         :returns: An :class:`HFBackend` instance ready for generation.
         """
+        load_cfg = _normalize_hf_load_config(load_config, **load_kwargs)
         env = _load_torch_and_transformers()
+        if env[1] is None or env[2] is None:
+            raise ImportError("transformers is required to load HF models via HFBackend.")
         tok_src = tokenizer_path or model_name_or_path
         tokenizer = _load_hf_tokenizer(
             env[1],
             tok_src,
-            revision=revision,
-            trust_remote_code=trust_remote_code,
-            cache_dir=cache_dir,
+            load_cfg,
         )
         model = _load_hf_model(
             env[2],
             env[0],
             model_name_or_path,
-            revision=revision,
-            trust_remote_code=trust_remote_code,
-            cache_dir=cache_dir,
-            dtype=dtype,
-            device_map=device_map,
-            attn_implementation=attn_implementation,
+            load_cfg,
         )
         return cls(tokenizer, model)
 
@@ -302,11 +347,7 @@ class HFBackend:
             sequences=sequences,
             input_lengths=input_lengths,
             stop_strings=stop_strings or [],
-            max_new_tokens=(
-                int(gen_kwargs["max_new_tokens"])
-                if gen_kwargs.get("max_new_tokens")
-                else None
-            ),
+            max_new_tokens=(int(gen_kwargs["max_new_tokens"]) if gen_kwargs.get("max_new_tokens") else None),
         )
         texts, stop_reasons = self._decode_and_classify(decode_ctx)
 

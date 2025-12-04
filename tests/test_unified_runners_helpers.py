@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import types
-
 import pytest
 
 
@@ -63,38 +61,52 @@ def test_unified_math_runner_builds_config_and_delegates(monkeypatch, tmp_path):
 def test_unified_math_runner_main_uses_hfbackend(monkeypatch):
     called = {}
 
-    def fake_run_math_main(*, backend_cls):
+    def fake_run_math_main(*, backend_cls, argv=None):
         called["backend_cls"] = backend_cls
+        called["argv"] = argv
 
     monkeypatch.setattr(math_cli, "run_math_main", fake_run_math_main)
 
-    math_cli.main()
+    math_cli.main(argv=["--foo", "bar"])
     assert called["backend_cls"] is not None
+    assert called["argv"] == ["--foo", "bar"]
 
 
 def test_unified_carpark_runner_main_delegates(monkeypatch):
     called = {}
 
-    def fake_run_carpark_main(*, load_module, backend_cls):
+    def fake_run_carpark_main(*, load_module, backend_cls, argv=None):
         called["load_module"] = load_module
         called["backend_cls"] = backend_cls
+        called["argv"] = argv
+
+    monkeypatch.setattr(carpark_cli, "load_carpark_module", lambda: "module")
+    monkeypatch.setattr(carpark_cli, "_load_carpark_module", carpark_cli._load_carpark_module)
 
     monkeypatch.setattr(carpark_cli, "run_carpark_main", fake_run_carpark_main)
 
-    carpark_cli.main()
+    carpark_cli.main(argv=["--flag"])
     assert callable(called["load_module"])
     assert called["backend_cls"] is not None
+    assert called["argv"] == ["--flag"]
+    assert carpark_cli._load_carpark_module() == "module"
 
 
 def test_unified_crossword_runner_main_delegates(monkeypatch):
     called = {}
 
-    def fake_run_crossword_main(*, load_module, backend_cls):
+    def fake_run_crossword_main(*, load_module, backend_cls, argv=None):
         called["load_module"] = load_module
         called["backend_cls"] = backend_cls
+        called["argv"] = argv
+
+    monkeypatch.setattr(crossword_cli, "load_crossword_module", lambda: "cross")
+    monkeypatch.setattr(crossword_cli, "_load_crossword_module", crossword_cli._load_crossword_module)
 
     monkeypatch.setattr(crossword_cli, "run_crossword_main", fake_run_crossword_main)
 
-    crossword_cli.main()
+    crossword_cli.main(argv=["--x"])
     assert callable(called["load_module"])
     assert called["backend_cls"] is not None
+    assert called["argv"] == ["--x"]
+    assert crossword_cli._load_crossword_module() == "cross"

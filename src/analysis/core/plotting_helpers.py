@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from typing import Sequence
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -11,6 +11,25 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 from ..plotting import a4_size_inches, apply_paper_font_style
+
+
+def _safe_attr(line: Any, getter_name: str, fallback_attrs: Sequence[str], default: Any) -> Any:
+    """
+    Best-effort retrieval for matplotlib line attributes across backends/stubs.
+    """
+    getter = getattr(line, getter_name, None)
+    value = None
+    if callable(getter):
+        try:
+            value = getter()
+        except (TypeError, ValueError, AttributeError):  # pragma: no cover - safety net
+            value = None
+    if value is None:
+        for attr in fallback_attrs:
+            value = getattr(line, attr, None)
+            if value is not None:
+                break
+    return default if value is None else value
 
 
 def set_global_fonts(font_family: str = "Times New Roman", font_size: int = 12) -> None:
@@ -34,16 +53,14 @@ def compute_effective_max_step(
     if args.max_step is None:
         effective = hard_max_step
         print(
-            f"[info] Capping max_step to {effective} "
-            f"(hard cap = {hard_max_step}).",
+            f"[info] Capping max_step to {effective} (hard cap = {hard_max_step}).",
         )
         return effective
 
     if args.max_step > hard_max_step:
         effective = hard_max_step
         print(
-            f"[info] Capping max_step to {effective} "
-            f"(hard cap = {hard_max_step}).",
+            f"[info] Capping max_step to {effective} (hard cap = {hard_max_step}).",
         )
         return effective
 
@@ -68,13 +85,20 @@ def aha_histogram_legend_handles(axis_right: Axes) -> Sequence[Line2D | Patch]:
     bars_proxy = Patch(facecolor="#CCCCCC", label="Total (bin count)")
     handles: list[Line2D | Patch] = [bars_proxy]
     for line in axis_right.lines:
+        # Some matplotlib line objects (or test doubles) may not expose the full
+        # getter API, so pull attributes defensively with sensible fallbacks.
+        color = _safe_attr(line, "get_color", ["color", "_color"], "C0")
+        label = _safe_attr(line, "get_label", ["label"], "")
+        marker = _safe_attr(line, "get_marker", ["marker"], "o")
+        linewidth = _safe_attr(line, "get_linewidth", ["linewidth"], 1.8)
+
         handle = Line2D(
             [0],
             [0],
-            color=line.get_color(),
-            lw=1.8,
-            marker="o",
-            label=line.get_label(),
+            color=color,
+            lw=linewidth,
+            marker=marker,
+            label=label,
         )
         handles.append(handle)
     return handles

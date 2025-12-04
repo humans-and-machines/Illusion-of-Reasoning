@@ -50,11 +50,14 @@ def clean_file(path: str) -> Tuple[int, int]:
     cleared = 0
     tmp_path = path + ".tmp"
 
-    with open(path, "r", encoding="utf-8") as fin, open(
-        tmp_path,
-        "w",
-        encoding="utf-8",
-    ) as fout:
+    with (
+        open(path, "r", encoding="utf-8") as fin,
+        open(
+            tmp_path,
+            "w",
+            encoding="utf-8",
+        ) as fout,
+    ):
         for line in fin:
             stripped_line = line.strip()
             if not stripped_line:
@@ -111,8 +114,7 @@ def clean_root(results_root: str) -> Tuple[int, int, int]:
             print(f"[clean_shift_fallbacks] {path}: records={n_records}, cleared={n_cleared}")
 
     print(
-        f"[clean_shift_fallbacks] Done. files={total_files}, "
-        f"records={total_records}, cleared={total_cleared}",
+        f"[clean_shift_fallbacks] Done. files={total_files}, records={total_records}, cleared={total_cleared}",
     )
     return total_files, total_records, total_cleared
 

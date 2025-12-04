@@ -30,10 +30,7 @@ def extract_pass_text(pass_dict: Dict[str, Any]) -> Optional[str]:
     messages = pass_dict.get("messages")
     if isinstance(messages, list):
         for message_dict in reversed(messages):
-            if (
-                isinstance(message_dict, dict)
-                and str(message_dict.get("role", "")).lower() == "assistant"
-            ):
+            if isinstance(message_dict, dict) and str(message_dict.get("role", "")).lower() == "assistant":
                 content = message_dict.get("content") or message_dict.get("text")
                 if isinstance(content, str) and content.strip():
                     return content

@@ -27,16 +27,14 @@ from dataclasses import dataclass
 from json import JSONDecodeError
 from typing import Any, Dict, Iterable, List, Optional, Set
 
-from src.annotate.infra.config import load_azure_config
-from src.annotate.infra.llm_client import build_preferred_client
-from src.annotate.core.prefilter import (
-    extract_think as _extract_think,
-    find_shift_cues as _find_shift_cues,
-)
-from src.annotate.core.prompts import (
-    SHIFT_JUDGE_SYSTEM_PROMPT as PROMPT_SYSTEM,
-    SHIFT_JUDGE_USER_TEMPLATE as PROMPT_USER_TEMPLATE,
-)
+from ...common.jsonl_utils import scan_jsonl_files
+from ..infra.config import load_azure_config
+from ..infra.llm_client import build_preferred_client
+from .prefilter import extract_think as _extract_think
+from .prefilter import find_shift_cues as _find_shift_cues
+from .prompts import SHIFT_JUDGE_SYSTEM_PROMPT as PROMPT_SYSTEM
+from .prompts import SHIFT_JUDGE_USER_TEMPLATE as PROMPT_USER_TEMPLATE
+
 
 try:  # pragma: no cover - optional dependency
     from openai import OpenAIError as _OpenAIError
@@ -118,21 +116,11 @@ def _sanitize_jsonish(text: str) -> str:
         obj = json.loads(text)
     except (JSONDecodeError, TypeError, ValueError):
         # Fall back to a simple textual replacement.
-        return (
-            text.replace("\\(", "(")
-            .replace("\\)", ")")
-            .replace("\\[", "[")
-            .replace("\\]", "]")
-        )
+        return text.replace("\\(", "(").replace("\\)", ")").replace("\\[", "[").replace("\\]", "]")
 
     def _fix(val: Any) -> Any:
         if isinstance(val, str):
-            return (
-                val.replace("\\(", "(")
-                .replace("\\)", ")")
-                .replace("\\[", "[")
-                .replace("\\]", "]")
-            )
+            return val.replace("\\(", "(").replace("\\)", ")").replace("\\[", "[").replace("\\]", "]")
         if isinstance(val, list):
             return [_fix(v) for v in val]
         if isinstance(val, dict):
@@ -289,26 +277,14 @@ def scan_jsonl(root: str, split: Optional[str]) -> List[str]:
     :param root: Root directory containing results.
     :param split: Optional substring to filter filenames (e.g. ``\"test\"``).
     """
-    files: List[str] = []
-    for dirpath, _, filenames in os.walk(root):
-        for filename in filenames:
-            if not filename.endswith(".jsonl"):
-                continue
-            if split and split not in filename:
-                continue
-            files.append(os.path.join(dirpath, filename))
+    files = scan_jsonl_files(root, split_substr=split)
     files.sort(key=lambda p: (nat_step_from_path(p) or 0, p), reverse=True)
     return files
 
 
 def record_id_for_logs(obj: Dict[str, Any]) -> str:
     """Human-readable identifier for logging."""
-    return (
-        obj.get("row_key")
-        or obj.get("problem")
-        or obj.get("clue")
-        or f"idx={obj.get('dataset_index','?')}"
-    )
+    return obj.get("row_key") or obj.get("problem") or obj.get("clue") or f"idx={obj.get('dataset_index', '?')}"
 
 
 def _load_records(path: str) -> List[Dict[str, Any]]:

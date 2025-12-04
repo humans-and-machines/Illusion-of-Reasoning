@@ -28,14 +28,15 @@ CSV at <out_dir>/aha_conditionals__<dataset>__<model>.csv with columns:
     shift_rate
 """
 
-import os
 import argparse
+import os
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
+from src.analysis.aha_utils import any_keys_true, cue_gate_for_llm
 from src.analysis.io import build_jsonl_files_by_domain, iter_records_from_file, scan_jsonl_files
 from src.analysis.metrics import make_carpark_success_fn
 from src.analysis.utils import (
@@ -49,7 +50,6 @@ from src.analysis.utils import (
     nat_step_from_path,
     step_within_bounds,
 )
-from src.analysis.aha_utils import any_keys_true, cue_gate_for_llm
 
 
 @dataclass
@@ -86,9 +86,12 @@ def _aha_gpt_for_rec(
         # Consider marker lists as positive signals in broad mode
         if coerce_bool(both_get(pass1_fields, rec, "shift_markers_v1")) == 1:
             raw = 1
-        elif coerce_bool(
-            both_get(pass1_fields, rec, "_shift_prefilter_markers"),
-        ) == 1:
+        elif (
+            coerce_bool(
+                both_get(pass1_fields, rec, "_shift_prefilter_markers"),
+            )
+            == 1
+        ):
             raw = 1
 
     if not config.gpt_subset_native:
@@ -213,6 +216,7 @@ def load_rows(
 
 # ----------------- Aggregation -----------------
 
+
 def agg_domain_conditionals(rows_df: pd.DataFrame) -> pd.DataFrame:
     """
     Aggregate per domain, preserving the input order.
@@ -288,9 +292,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
     add_split_and_out_dir_args(
         parser,
-        out_dir_help=(
-            "Base output directory (default: <first_root>/aha_conditionals)."
-        ),
+        out_dir_help=("Base output directory (default: <first_root>/aha_conditionals)."),
     )
     parser.add_argument("--dataset_name", default="MIXED")
     parser.add_argument("--model_name", default="MIXED_MODELS")
@@ -300,9 +302,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--gpt_mode",
         choices=["canonical", "broad"],
         default="canonical",
-        help=(
-            "canonical: boolean keys only; broad: also count marker lists as positive."
-        ),
+        help=("canonical: boolean keys only; broad: also count marker lists as positive."),
     )
     parser.add_argument(
         "--no_gpt_subset_native",
@@ -431,13 +431,10 @@ def _compute_effective_max_step(args: argparse.Namespace) -> int:
     :param args: Parsed CLI arguments.
     :returns: Effective maximum step value.
     """
-    effective_max_step = (
-        HARD_STEP_CAP if args.max_step is None else min(args.max_step, HARD_STEP_CAP)
-    )
+    effective_max_step = HARD_STEP_CAP if args.max_step is None else min(args.max_step, HARD_STEP_CAP)
     if args.max_step is None or args.max_step > HARD_STEP_CAP:
         print(
-            f"[info] Capping max_step to {effective_max_step} "
-            f"(hard cap = {HARD_STEP_CAP}).",
+            f"[info] Capping max_step to {effective_max_step} (hard cap = {HARD_STEP_CAP}).",
         )
     return effective_max_step
 

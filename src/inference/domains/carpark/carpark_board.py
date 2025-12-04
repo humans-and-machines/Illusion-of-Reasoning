@@ -23,6 +23,7 @@ from src.inference.utils.carpark_rush_utils import (
     _toklist,
 )
 
+
 __all__ = [
     "TOKEN_RE",
     "_toklist",

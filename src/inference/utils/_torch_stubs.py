@@ -16,9 +16,32 @@ from typing import Any
 class TorchStub:
     """Stub object that raises if torch-dependent utilities are used."""
 
+    # Minimal symbolic tensor types to satisfy isinstance/attribute probes in
+    # downstream code and tests when the real torch is unavailable.
+    SymFloat = float
+    SymBool = bool
+    long = int
+    long = "long"
+    float16 = "float16"
+    bfloat16 = "bfloat16"
+
     def __getattr__(self, _name: str) -> Any:
         msg = "torch is required for inference utilities in inference.common."
         raise ImportError(msg)
+
+    # Minimal tensor creation helpers used in tests when the real torch
+    # package is absent.
+    def tensor(self, data=None, **_kwargs: Any):
+        """Return raw data to mimic torch.tensor when torch is absent."""
+        return data
+
+    def zeros(self, shape=None, **_kwargs: Any):
+        """Return a nested list of zeros with a minimal shape signature."""
+        return [[0] * shape[1]] if isinstance(shape, tuple) else [0]
+
+    def ones(self, shape=None, **_kwargs: Any):
+        """Return a nested list of ones with a minimal shape signature."""
+        return [[1] * shape[1]] if isinstance(shape, tuple) else [1]
 
     def is_available(self) -> bool:
         """Return False to mirror torch.cuda.is_available-style probes."""
@@ -27,6 +50,10 @@ class TorchStub:
     def device(self) -> str:
         """Placeholder device accessor to satisfy style checks."""
         return "cpu"
+
+    def inference_mode(self, *_args: Any, **_kwargs: Any):
+        """Stub context/decorator matching torch.inference_mode."""
+        return lambda fn: fn
 
 
 class StoppingCriteriaStub:

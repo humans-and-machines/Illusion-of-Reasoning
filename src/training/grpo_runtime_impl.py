@@ -1,14 +1,8 @@
-"""Compatibility wrapper around the full GRPO runtime implementation.
-
-The heavy implementation lives in :mod:`src.training.grpo_runtime_impl_full`.
-This module exists so external callers can continue to import
-``training.grpo_runtime_impl`` while keeping this file small enough to satisfy
-linting limits.
-"""
+"""Compatibility wrapper around the relocated GRPO runtime implementation."""
 
 from __future__ import annotations
 
-from .grpo_runtime_impl_full import main
+from .runtime.main import main
 
 
 __all__ = ["main"]

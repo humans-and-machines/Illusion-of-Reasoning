@@ -7,9 +7,7 @@ from pathlib import Path
 
 def main() -> None:
     """Print a summary of available results grouped by domain/model/step/temp."""
-    arg_parser = argparse.ArgumentParser(
-        description="List results by domain/model/step/temp."
-    )
+    arg_parser = argparse.ArgumentParser(description="List results by domain/model/step/temp.")
     arg_parser.add_argument(
         "root",
         nargs="?",
@@ -34,8 +32,7 @@ def main() -> None:
                         has_recheck = any(temp_dir.glob("*recheck.jsonl"))
                         has_analysis = any(temp_dir.glob("*analysis.jsonl"))
                         summary = (
-                            f"{rel} | raw={has_raw} shift={has_shift} "
-                            f"recheck={has_recheck} analysis={has_analysis}"
+                            f"{rel} | raw={has_raw} shift={has_shift} recheck={has_recheck} analysis={has_analysis}"
                         )
                         print(summary)
 

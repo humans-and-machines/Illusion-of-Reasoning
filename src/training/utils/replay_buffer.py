@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
 import copy
-import threading
 import math
+import threading
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
 
@@ -109,7 +110,6 @@ class ReplayBuffer:
     def _set_err(self, **kwargs):
         self._last_error = kwargs
 
-
     def __len__(self) -> int:
         return len(self._storage.buf)
 
@@ -141,10 +141,7 @@ class ReplayBuffer:
             return _prompt_key(sample["prompt"])
         if isinstance(sample, dict) and "group" in sample:
             try:
-                return tuple(
-                    _prompt_key(ex["prompt"]) if _is_full_example(ex) else repr(ex)
-                    for ex in sample["group"]
-                )
+                return tuple(_prompt_key(ex["prompt"]) if _is_full_example(ex) else repr(ex) for ex in sample["group"])
             except (TypeError, KeyError):
                 return repr(sample)
         return repr(sample)
@@ -186,8 +183,7 @@ class ReplayBuffer:
                 self._storage.uid2idx[uid] = len(self._storage.buf) - 1
                 if self.debug_steps:
                     print(
-                        f"[RB][ADD] inserted uid={uid} μ={mean_value:.4f} "
-                        f"size={len(self._storage.buf)}",
+                        f"[RB][ADD] inserted uid={uid} μ={mean_value:.4f} size={len(self._storage.buf)}",
                     )
                 return True, uid
 
@@ -217,8 +213,7 @@ class ReplayBuffer:
                 self._storage.uid2idx[uid] = worst
                 if self.debug_steps:
                     print(
-                        f"[RB][REPLACE] worst idx={worst} -> uid={uid} "
-                        f"μ={mean_value:.4f}",
+                        f"[RB][REPLACE] worst idx={worst} -> uid={uid} μ={mean_value:.4f}",
                     )
                 return True, uid
 
@@ -250,8 +245,7 @@ class ReplayBuffer:
 
         if verbose or self.debug_steps:
             print(
-                f"[RB][add_group] size={len(group)} μ={reward_local:.4f} "
-                f"current_len={len(self)} cap={self.capacity}"
+                f"[RB][add_group] size={len(group)} μ={reward_local:.4f} current_len={len(self)} cap={self.capacity}"
             )
 
         inserted, uid = self.add({"group": copy.deepcopy(group)}, reward_local)

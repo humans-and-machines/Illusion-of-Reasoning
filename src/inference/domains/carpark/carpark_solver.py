@@ -20,35 +20,29 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.inference.utils.carpark_rush_utils import rush_soft_match_reward
 from src.inference.utils.common import (
-    GenerationLimits,
-    PassOutputs,
     add_token_and_tag_fields,
     build_entropy_pass_base,
-    build_extra_pass_results_for_cues,
     build_math_inference_config_kwargs,
     build_second_pass_cue_strings,
     build_two_pass_row_base,
-    empty_pass_outputs,
-    extract_blocks as _extract_blocks,
-    finite_mean as _finite_mean,
-    repeat_for_samples as _repeat_for_samples,
-    require_torch,
-    require_transformers,
-    run_generate_batch,
-    setup_script_logger,
 )
-from src.inference.utils.math_pass_utils import DEFAULT_SECOND_PASS_PHRASE
+from src.inference.utils.common import extract_blocks as _extract_blocks
+from src.inference.utils.common import finite_mean as _finite_mean
+from src.inference.utils.common import require_torch, require_transformers, setup_script_logger
+from src.inference.utils.generation import (
+    GenerationLimits,
+    PassOutputs,
+    build_extra_pass_results_for_cues,
+    empty_pass_outputs,
+)
+from src.inference.utils.generation import repeat_for_samples as _repeat_for_samples
+from src.inference.utils.generation import run_generate_batch
+from src.inference.utils.math_pass_utils import DEFAULT_SECOND_PASS_PHRASE, MathEntropySummary
 from src.inference.utils.task_registry import CARPARK_SYSTEM_PROMPT
 
-from .carpark_board import (
-    _canon_rush_generic,
-    _canon_rush_gold,
-    _is_valid_rush,
-)
-from .carpark_data import (
-    build_batch_items_for_range,
-    load_existing_example_index,
-)
+from .carpark_board import _canon_rush_generic, _canon_rush_gold, _is_valid_rush
+from .carpark_data import BatchRangeConfig, build_batch_items_for_range, load_existing_example_index
+
 
 torch = require_torch("carpark_core")
 transformers_mod = require_transformers("carpark_core")
@@ -347,6 +341,7 @@ class CarparkInferenceConfig:
         """
         return self.limits.answer_cap
 
+
 @dataclass
 class InferenceContext:
     """Bundle model, tokenizer, and config for generation helpers."""
@@ -436,14 +431,20 @@ def _pack_pass_result(
     markers = _find_reconsider_markers(think_text, meta)
     pred_canon = _canon_rush_generic(pred_answer_text)
 
+    entropy_summary = MathEntropySummary(
+        overall=_finite_mean(token_entropies_all) if token_entropies_all else None,
+        think=_finite_mean(ent_think) if ent_think else None,
+        answer=_finite_mean(ent_answer) if ent_answer else None,
+        pre_cue=None,
+        reconsider_think=None,
+        reconsider_full=None,
+    )
     base = build_entropy_pass_base(
         full_text=full_text,
         pred_answer_text=pred_answer_text,
         pred_canon=pred_canon,
         prev_output=meta.get("prev_output"),
-        entropy_overall=_finite_mean(token_entropies_all) if token_entropies_all else None,
-        entropy_think=_finite_mean(ent_think) if ent_think else None,
-        entropy_answer=_finite_mean(ent_answer) if ent_answer else None,
+        entropy_summary=entropy_summary,
     )
     tokens_think = len(ent_think or [])
     tokens_answer = len(ent_answer or [])
@@ -488,8 +489,7 @@ def _run_pass1_for_batch(
     """Run pass-1 (think + answer) for a batch of examples."""
     num_samples = int(context.config.num_samples)
     base_prompts = [
-        chat_base_for_pass1_from_messages(context.tokenizer, example["messages"])
-        for example in batch_items
+        chat_base_for_pass1_from_messages(context.tokenizer, example["messages"]) for example in batch_items
     ]
     pre1_think = _repeat_for_samples(
         [prompt + "<think>\n" for prompt in base_prompts],
@@ -503,8 +503,7 @@ def _run_pass1_for_batch(
     )
 
     pre1_answer: List[str] = [
-        pre_think + think_text + "</think>\n<answer>\n"
-        for pre_think, think_text in zip(pre1_think, think1_texts)
+        pre_think + think_text + "</think>\n<answer>\n" for pre_think, think_text in zip(pre1_think, think1_texts)
     ]
     answer1_texts, answer1_ents, _, _, answer1_stop = _gen_batch(
         pre1_answer,
@@ -584,8 +583,7 @@ def _run_pass2_for_batch(ctx: SecondPassContext) -> PassOutputs:
     )
 
     pre_answer_prefixes = [
-        prefix + text + "</think>\n<answer>\n"
-        for prefix, text in zip(pre_think_prefixes, think_texts)
+        prefix + text + "</think>\n<answer>\n" for prefix, text in zip(pre_think_prefixes, think_texts)
     ]
     answer_texts, ent_answer, _, _, stop_answer = _gen_batch(
         pre_answer_prefixes,
@@ -631,8 +629,7 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
         },
     )
     pass1_result["is_correct_pred"] = bool(
-        pass1_result.get("pred_answer_canon")
-        and pass1_result["pred_answer_canon"] in gold_set
+        pass1_result.get("pred_answer_canon") and pass1_result["pred_answer_canon"] in gold_set
     )
     (
         pass1_result["soft_reward"],
@@ -657,19 +654,17 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             },
         )
         pass2_result["is_correct_pred"] = bool(
-            pass2_result.get("pred_answer_canon")
-            and pass2_result["pred_answer_canon"] in gold_set
+            pass2_result.get("pred_answer_canon") and pass2_result["pred_answer_canon"] in gold_set
         )
         (
             pass2_result["soft_reward"],
             pass2_result["soft_reward_detail"],
         ) = rush_soft_match_reward(
             pass2_result["pred_answer"],
-                ctx.example["solution"],
+            ctx.example["solution"],
         )
-        pass2_result["improved_over_pass1"] = (
-            bool(pass2_result["is_correct_pred"])
-            and not bool(pass1_result["is_correct_pred"])
+        pass2_result["improved_over_pass1"] = bool(pass2_result["is_correct_pred"]) and not bool(
+            pass1_result["is_correct_pred"]
         )
 
     # Optional multi-cue reconsideration passes (pass2a / pass2b / pass2c).
@@ -690,8 +685,7 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             },
         )
         extra_res["is_correct_pred"] = bool(
-            extra_res.get("pred_answer_canon")
-            and extra_res["pred_answer_canon"] in gold_set
+            extra_res.get("pred_answer_canon") and extra_res["pred_answer_canon"] in gold_set
         )
         (
             extra_res["soft_reward"],
@@ -700,9 +694,8 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             extra_res["pred_answer"],
             ctx.example["solution"],
         )
-        extra_res["improved_over_pass1"] = (
-            bool(extra_res["is_correct_pred"])
-            and not bool(pass1_result["is_correct_pred"])
+        extra_res["improved_over_pass1"] = bool(extra_res["is_correct_pred"]) and not bool(
+            pass1_result["is_correct_pred"]
         )
         return extra_res
 
@@ -839,10 +832,12 @@ def _run_inference_on_split_core(
             examples=examples,
             start_idx=start_idx,
             batch_size=context.config.batch_size,
-            prompt_col=context.config.prompt_col,
-            solution_col=context.config.solution_col,
-            num_samples=context.config.num_samples,
-            existing_by_example=existing_by_example,
+            config=BatchRangeConfig(
+                prompt_col=context.config.prompt_col,
+                solution_col=context.config.solution_col,
+                num_samples=context.config.num_samples,
+                existing_by_example=existing_by_example,
+            ),
         )
         if not batch_items:
             continue

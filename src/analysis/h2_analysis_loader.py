@@ -15,6 +15,7 @@ import pandas as pd
 from src.analysis.core.h2_uncertainty_helpers import get_aha_gpt_flag
 from src.analysis.utils import coerce_bool, nat_step_from_path
 
+
 TEMP_PATS = [re.compile(r"temp(?:erature)?[_-]?([0-9]*\.?[0-9]+)", re.I)]
 
 
@@ -28,6 +29,7 @@ def maybe_temp_from_path(path: str) -> Optional[float]:
             except ValueError:
                 continue
     return None
+
 
 def _get_aha_native(pass1_dict: Dict[str, Any]) -> Optional[int]:
     """Native reconsider cue, ignoring injected cues on pass-1."""

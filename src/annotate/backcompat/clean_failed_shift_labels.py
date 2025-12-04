@@ -6,6 +6,7 @@ Canonical implementation now lives in :mod:`src.annotate.cli.clean_cli`.
 
 from ..cli.clean_cli import main
 
+
 __all__ = ["main"]
 
 

@@ -22,7 +22,6 @@ import os
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
-from src.inference.utils.common import iter_jsonl_objects
 from src.inference.domains.summarize.summarize_inference_core import (
     StepAgg,
     accumulate_prompt_variants,
@@ -32,6 +31,7 @@ from src.inference.domains.summarize.summarize_inference_core import (
     scan_files,
     should_drop_group,
 )
+from src.inference.utils.common import iter_jsonl_objects
 
 
 def _compute_prompt_drop_groups(files: List[str], args: argparse.Namespace) -> set[str]:
@@ -261,10 +261,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--split",
         default=None,
-        help=(
-            "Filter filenames containing this split substring "
-            "(e.g., 'test')."
-        ),
+        help=("Filter filenames containing this split substring (e.g., 'test')."),
     )
 
     # Prompt-variant filtering
@@ -272,10 +269,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--max_prompt_versions",
         type=int,
         default=None,
-        help=(
-            "Drop any group that has more than this many distinct "
-            "prompt variants."
-        ),
+        help=("Drop any group that has more than this many distinct prompt variants."),
     )
     parser.add_argument(
         "--prompt_key",
@@ -304,10 +298,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--max_per_group",
         type=int,
         default=None,
-        help=(
-            "Keep at most this many records per group "
-            "(grouping uses --group_key, default 'problem')."
-        ),
+        help=("Keep at most this many records per group (grouping uses --group_key, default 'problem')."),
     )
     parser.add_argument(
         "--group_key",
@@ -324,10 +315,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--write_filtered_to",
         default=None,
-        help=(
-            "Write filtered JSONLs under this output root, "
-            "mirroring the input tree."
-        ),
+        help=("Write filtered JSONLs under this output root, mirroring the input tree."),
     )
     parser.add_argument(
         "--aggregate_from_filtered",
@@ -340,10 +328,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--recompute_correctness",
         choices=["none", "substring", "exact"],
         default="none",
-        help=(
-            "Override recorded correctness using pred_answer_canon vs "
-            "gold_answer_canon."
-        ),
+        help=("Override recorded correctness using pred_answer_canon vs gold_answer_canon."),
     )
 
     # CSV outputs
@@ -361,6 +346,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 # ------------------------------ Main -----------------------------------------
+
 
 def main() -> None:
     """

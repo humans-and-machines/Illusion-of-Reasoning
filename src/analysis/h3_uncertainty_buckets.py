@@ -71,15 +71,8 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from src.analysis.core import (
-    build_problem_step_from_samples,
-    make_formal_thresholds,
-    mark_formal_pairs_with_gain,
-)
-from src.analysis.h3_uncertainty.glm import (
-    bucket_group_accuracy,
-    fit_glm_bucket_interaction,
-)
+from src.analysis.core import build_problem_step_from_samples, make_formal_thresholds, mark_formal_pairs_with_gain
+from src.analysis.h3_uncertainty.glm import bucket_group_accuracy, fit_glm_bucket_interaction
 from src.analysis.h3_uncertainty.ingest import add_perplexity_buckets, load_rows
 from src.analysis.h3_uncertainty.plotting import (
     plot_prompt_by_bucket_ci,
@@ -104,6 +97,7 @@ from src.analysis.h3_uncertainty.reporting import (
 )
 from src.analysis.io import scan_jsonl_files
 
+
 GLM_VARIANTS = [
     ("aha_words", "words"),
     ("aha_gpt", "gpt"),
@@ -114,7 +108,7 @@ GLM_VARIANTS = [
 def build_arg_parser() -> argparse.ArgumentParser:
     """Construct the CLI argument parser."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("results_root")
+    parser.add_argument("results_root", nargs="?", default=None)
     parser.add_argument("--split", default=None)
     parser.add_argument("--out_dir", default=None)
     parser.add_argument("--dataset_name", default="MATH-500")
@@ -162,10 +156,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--make_plots",
         action="store_true",
-        help=(
-            "Emit PNG plots for question- and prompt-level re-asking effects "
-            "(overall/step/bucket)."
-        ),
+        help=("Emit PNG plots for question- and prompt-level re-asking effects (overall/step/bucket)."),
     )
     parser.add_argument("--also_pdf_plots", action="store_true")
     parser.add_argument("--font_family", default="Times New Roman")
@@ -178,11 +169,7 @@ def parse_bucket_edges(edge_string: Optional[str]) -> Optional[List[float]]:
     if not edge_string:
         return None
     try:
-        return [
-            float(piece.strip())
-            for piece in edge_string.split(",")
-            if piece.strip()
-        ]
+        return [float(piece.strip()) for piece in edge_string.split(",") if piece.strip()]
     except ValueError as exc:
         raise SystemExit("Failed to parse --bucket_edges.") from exc
 
@@ -206,10 +193,7 @@ def prepare_pass1_dataframe(
         on=["step", "problem"],
         how="left",
     ).fillna({"aha_formal_pair": 0})
-    pass1_df["aha_formal"] = (
-        pass1_df["aha_formal_pair"].astype(int)
-        & pass1_df["aha_gpt"].astype(int)
-    ).astype(int)
+    pass1_df["aha_formal"] = (pass1_df["aha_formal_pair"].astype(int) & pass1_df["aha_gpt"].astype(int)).astype(int)
 
     custom_edges = None
     if args.bucket_method == "fixed":
@@ -268,11 +252,21 @@ def run_glm_variants(
             index=False,
         )
 
-    margins_df = (
-        pd.DataFrame(margin_rows)
-        .sort_values(["variant", "perplexity_bucket"])
-        .reset_index(drop=True)
-    )
+    if margin_rows:
+        margins_df = pd.DataFrame(margin_rows).sort_values(["variant", "perplexity_bucket"]).reset_index(drop=True)
+    else:
+        margins_df = pd.DataFrame(
+            columns=[
+                "dataset",
+                "model",
+                "variant",
+                "perplexity_bucket",
+                "N",
+                "share_aha",
+                "AME_bucket",
+                "glm_summary_path",
+            ],
+        )
     margins_df.to_csv(os.path.join(out_dir, "h3_glm_bucket_margins.csv"), index=False)
 
     accuracy_parts = []
@@ -423,9 +417,7 @@ def run_reasking_analysis(
     out_dir: str,
 ) -> Dict[str, pd.DataFrame]:
     """Produce re-asking tables, aggregates, and optional split-by-aha files."""
-    pass1_buckets = pass1_df[
-        ["pair_id", "perplexity_bucket", "aha_words", "aha_gpt", "aha_formal"]
-    ].drop_duplicates()
+    pass1_buckets = pass1_df[["pair_id", "perplexity_bucket", "aha_words", "aha_gpt", "aha_formal"]].drop_duplicates()
     aligned_df = samples_df.merge(pass1_buckets, on="pair_id", how="left")
     pairs_df, probs_df, cond_df, cond_forced_df = compute_reasking_tables(
         aligned_df,
@@ -545,6 +537,8 @@ def summarize_outputs(out_dir: str) -> None:
 
 def run_pipeline(args: argparse.Namespace) -> None:
     """Execute the H3 uncertainty buckets analysis."""
+    if not args.results_root:
+        raise SystemExit("results_root is required.")
     out_dir = args.out_dir or os.path.join(args.results_root, "h3_uncertainty_buckets")
     os.makedirs(out_dir, exist_ok=True)
     files = scan_jsonl_files(args.results_root, args.split)

@@ -123,3 +123,73 @@ def test_stepagg_add_record_and_finalize_updates_counts():
     footer = agg.footer_text()
     assert str(agg.step) in row
     assert "examples:" in footer
+
+
+def test_stepagg_soft_reward_fallback_and_token_lines(monkeypatch):
+    StepAgg = core_mod.StepAgg
+
+    record = {
+        "problem": "P2",
+        "gold_answer_canon": "gold",
+        "pass1": {"is_correct_pred": True, "pred_answer_canon": "gold", "soft reward": 0.2},
+        "pass2": {"is_correct_pred": False, "pred_answer_canon": "x", "soft reward": 0.4},
+    }
+
+    agg = StepAgg(step=2)
+    agg.add_record(record, recompute_mode="exact")
+    agg.finalize()
+
+    # Fallback soft reward key is used, and tokens absent so no token stats line.
+    assert agg.pass1.soft_values == [0.2]
+    assert agg.pass2.soft_values == [0.4]
+    assert "mean tokens" not in agg.footer_text()
+
+
+def test_format_stop_counter_zero_and_csv_row_with_none():
+    agg = core_mod.StepAgg(step=0)
+    # No samples → counters zero
+    assert core_mod.StepAgg._format_stop_counter(core_mod.Counter(), 0) == "—"
+
+    csv_row = core_mod.build_step_csv_row(agg)
+    # Soft means and accuracies are None when no samples/examples.
+    assert csv_row[2] is None and csv_row[3] is None
+
+
+def test_reconsider_and_soft_reward_fallbacks_in_both_passes():
+    agg = core_mod.StepAgg(step=5)
+    record = {
+        "problem": "P-soft",
+        "gold_answer_canon": "gold",
+        "pass1": {
+            "is_correct_pred": False,
+            "pred_answer_canon": "p1",
+            "has_reconsider_cue": True,
+            "soft_reward": None,
+            "soft reward": 0.25,
+        },
+        "pass2": {
+            "is_correct_pred": False,
+            "pred_answer_canon": "p2",
+            "has_reconsider_cue": True,
+            "soft_reward": None,
+            "soft reward": 0.75,
+        },
+    }
+
+    agg.add_record(record, recompute_mode="none")
+    agg.finalize()
+
+    assert agg.pass1.reconsider_numer == 1
+    assert agg.pass2.reconsider_numer == 1
+    assert agg.pass1.soft_values == [0.25]
+    assert agg.pass2.soft_values == [0.75]
+    assert agg.pass2.sample_improved == 0
+
+
+def test_row_metrics_when_no_examples_show_placeholders():
+    agg = core_mod.StepAgg(step=6)
+    metrics = agg._row_metrics()
+
+    assert metrics["acc1_example"] == "-"
+    assert metrics["acc2_example"] == "-"
+    assert metrics["improvement_example"] == "-"

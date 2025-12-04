@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import os
+from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+
+from src.common.jsonl_utils import iter_jsonl_lines
 
 from ..common.pass_extraction import extract_pass_answer
 from ..labels import aha_gpt_for_rec
@@ -99,22 +101,16 @@ def _build_target_index(
             ].iterrows()
         }
         index = {
-            (str(row["domain"]), str(row["problem"]), int(row["step"])): row
-            for _, row in problem_step_df.iterrows()
+            (str(row["domain"]), str(row["problem"]), int(row["step"])): row for _, row in problem_step_df.iterrows()
         }
     else:
         targets = {
             ("All", str(row["problem"]), int(row["step"]))
-            for _, row in problem_step_df.loc[
-                problem_step_df["aha_formal"] == 1, ["problem", "step"]
-            ].iterrows()
+            for _, row in problem_step_df.loc[problem_step_df["aha_formal"] == 1, ["problem", "step"]].iterrows()
         }
         dup = problem_step_df.copy()
         dup["domain"] = "All"
-        index = {
-            (str(row["domain"]), str(row["problem"]), int(row["step"])): row
-            for _, row in dup.iterrows()
-        }
+        index = {(str(row["domain"]), str(row["problem"]), int(row["step"])): row for _, row in dup.iterrows()}
     return targets, index
 
 
@@ -149,13 +145,8 @@ def _iter_domain_records(domain: str, files: List[str]) -> Iterator[PassRecord]:
     for path in files:
         step_from_name = nat_step_from_path(path)
         with open(path, "r", encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    payload = json.loads(line)
-                except json.JSONDecodeError:
+            for payload in iter_jsonl_lines(handle):
+                if not isinstance(payload, dict):
                     continue
                 step = payload.get(
                     "step",
@@ -163,16 +154,10 @@ def _iter_domain_records(domain: str, files: List[str]) -> Iterator[PassRecord]:
                 )
                 if step is None:
                     continue
-                problem_value = (
-                    payload.get("problem")
-                    or payload.get("clue")
-                    or payload.get("row_key")
-                )
+                problem_value = payload.get("problem") or payload.get("clue") or payload.get("row_key")
                 if problem_value is None:
                     dataset_index = payload.get("dataset_index")
-                    problem_value = (
-                        f"idx:{dataset_index}" if dataset_index is not None else "unknown"
-                    )
+                    problem_value = f"idx:{dataset_index}" if dataset_index is not None else "unknown"
                 yield PassRecord(
                     domain=str(domain),
                     problem=str(problem_value),
@@ -250,11 +235,7 @@ def _build_event_dict(
         "thresholds": {
             "delta1": float(config.thresholds.delta1),
             "delta2": float(config.thresholds.delta2),
-            "delta3": (
-                float(config.thresholds.delta3)
-                if config.thresholds.delta3 is not None
-                else None
-            ),
+            "delta3": (float(config.thresholds.delta3) if config.thresholds.delta3 is not None else None),
             "min_prior_steps": int(config.thresholds.min_prior_steps),
         },
         "question": question,

@@ -14,12 +14,16 @@ from typing import Optional, Sequence
 from src.inference.backends import HFBackend
 from src.inference.runners.unified_runner_base import run_math_main
 
+
 __all__ = ["main", "HFBackend", "run_math_main"]
 
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     """Entry point for math inference CLI."""
-    run_math_main(backend_cls=HFBackend, argv=argv)
+    kwargs = {"backend_cls": HFBackend}
+    if argv is not None:
+        kwargs["argv"] = argv
+    run_math_main(**kwargs)
 
 
 if __name__ == "__main__":

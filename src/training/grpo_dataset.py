@@ -8,6 +8,7 @@ import os
 import re
 from typing import Any, Dict, Optional
 
+
 datasets = importlib.import_module("datasets")
 
 logger = logging.getLogger(__name__)
@@ -154,9 +155,7 @@ def _extract_solution(example: dict, solution_column: str) -> str:
         raise ValueError(f"Dataset row missing '{solution_column}'")
 
     if isinstance(raw_sol, (list, tuple)):
-        return ",".join(
-            str(token).strip() for token in raw_sol if str(token).strip()
-        )
+        return ",".join(str(token).strip() for token in raw_sol if str(token).strip())
 
     raw_sol_str = str(raw_sol)
     answer_match = re.search(
@@ -177,13 +176,8 @@ def _estimate_prompt_tokens(messages: list[dict[str, str]], tokenizer) -> int:
         )
         return int(templated.input_ids.shape[-1])
     except (TypeError, AttributeError, ValueError):
-        flat_prompt = "\n".join(
-            f"{message['role']}: {message['content']}"
-            for message in messages
-        )
-        return int(
-            tokenizer(flat_prompt, return_tensors="pt").input_ids.shape[-1]
-        )
+        flat_prompt = "\n".join(f"{message['role']}: {message['content']}" for message in messages)
+        return int(tokenizer(flat_prompt, return_tensors="pt").input_ids.shape[-1])
 
 
 def _make_conversation(
@@ -244,9 +238,11 @@ def _load_easy_pool(script_args, tokenizer, training_args):
     load it and format to the same schema as the cryptic set, tagging task=EASY.
     Returns: List[dict] or None
     """
-    easy_name = getattr(script_args, "easy_dataset_name", None) \
-                or os.environ.get("EASY_DATASET_NAME") \
-                or os.environ.get("EASY_DATASET")
+    easy_name = (
+        getattr(script_args, "easy_dataset_name", None)
+        or os.environ.get("EASY_DATASET_NAME")
+        or os.environ.get("EASY_DATASET")
+    )
     if not easy_name:
         return None
 
@@ -279,9 +275,11 @@ def _load_easy_pool(script_args, tokenizer, training_args):
             easy[split] = easy[split].remove_columns("messages")
 
     # pick a split for training
-    train_key = script_args.dataset_train_split \
-        if script_args.dataset_train_split in easy \
+    train_key = (
+        script_args.dataset_train_split
+        if script_args.dataset_train_split in easy
         else ("train" if "train" in easy else list(easy.keys())[0])
+    )
 
     # convert to a python list of dicts (fast random access)
     pool = list(easy[train_key])

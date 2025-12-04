@@ -160,31 +160,13 @@ def _generate(
 
     logits_processors = []
     if config.sampling.ban_eos_steps:
-        logits_processors.append(
-            BanEosForSteps(config.eos_token_ids, config.sampling.ban_eos_steps)
-        )
+        logits_processors.append(BanEosForSteps(config.eos_token_ids, config.sampling.ban_eos_steps))
 
-    min_new = (
-        config.min_new_tokens
-        if config.min_new_tokens and config.min_new_tokens > 0
-        else None
-    )
-    beams = (
-        config.num_beams
-        if (config.num_beams and config.num_beams > 1 and not config.sampling.do_sample)
-        else 1
-    )
+    min_new = config.min_new_tokens if config.min_new_tokens and config.min_new_tokens > 0 else None
+    beams = config.num_beams if (config.num_beams and config.num_beams > 1 and not config.sampling.do_sample) else 1
     temperature = config.sampling.temperature if config.sampling.do_sample else None
-    top_p = (
-        config.sampling.top_p
-        if (config.sampling.do_sample and config.sampling.top_p not in (None, 0))
-        else None
-    )
-    top_k = (
-        config.sampling.top_k
-        if (config.sampling.do_sample and config.sampling.top_k not in (None, 0))
-        else None
-    )
+    top_p = config.sampling.top_p if (config.sampling.do_sample and config.sampling.top_p not in (None, 0)) else None
+    top_k = config.sampling.top_k if (config.sampling.do_sample and config.sampling.top_k not in (None, 0)) else None
 
     with torch_mod.inference_mode():
         generation_output = model.generate(
@@ -317,10 +299,7 @@ def _token_logprobs_stream(
             1,
             token_ids_tensor.view(-1, 1),
         ).squeeze(1)
-        return [
-            float(picked_logprobs[position].item())
-            for position in range(len(active_indices))
-        ]
+        return [float(picked_logprobs[position].item()) for position in range(len(active_indices))]
 
     state = ScoreStreamState(
         scores=scores,
@@ -333,10 +312,7 @@ def _token_logprobs_stream(
         state=state,
         per_step_values_fn=_per_step_values,
     )
-    averages = [
-        (sum_val / count if count > 0 else 0.0)
-        for sum_val, count in zip(logprob_sums, token_counts)
-    ]
+    averages = [(sum_val / count if count > 0 else 0.0) for sum_val, count in zip(logprob_sums, token_counts)]
     return logprob_sums, averages, token_counts
 
 
@@ -361,10 +337,7 @@ def _token_entropy_stream(
         step_logits = step_scores[active_indices].float()
         probs = torch_module.softmax(step_logits, dim=-1)
         entropies = -(probs * probs.clamp_min(1e-12).log()).sum(dim=-1)
-        return [
-            float(entropies[position].item())
-            for position in range(len(active_indices))
-        ]
+        return [float(entropies[position].item()) for position in range(len(active_indices))]
 
     state = ScoreStreamState(
         scores=scores,
@@ -377,10 +350,7 @@ def _token_entropy_stream(
         state=state,
         per_step_values_fn=_per_step_values,
     )
-    averages = [
-        (sum_val / count if count > 0 else 0.0)
-        for sum_val, count in zip(entropy_sums, token_counts)
-    ]
+    averages = [(sum_val / count if count > 0 else 0.0) for sum_val, count in zip(entropy_sums, token_counts)]
     return averages, token_counts
 
 
@@ -403,11 +373,7 @@ def _stream_reduce_over_scores(
 
     max_effective_length = max(effective_lengths) if effective_lengths else 0
     for time_index in range(max_effective_length):
-        active_indices = [
-            idx
-            for idx, length in enumerate(effective_lengths)
-            if time_index < length
-        ]
+        active_indices = [idx for idx, length in enumerate(effective_lengths) if time_index < length]
         if not active_indices:
             break
 

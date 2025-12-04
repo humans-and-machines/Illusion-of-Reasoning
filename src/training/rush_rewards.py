@@ -15,7 +15,35 @@ from __future__ import annotations
 
 import math
 import re
+from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+
+@dataclass(frozen=True)
+class _RushRewardInputs:
+    """Bundle Rush reward inputs to keep function signatures small."""
+
+    answer: Any | None = None
+    gold: Any | None = None
+    board_str: str | None = None
+    board_size: int | None = None
+    gold_moves: int | None = None
+
+    @classmethod
+    def from_kwargs(
+        cls,
+        overrides: Dict[str, Any],
+        base: "_RushRewardInputs | None" = None,
+    ) -> "_RushRewardInputs":
+        """Merge overrides with an optional base inputs object."""
+        base_inputs = base or cls()
+        return cls(
+            answer=overrides.get("answer", base_inputs.answer),
+            gold=overrides.get("gold", base_inputs.gold),
+            board_str=overrides.get("board_str", base_inputs.board_str),
+            board_size=overrides.get("board_size", overrides.get("N", base_inputs.board_size)),
+            gold_moves=overrides.get("gold_moves", base_inputs.gold_moves),
+        )
 
 
 # ---------- Token utilities ----------
@@ -163,10 +191,7 @@ def _canon_seq_from_text(text: Any) -> Optional[List[str]]:
             )
         else:
             merged_moves.append((piece, direction, steps))
-    return [
-        f"{piece}{direction}{steps}"
-        for (piece, direction, steps) in merged_moves
-    ]
+    return [f"{piece}{direction}{steps}" for (piece, direction, steps) in merged_moves]
 
 
 def _len_tokens(tokens: Optional[List[str]]) -> int:
@@ -174,6 +199,7 @@ def _len_tokens(tokens: Optional[List[str]]) -> int:
 
 
 # ---------- Prompt extraction ----------
+
 
 def _stringify_prompt(prompts: Any) -> str:
     """
@@ -271,9 +297,7 @@ class Board:
         grid = (grid_str or "").strip()
         if len(grid) != size * size:
             raise ValueError(f"Board string length {len(grid)} != N*N ({size * size})")
-        self.grid: List[List[str]] = [
-            list(grid[row * size : (row + 1) * size]) for row in range(size)
-        ]
+        self.grid: List[List[str]] = [list(grid[row * size : (row + 1) * size]) for row in range(size)]
         self.cars: Dict[str, List[Tuple[int, int]]] = self._index_cars()
         self.orient: Dict[str, str] = self._orientations()  # "H" or "V"
 
@@ -451,16 +475,9 @@ def _canon_gold_candidates(gold: Any) -> List[List[str]]:
     if gold is None:
         return []
     # Unwrap ["A>2,Bv5"] → "A>2,Bv5".
-    if (
-        isinstance(gold, (list, tuple))
-        and len(gold) == 1
-        and isinstance(gold[0], str)
-    ):
+    if isinstance(gold, (list, tuple)) and len(gold) == 1 and isinstance(gold[0], str):
         gold = gold[0]
-    if isinstance(gold, str) or (
-        isinstance(gold, (list, tuple))
-        and (not gold or isinstance(gold[0], str))
-    ):
+    if isinstance(gold, str) or (isinstance(gold, (list, tuple)) and (not gold or isinstance(gold[0], str))):
         seq = _canon_seq(gold)
         return [seq] if seq is not None else []
 
@@ -619,12 +636,7 @@ def rush_solution_shaped(
     *,
     prompts,
     completions,
-    answer=None,
-    gold=None,
-    # NEW: allow bypassing prompt parsing entirely:
-    board_str: str | None = None,
-    board_size: int | None = None,
-    gold_moves: int | None = None,
+    reward_inputs: _RushRewardInputs | None = None,
     **kwargs,
 ) -> List[float]:
     """
@@ -635,7 +647,11 @@ def rush_solution_shaped(
       - exact match (vs gold candidates)
       - prefix/LCP credit vs gold
       - gold-only "solve optimality": shorter sequences are better based on gold_moves
+
+    ``reward_inputs`` can pre-bundle gold/board hints; explicit keyword overrides
+    like ``gold_moves`` or ``board_str`` still take precedence.
     """
+    inputs = _RushRewardInputs.from_kwargs(kwargs, reward_inputs)
     ctx: Dict[str, Any] = {}
     ctx["weights"] = {
         "exact": float(kwargs.get("w_exact", 0.65)),
@@ -651,25 +667,21 @@ def rush_solution_shaped(
     ctx["completions"] = completions
 
     ctx["gold_cands"] = _canon_gold_candidates(
-        gold or answer or kwargs.get("answers") or kwargs.get("gold_answers"),
+        inputs.gold or inputs.answer or kwargs.get("answers") or kwargs.get("gold_answers"),
     )
     ctx["board"], ctx["board_target_moves"] = _rush_build_board_and_moves(
         prompts,
-        board_str,
-        board_size,
+        inputs.board_str,
+        inputs.board_size,
     )
 
-    if gold_moves is not None:
-        ctx["target_moves"] = gold_moves
+    if inputs.gold_moves is not None:
+        ctx["target_moves"] = inputs.gold_moves
     elif ctx["board_target_moves"] is not None:
         ctx["target_moves"] = ctx["board_target_moves"]
     else:
         ctx["target_moves"] = min(
-            (
-                _len_tokens(candidate)
-                for candidate in ctx["gold_cands"]
-                if candidate is not None
-            ),
+            (_len_tokens(candidate) for candidate in ctx["gold_cands"] if candidate is not None),
             default=None,
         )
 
@@ -708,11 +720,7 @@ def rush_solution_shaped(
                         ctx["weights"]["exact"]
                         * (
                             1.0
-                            if any(
-                                pred_can == candidate
-                                for candidate in ctx["gold_cands"]
-                                if candidate is not None
-                            )
+                            if any(pred_can == candidate for candidate in ctx["gold_cands"] if candidate is not None)
                             else 0.0
                         )
                         + ctx["weights"]["solve"] * solve_terms[1]
@@ -774,9 +782,7 @@ def rush_solution_exact(
             scores.append(bonus)
             continue
 
-        exact_match = any(
-            pred_can == candidate for candidate in gold_cands if candidate is not None
-        )
+        exact_match = any(pred_can == candidate for candidate in gold_cands if candidate is not None)
         scores.append(1.0 if exact_match else 0.0)
 
     return scores

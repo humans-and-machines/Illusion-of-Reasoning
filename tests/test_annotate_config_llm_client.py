@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import types
-
 import pytest
 
 
@@ -176,4 +174,3 @@ def test_build_chat_client_wraps_azure_client(monkeypatch):
     assert calls["kwargs"]["azure_endpoint"] == "https://api.example.com"
     assert calls["kwargs"]["api_key"] == "KEY"
     assert calls["kwargs"]["api_version"] == "2024-01-01"
-

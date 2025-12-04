@@ -30,6 +30,7 @@ Optional:
 """
 
 from __future__ import annotations
+
 import argparse
 import os
 from typing import Any, Dict, List, Tuple
@@ -38,6 +39,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 
 try:
     import statsmodels.api as sm  # type: ignore[import]
@@ -59,6 +61,7 @@ from src.analysis.utils import (
     nat_step_from_path,
     problem_key_from_record,
 )
+
 
 matplotlib.use("Agg")
 
@@ -134,6 +137,7 @@ def load_samples(
         raise SystemExit("No PASS-1 rows found.")
     return samples_df
 
+
 # ---------- problem-step table + Formal ----------
 
 
@@ -187,14 +191,12 @@ def mark_formal(
             if j < min_prior_steps:
                 flags[idx] = 0
             else:
-                prior_ok = (
-                    float(np.max(freq[:j])) < delta1
-                    and float(np.max(rate[:j])) < delta2
-                )
+                prior_ok = float(np.max(freq[:j])) < delta1 and float(np.max(rate[:j])) < delta2
                 flags[idx] = int(prior_ok and (shift[j] == 1))
             idx += 1
     problem_step_df["aha_formal_ps"] = flags
     return problem_step_df
+
 
 # ---------- GLM ----------
 
@@ -213,24 +215,15 @@ def _compute_glm_metrics(
     data_with_aha0[aha_column] = 0
     ame = float(
         np.mean(
-            glm_result.predict(data_with_aha1)
-            - glm_result.predict(data_with_aha0),
+            glm_result.predict(data_with_aha1) - glm_result.predict(data_with_aha0),
         ),
     )
 
     acc_overall = float(glm_data["correct"].mean())
     mask_aha1 = glm_data[aha_column] == 1
     mask_aha0 = glm_data[aha_column] == 0
-    acc_aha1 = (
-        float(glm_data.loc[mask_aha1, "correct"].mean())
-        if mask_aha1.any()
-        else float("nan")
-    )
-    acc_aha0 = (
-        float(glm_data.loc[mask_aha0, "correct"].mean())
-        if mask_aha0.any()
-        else float("nan")
-    )
+    acc_aha1 = float(glm_data.loc[mask_aha1, "correct"].mean()) if mask_aha1.any() else float("nan")
+    acc_aha0 = float(glm_data.loc[mask_aha0, "correct"].mean()) if mask_aha0.any() else float("nan")
     if np.isfinite(acc_aha1) and np.isfinite(acc_aha0):
         delta_acc = acc_aha1 - acc_aha0
     else:
@@ -261,9 +254,7 @@ def fit_glm(
         raise RuntimeError("statsmodels is required (pip install statsmodels).")
 
     glm_data = samples_df.copy()
-    glm_data["step_std"] = (
-        glm_data["step"] - glm_data["step"].mean()
-    ) / (glm_data["step"].std(ddof=0) + 1e-8)
+    glm_data["step_std"] = (glm_data["step"] - glm_data["step"].mean()) / (glm_data["step"].std(ddof=0) + 1e-8)
     if aha_col not in glm_data.columns:
         raise ValueError(f"missing {aha_col}")
 
@@ -284,8 +275,7 @@ def fit_glm(
     write_glm_summary_header(out_txt, glm_result, cov_type, cov_kwds)
     with open(out_txt, "a", encoding="utf-8") as summary_file:
         summary_file.write(
-            f"\nAverage Marginal Effect (AME) of {aha_col}: "
-            f"{metrics['ame']:.4f}\n",
+            f"\nAverage Marginal Effect (AME) of {aha_col}: {metrics['ame']:.4f}\n",
         )
         summary_file.write(
             f"\nAcc(overall)={metrics['acc_overall']:.4f}  "
@@ -315,6 +305,7 @@ def fit_glm(
         "summary_path": out_txt,
     }
 
+
 # ---------- Accuracy per grouping ----------
 
 
@@ -327,9 +318,8 @@ def _append_accuracy_rows_for_variant(
     """
     Append overall, delta, and per-step accuracy rows for a single Aha variant.
     """
-    grouped = (
-        samples_df.groupby(samples_df[aha_column], as_index=False)
-        .agg(n=("correct", "size"), k=("correct", "sum"))
+    grouped = samples_df.groupby(samples_df[aha_column], as_index=False).agg(
+        n=("correct", "size"), k=("correct", "sum")
     )
     grouped["acc"] = grouped["k"] / grouped["n"]
 
@@ -344,38 +334,27 @@ def _append_accuracy_rows_for_variant(
             },
         )
 
-    has_aha1 = (grouped[aha_column] == 1).any()
-    has_aha0 = (grouped[aha_column] == 0).any()
-    acc_aha1 = (
-        float(grouped.loc[grouped[aha_column] == 1, "acc"])
-        if has_aha1
-        else np.nan
-    )
-    acc_aha0 = (
-        float(grouped.loc[grouped[aha_column] == 0, "acc"])
-        if has_aha0
-        else np.nan
-    )
-    num_aha1 = int(grouped.loc[grouped[aha_column] == 1, "n"]) if has_aha1 else 0
-    num_aha0 = int(grouped.loc[grouped[aha_column] == 0, "n"]) if has_aha0 else 0
+    def _extract_acc_and_count(label: int) -> tuple[float, int]:
+        subset = grouped.loc[grouped[aha_column] == label]
+        if subset.empty:
+            return np.nan, 0
+        return float(subset["acc"].iloc[0]), int(subset["n"].iloc[0])
+
+    acc_aha1, num_aha1 = _extract_acc_and_count(1)
+    acc_aha0, num_aha0 = _extract_acc_and_count(0)
     rows["delta"].append(
         {
             "variant": variant_name,
             "acc_aha1": acc_aha1,
             "acc_aha0": acc_aha0,
-            "delta_acc": (
-                acc_aha1 - acc_aha0
-                if (np.isfinite(acc_aha1) and np.isfinite(acc_aha0))
-                else np.nan
-            ),
+            "delta_acc": (acc_aha1 - acc_aha0 if (np.isfinite(acc_aha1) and np.isfinite(acc_aha0)) else np.nan),
             "n_aha1": num_aha1,
             "n_aha0": num_aha0,
         },
     )
 
-    grouped_step = (
-        samples_df.groupby(["step", samples_df[aha_column]], as_index=False)
-        .agg(n=("correct", "size"), k=("correct", "sum"))
+    grouped_step = samples_df.groupby(["step", samples_df[aha_column]], as_index=False).agg(
+        n=("correct", "size"), k=("correct", "sum")
     )
     grouped_step["accuracy"] = grouped_step["k"] / grouped_step["n"]
     grouped_step = grouped_step.rename(columns={aha_column: "aha"})
@@ -418,21 +397,9 @@ def compute_group_accuracy_tables(
             rows=rows,
         )
 
-    overall_df = (
-        pd.DataFrame(rows["overall"])
-        .sort_values(["variant", "aha"])
-        .reset_index(drop=True)
-    )
-    delta_df = (
-        pd.DataFrame(rows["delta"])
-        .sort_values(["variant"])
-        .reset_index(drop=True)
-    )
-    by_step_df = (
-        pd.concat(rows["by_step"], ignore_index=True)
-        if rows["by_step"]
-        else pd.DataFrame()
-    )
+    overall_df = pd.DataFrame(rows["overall"]).sort_values(["variant", "aha"]).reset_index(drop=True)
+    delta_df = pd.DataFrame(rows["delta"]).sort_values(["variant"]).reset_index(drop=True)
+    by_step_df = pd.concat(rows["by_step"], ignore_index=True) if rows["by_step"] else pd.DataFrame()
 
     acc_csv = os.path.join(out_dir, "h1_group_accuracy.csv")
     delta_csv = os.path.join(out_dir, "h1_group_accuracy_delta.csv")
@@ -444,7 +411,9 @@ def compute_group_accuracy_tables(
 
     return acc_csv, delta_csv, step_csv
 
+
 # ---------- A4 PDF summary (Times New Roman 12pt) ----------
+
 
 def _fmt_float_or_str(value: Any) -> str:
     """
@@ -486,20 +455,14 @@ def _draw_glm_table(
     ]
     table_df = summary_df[columns].copy()
     table_df["delta_acc"] = table_df["delta_acc"] * 100.0
-    table_rows = [
-        [_fmt_float_or_str(value) for value in row_values]
-        for row_values in table_df.values.tolist()
-    ]
+    table_rows = [[_fmt_float_or_str(value) for value in row_values] for row_values in table_df.values.tolist()]
 
     y_cursor = 0.92
     line_height = 0.045
     axis.text(
         0.0,
         y_cursor,
-        (
-            "GLM: correct ~ C(problem) + step_std + aha "
-            "(cluster-robust SEs by problem)"
-        ),
+        ("GLM: correct ~ C(problem) + step_std + aha (cluster-robust SEs by problem)"),
         ha="left",
         va="top",
     )
@@ -555,21 +518,9 @@ def _draw_accuracy_delta_table(
             ha="left",
             va="top",
         )
-        acc_aha1 = (
-            f"{delta_row['acc_aha1']:.4f}"
-            if np.isfinite(delta_row["acc_aha1"])
-            else "nan"
-        )
-        acc_aha0 = (
-            f"{delta_row['acc_aha0']:.4f}"
-            if np.isfinite(delta_row["acc_aha0"])
-            else "nan"
-        )
-        delta_pp = (
-            f"{delta_row['delta_pp']:+.2f}"
-            if np.isfinite(delta_row["delta_pp"])
-            else "nan"
-        )
+        acc_aha1 = f"{delta_row['acc_aha1']:.4f}" if np.isfinite(delta_row["acc_aha1"]) else "nan"
+        acc_aha0 = f"{delta_row['acc_aha0']:.4f}" if np.isfinite(delta_row["acc_aha0"]) else "nan"
+        delta_pp = f"{delta_row['delta_pp']:+.2f}" if np.isfinite(delta_row["delta_pp"]) else "nan"
         axis.text(x_positions[1], y_cursor, acc_aha1, ha="left", va="top")
         axis.text(x_positions[2], y_cursor, acc_aha0, ha="left", va="top")
         axis.text(x_positions[3], y_cursor, delta_pp, ha="left", va="top")
@@ -652,10 +603,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tex_path",
         default=None,
-        help=(
-            "Write a LaTeX table here if provided "
-            "(e.g., h1_glm_ame_summary.tex)."
-        ),
+        help=("Write a LaTeX table here if provided (e.g., h1_glm_ame_summary.tex)."),
     )
 
     # Optional A4 PDF summary
@@ -716,9 +664,7 @@ def _load_and_prepare_samples(args: argparse.Namespace) -> pd.DataFrame:
     if not (share_formal <= share_gpt + 1e-12 and share_gpt <= share_words + 1e-12):
         print(
             "[warn] Subset relations violated (unexpected). shares:",
-            f"words={share_words:.4f}, "
-            f"gpt={share_gpt:.4f}, "
-            f"formal={share_formal:.4f}",
+            f"words={share_words:.4f}, gpt={share_gpt:.4f}, formal={share_formal:.4f}",
         )
 
     return samples_df
@@ -791,18 +737,11 @@ def _write_latex_table(summary_df: pd.DataFrame, tex_path: str) -> None:
     lines = [
         "\\begin{tabular}{lrrrrrrrr}",
         "\\toprule",
-        (
-            "Variant & N & Share Aha & Acc(aha=1) & Acc(aha=0) & "
-            "$\\Delta$ (pp) & AME & Coef & $p$ \\\\"
-        ),
+        ("Variant & N & Share Aha & Acc(aha=1) & Acc(aha=0) & $\\Delta$ (pp) & AME & Coef & $p$ \\\\"),
         "\\midrule",
     ]
     for _, summary_row in summary_df.iterrows():
-        delta_pp = (
-            100.0 * summary_row["delta_acc"]
-            if np.isfinite(summary_row["delta_acc"])
-            else np.nan
-        )
+        delta_pp = 100.0 * summary_row["delta_acc"] if np.isfinite(summary_row["delta_acc"]) else np.nan
         lines.append(
             f"{summary_row['variant'].title()} & {int(summary_row['N'])} & "
             f"{fmt(summary_row['share_aha'])} & "
@@ -851,11 +790,7 @@ def _print_console_summary(
     print("Group accuracy (delta):  ", delta_csv)
     print("Group accuracy by step:  ", step_csv)
     for _, summary_row in summary_df.iterrows():
-        delta_pp = (
-            100.0 * summary_row["delta_acc"]
-            if np.isfinite(summary_row["delta_acc"])
-            else np.nan
-        )
+        delta_pp = 100.0 * summary_row["delta_acc"] if np.isfinite(summary_row["delta_acc"]) else np.nan
         if np.isfinite(delta_pp):
             sign = "+" if delta_pp >= 0 else ""
             delta_str = f"{sign}{delta_pp:.2f}"
@@ -874,6 +809,7 @@ def _print_console_summary(
 
 
 # ---------- main ----------
+
 
 def main() -> None:
     """
@@ -900,6 +836,7 @@ def main() -> None:
         _write_pdf_summary(args, out_dir, summary_df, delta_csv)
 
     _print_console_summary(summary_df, summary_csv_path, acc_csv, delta_csv, step_csv)
+
 
 if __name__ == "__main__":
     main()

@@ -16,9 +16,11 @@ import os
 from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, Iterable, List, Optional, Sequence
+
 from src.inference.domains.math import math_core
 from src.inference.utils.common import (
     GenerationLimits,
+    _MathInferenceSampling,
     build_math_inference_config_kwargs,
     build_math_inference_config_kwargs_from_args,
     require_datasets,
@@ -35,6 +37,7 @@ from src.inference.utils.gateway_utils import (
 # ---------------------------------------------------------------------------
 # Math unified runner
 # ---------------------------------------------------------------------------
+
 
 def parse_math_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """
@@ -127,6 +130,7 @@ def run_math_main(backend_cls, argv: Optional[Sequence[str]] = None) -> None:
 # Simple math-inference helper for tests
 # ---------------------------------------------------------------------------
 
+
 class _SimpleListDataset:
     """
     Minimal Dataset-like wrapper over a list of dicts for testing.
@@ -173,23 +177,7 @@ class _SimpleListDataset:
 MathTestLimits = GenerationLimits
 
 
-@dataclass
-class MathTestSampling:
-    """
-    Sampling and two-pass configuration for test-only math inference.
-
-    :param temperature: Sampling temperature for generation.
-    :param top_p: Nucleus-sampling parameter for generation.
-    :param two_pass: Whether to enable the reconsideration second pass.
-    :param second_pass_phrase: Cue phrase injected into second-pass prompts.
-    :param second_pass_use_sample_idx: Preferred sample index to feed pass 2.
-    """
-
-    temperature: float
-    top_p: float
-    two_pass: bool
-    second_pass_phrase: str
-    second_pass_use_sample_idx: int
+MathTestSampling = _MathInferenceSampling
 
 
 @dataclass(init=False)
@@ -319,6 +307,7 @@ def run_math_inference(
 # Carpark unified runner
 # ---------------------------------------------------------------------------
 
+
 def parse_carpark_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """
     Construct and parse CLI arguments for the unified carpark runner.
@@ -392,6 +381,7 @@ def run_carpark_main(
 # Crossword unified runner
 # ---------------------------------------------------------------------------
 
+
 def parse_crossword_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """
     Construct and parse CLI arguments for the unified crossword runner.
@@ -414,6 +404,73 @@ def parse_crossword_args(argv: Optional[Sequence[str]] = None) -> argparse.Names
     )
     configure_unified_runner_common(parser, default_dtype="float16")
     return parser.parse_args(argv)
+
+
+def _has_crossword_configs(cw_mod) -> bool:
+    """Return True if the crossword module exposes the required config classes."""
+    required_cfg_attrs = (
+        "CrosswordCapsConfig",
+        "CrosswordSamplingConfig",
+        "CrosswordTwoPassConfig",
+        "CrosswordInferenceConfig",
+    )
+    return all(hasattr(cw_mod, attr) for attr in required_cfg_attrs)
+
+
+def _build_crossword_run_kwargs(cw_mod, args, backend, eos_ids, examples):
+    """Construct kwargs for running crossword inference, using configs when available."""
+    if _has_crossword_configs(cw_mod):
+        caps_cfg = cw_mod.CrosswordCapsConfig(
+            batch_size=args.batch_size,
+            num_samples=args.num_samples,
+            think_cap=args.think_cap,
+            answer_cap=args.answer_cap,
+        )
+        sampling_cfg = cw_mod.CrosswordSamplingConfig(
+            temperature=args.temperature,
+            top_p=args.top_p,
+            entropy_mode=args.entropy_mode,
+        )
+        two_pass_cfg = cw_mod.CrosswordTwoPassConfig(
+            enabled=args.two_pass,
+            phrase=args.second_pass_phrase,
+            sample_index=args.second_pass_use_sample_idx,
+        )
+        cfg = cw_mod.CrosswordInferenceConfig(
+            split_name=args.split,
+            output_dir=args.output_dir,
+            step=args.step,
+            eos_ids=eos_ids,
+            caps=caps_cfg,
+            sampling=sampling_cfg,
+            two_pass=two_pass_cfg,
+        )
+        return {
+            "examples": examples,
+            "tokenizer": backend.tokenizer,
+            "model": backend.model,
+            "config": cfg,
+        }
+
+    return {
+        "split_name": args.split,
+        "examples": examples,
+        "tokenizer": backend.tokenizer,
+        "model": backend.model,
+        "batch_size": args.batch_size,
+        "num_samples": args.num_samples,
+        "think_cap": args.think_cap,
+        "answer_cap": args.answer_cap,
+        "temperature": args.temperature,
+        "top_p": args.top_p,
+        "entropy_mode": args.entropy_mode,
+        "two_pass": args.two_pass,
+        "second_pass_phrase": args.second_pass_phrase,
+        "second_pass_use_sample_idx": args.second_pass_use_sample_idx,
+        "eos_ids": eos_ids,
+        "step": args.step,
+        "output_dir": args.output_dir,
+    }
 
 
 def run_crossword_main(
@@ -455,36 +512,6 @@ def run_crossword_main(
 
     examples = limit_dataset_for_args(examples, args)
 
-    caps_cfg = cw_mod.CrosswordCapsConfig(
-        batch_size=args.batch_size,
-        num_samples=args.num_samples,
-        think_cap=args.think_cap,
-        answer_cap=args.answer_cap,
-    )
-    sampling_cfg = cw_mod.CrosswordSamplingConfig(
-        temperature=args.temperature,
-        top_p=args.top_p,
-        entropy_mode=args.entropy_mode,
-    )
-    two_pass_cfg = cw_mod.CrosswordTwoPassConfig(
-        enabled=args.two_pass,
-        phrase=args.second_pass_phrase,
-        sample_index=args.second_pass_use_sample_idx,
-    )
-    cfg = cw_mod.CrosswordInferenceConfig(
-        split_name=args.split,
-        output_dir=args.output_dir,
-        step=args.step,
-        eos_ids=eos_ids,
-        caps=caps_cfg,
-        sampling=sampling_cfg,
-        two_pass=two_pass_cfg,
-    )
-
-    cw_mod.run_inference_on_split(
-        examples=examples,
-        tokenizer=backend.tokenizer,
-        model=backend.model,
-        config=cfg,
-    )
+    run_kwargs = _build_crossword_run_kwargs(cw_mod, args, backend, eos_ids, examples)
+    cw_mod.run_inference_on_split(**run_kwargs)
     print(f"All inference complete → {args.output_dir}")

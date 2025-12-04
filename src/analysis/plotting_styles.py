@@ -12,26 +12,44 @@ from typing import Dict, List, Optional, Tuple
 import matplotlib
 from matplotlib import cm
 
-matplotlib.rcParams.update({
-    "pdf.fonttype": 42,
-    "ps.fonttype": 42,
-    "font.family": "serif",
-    "font.serif": [
-        "Times New Roman",
-        "Times",
-        "Nimbus Roman",
-        "TeX Gyre Termes",
-        "DejaVu Serif",
-    ],
-    "mathtext.fontset": "stix",
-    "font.size": 12,
-    "axes.titlesize": 12,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "legend.fontsize": 12,
-    "figure.titlesize": 12,
-})
+
+class _ColormapRegistryFallback(dict):
+    """Dict-like shim that defers to ``cm.get_cmap``."""
+
+    def __getitem__(self, name):
+        return cm.get_cmap(name)
+
+
+def _resolve_colormap_registry():
+    """
+    Backfill ``matplotlib.colormaps`` for environments with older matplotlib installs.
+    Uses the live ``matplotlib.colormaps`` attribute so monkeypatches are honored.
+    """
+    return getattr(matplotlib, "colormaps", None) or _ColormapRegistryFallback()
+
+
+matplotlib.rcParams.update(
+    {
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+        "font.family": "serif",
+        "font.serif": [
+            "Times New Roman",
+            "Times",
+            "Nimbus Roman",
+            "TeX Gyre Termes",
+            "DejaVu Serif",
+        ],
+        "mathtext.fontset": "stix",
+        "font.size": 12,
+        "axes.titlesize": 12,
+        "axes.labelsize": 12,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "figure.titlesize": 12,
+    }
+)
 
 METRIC_LABELS: Dict[str, str] = {
     "sample": "Per-draw accuracy",
@@ -67,7 +85,7 @@ def cmap_colors(name: str) -> List[Tuple[float, float, float]]:
     Access a qualitative matplotlib colormap and return RGB tuples.
     """
     try:
-        seq = matplotlib.colormaps[name].colors
+        seq = _resolve_colormap_registry()[name].colors
     except (KeyError, AttributeError, TypeError):
         seq = cm.get_cmap(name).colors
     rgb_list: List[Tuple[float, float, float]] = []

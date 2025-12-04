@@ -55,9 +55,12 @@ def cue_gate_for_llm(
     """
     Native cue gate used when gating GPT-detected shifts.
     """
-    has_reconsider = coerce_bool(
-        both_get(pass1_fields, record, "has_reconsider_cue"),
-    ) == 1
+    has_reconsider = (
+        coerce_bool(
+            both_get(pass1_fields, record, "has_reconsider_cue"),
+        )
+        == 1
+    )
     rec_marks = both_get(pass1_fields, record, "reconsider_markers") or []
     injected = isinstance(rec_marks, list) and ("injected_cue" in rec_marks)
     reconsider_ok = has_reconsider and not injected

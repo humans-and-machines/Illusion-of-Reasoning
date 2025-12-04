@@ -15,15 +15,8 @@ import numpy as np
 import pandas as pd
 
 from src.analysis.common.uncertainty import standardize_uncertainty
-from src.analysis.core import (
-    build_problem_step_from_samples,
-    iter_pass1_records,
-    make_formal_thresholds,
-)
-from src.analysis.core.h2_uncertainty_helpers import (
-    label_formal_samples,
-    mark_formal_pairs,
-)
+from src.analysis.core import build_problem_step_from_samples, iter_pass1_records, make_formal_thresholds
+from src.analysis.core.h2_uncertainty_helpers import label_formal_samples, mark_formal_pairs
 from src.analysis.io import scan_jsonl_files
 from src.analysis.labels import aha_words
 from src.analysis.utils import (
@@ -152,8 +145,7 @@ def wilson_ci(
     half_width = (
         z_score
         * np.sqrt(
-            (proportion * (1 - proportion) / num_trials)
-            + (z_squared / (4 * num_trials * num_trials)),
+            (proportion * (1 - proportion) / num_trials) + (z_squared / (4 * num_trials * num_trials)),
         )
         / denominator
     )
@@ -188,17 +180,26 @@ def density_from_hist(
     """
     Convert a histogram of standardized values into a (possibly smoothed) density.
     """
-    if values_std.size == 0:
-        centers = 0.5 * (edges[:-1] + edges[1:])
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    finite_vals = values_std[np.isfinite(values_std)]
+    if finite_vals.size == 0:
         return centers, np.zeros_like(centers)
-    hist, _ = np.histogram(values_std, bins=edges, density=True)
+
+    # Filter out values that fall outside the provided edges so histogram density
+    # calculations never divide by zero.
+    in_bounds = finite_vals[(finite_vals >= edges[0]) & (finite_vals <= edges[-1])]
+    if in_bounds.size == 0:
+        return centers, np.zeros_like(centers)
+
+    hist, _ = np.histogram(in_bounds, bins=edges, density=True)
+    if not np.isfinite(hist).all():
+        return centers, np.zeros_like(centers)
     if smooth_k and smooth_k > 1:
         k = max(1, int(smooth_k))
         if k % 2 == 0:
             k += 1
         kernel = np.ones(k, dtype=float) / k
         hist = np.convolve(hist, kernel, mode="same")
-    centers = 0.5 * (edges[:-1] + edges[1:])
     return centers, hist
 
 

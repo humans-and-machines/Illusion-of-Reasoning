@@ -16,6 +16,7 @@ python prune_by_problem.py --root results
 python prune_by_problem.py --root results --glob 'step*_test.jsonl' --dry-run
 python prune_by_problem.py --root results --glob 'step*_test.jsonl' --max-per 8 --no-backup
 """
+
 import argparse
 import fnmatch
 from typing import Dict, List, Optional, Tuple
@@ -54,6 +55,7 @@ def prune_file(path: str, settings: PruneSettings) -> Tuple[int, int]:
         by_group,
         settings,
     )
+
 
 def main() -> None:
     """CLI entrypoint for pruning oversampled per-problem JSONL results."""

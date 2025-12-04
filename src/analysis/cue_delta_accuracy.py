@@ -28,8 +28,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, Tuple
 
-from src.annotate.tasks.math_cue_variants import flatten_math_cue_variants
 from src.analysis.io import iter_records_from_file
+from src.annotate.tasks.math_cue_variants import flatten_math_cue_variants
 
 
 os.environ.setdefault(
@@ -95,10 +95,7 @@ def _build_table(
                 stats["baseline_wrong_correct"] += 1
 
     sorted_domains = tuple(sorted(domains.keys()))
-    quartile_mapping = {
-        domain: tuple(sorted(quartiles_by_domain[domain].keys()))
-        for domain in quartiles_by_domain
-    }
+    quartile_mapping = {domain: tuple(sorted(quartiles_by_domain[domain].keys())) for domain in quartiles_by_domain}
     sorted_variants = tuple(sorted(variants.keys()))
     return table, sorted_domains, quartile_mapping, sorted_variants
 
@@ -125,9 +122,7 @@ def _table_rows_from_stats(
                         "quartile": quartile,
                         "cue_variant": cue,
                         "N": baseline_stats["total"],
-                        "baseline_acc": _pct(
-                            baseline_stats["correct"], baseline_stats["total"]
-                        ),
+                        "baseline_acc": _pct(baseline_stats["correct"], baseline_stats["total"]),
                         "cue_acc": _pct(cue_stats["correct"], cue_stats["total"]),
                         "cue_acc_baseline_wrong": _pct(
                             cue_stats["baseline_wrong_correct"],
@@ -165,8 +160,7 @@ def _print_table_rows(rows: Tuple[Dict[str, Any], ...]) -> None:
                 cue_acc = _format_pct_or_na(row["cue_acc"])
                 cue_wrong = _format_pct_or_na(row["cue_acc_baseline_wrong"])
                 print(
-                    f"      Q{quartile_label} | {row['N']:5d} | {baseline_acc:>8} "
-                    f"| {cue_acc:>9} | {cue_wrong:>21}",
+                    f"      Q{quartile_label} | {row['N']:5d} | {baseline_acc:>8} | {cue_acc:>9} | {cue_wrong:>21}",
                 )
 
 
@@ -282,11 +276,7 @@ def _print_quartile_details(
             cue_bucket.get("correct", 0),
             cue_bucket.get("total", 0),
         )
-        delta_q = (
-            None
-            if baseline_q_acc is None or cue_q_acc is None
-            else cue_q_acc - baseline_q_acc
-        )
+        delta_q = None if baseline_q_acc is None or cue_q_acc is None else cue_q_acc - baseline_q_acc
         print(
             f"  Q{quartile}: cue acc {_format_pct(cue_q_acc)} "
             f"(baseline {_format_pct(baseline_q_acc)}) "
@@ -302,15 +292,10 @@ def _print_cue_summary(
     quartiles: Tuple[int, ...],
 ) -> None:
     acc = _pct(stats["correct"], stats["total"])
-    delta = (
-        None
-        if baseline_accuracy is None or acc is None
-        else acc - baseline_accuracy
-    )
+    delta = None if baseline_accuracy is None or acc is None else acc - baseline_accuracy
     print()
     print(
-        f"Cue {cue_label}: accuracy {_format_pct(acc)} "
-        f"→ Δ {_format_diff(delta)}",
+        f"Cue {cue_label}: accuracy {_format_pct(acc)} → Δ {_format_diff(delta)}",
     )
 
     _print_average_lengths(stats)
@@ -327,8 +312,7 @@ def _summarize(
     baseline_total = baseline_stats["total"]
     baseline_accuracy = _pct(baseline_stats["correct"], baseline_total)
     print(
-        "Baseline accuracy (pass1): "
-        f"{_format_pct(baseline_accuracy)} [{baseline_total} rows]",
+        f"Baseline accuracy (pass1): {_format_pct(baseline_accuracy)} [{baseline_total} rows]",
     )
 
     quartiles = _collect_quartiles(baseline_stats, cue_stats)
@@ -453,3 +437,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# Backwards-compatible alias for callers expecting a function named after the module.
+cue_delta_accuracy = main

@@ -11,6 +11,7 @@ previously duplicated across ``forced_aha_effect.py`` and
 
 from __future__ import annotations
 
+import importlib
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -19,15 +20,67 @@ import pandas as pd
 from src.analysis.metrics import wilson_ci
 from src.analysis.utils import coerce_bool
 
-try:  # pragma: no cover - optional dependency
-    from statsmodels.stats.contingency_tables import mcnemar as _statsmodels_mcnemar
-except ImportError:  # pragma: no cover - optional dependency
-    _statsmodels_mcnemar = None
 
-try:  # pragma: no cover - optional dependency
-    import scipy.stats as _scipy_stats
-except ImportError:  # pragma: no cover - optional dependency
-    _scipy_stats = None
+# Sentinels to distinguish "no override configured yet" from an explicit
+# override value of ``None`` used in tests to disable real imports.
+STATS_MODE_UNSET = object()
+SCIPY_STATS_UNSET = object()
+
+
+def _get_statsmodels_mcnemar():
+    """
+    Return the :func:`mcnemar` function from statsmodels, honoring test stubs.
+
+    Tests may install a stub as ``forced_aha_shared._statsmodels_mcnemar``; when
+    present, that override takes precedence over the real dependency.
+    """
+    override = globals().get("_statsmodels_mcnemar", STATS_MODE_UNSET)
+    if override is not STATS_MODE_UNSET:
+        # Tests may set this to a callable or to ``None``. The latter forces
+        # the approximate fallback path in :func:`mcnemar_pvalue_table`.
+        return override
+    try:  # pragma: no cover - optional dependency
+        stats_mod = importlib.import_module("statsmodels.stats.contingency_tables")
+    except (ImportError, ModuleNotFoundError):  # pragma: no cover
+        return None
+    return getattr(stats_mod, "mcnemar", None)
+
+
+def _get_scipy_stats():
+    """
+    Return the :mod:`scipy.stats` module or a test stub when available.
+
+    Tests may install a stub as ``forced_aha_shared._scipy_stats`` to decouple
+    the module from the real SciPy dependency.
+    """
+    override = globals().get("_scipy_stats", SCIPY_STATS_UNSET)
+    if override is not SCIPY_STATS_UNSET:
+        # Tests set this to either a dummy stats module or ``None``. When it is
+        # ``None`` we treat SciPy as unavailable and skip importing it.
+        return override
+    try:  # pragma: no cover - optional dependency
+        scipy_stats = importlib.import_module("scipy.stats")
+    except (ImportError, ModuleNotFoundError, ValueError):  # pragma: no cover
+        return None
+    return scipy_stats
+
+
+def _ensure_test_overrides_exist() -> None:
+    """
+    Create lazy test-override hooks if they are missing.
+
+    Unit tests expect ``forced_aha_shared._statsmodels_mcnemar`` and
+    ``forced_aha_shared._scipy_stats`` attributes to exist so they can be
+    monkeypatched. They are initialized to sentinel values so helpers can
+    distinguish "unset" from an explicit ``None`` override.
+    """
+    if "_statsmodels_mcnemar" not in globals():
+        globals()["_statsmodels_mcnemar"] = STATS_MODE_UNSET
+    if "_scipy_stats" not in globals():
+        globals()["_scipy_stats"] = SCIPY_STATS_UNSET
+
+
+_ensure_test_overrides_exist()
 
 # Public keys reused across scripts ------------------------------------------------
 
@@ -148,6 +201,7 @@ def pass_with_correctness(
 
 # Statistical helpers -------------------------------------------------------------
 
+
 def mcnemar_pvalue_table(
     count_00: int,
     count_01: int,
@@ -157,9 +211,10 @@ def mcnemar_pvalue_table(
     """
     Compute a McNemar-style p-value for a 2×2 contingency table.
     """
-    if _statsmodels_mcnemar is not None:
+    mcnemar_fn = _get_statsmodels_mcnemar()
+    if mcnemar_fn is not None:
         try:
-            result = _statsmodels_mcnemar(
+            result = mcnemar_fn(
                 [[count_00, count_01], [count_10, count_11]],
                 exact=False,
                 correction=True,
@@ -208,12 +263,13 @@ def paired_t_and_wilcoxon(diffs: np.ndarray) -> Tuple[Optional[float], Optional[
     t_p: Optional[float] = None
     w_p: Optional[float] = None
 
-    if _scipy_stats is None:
+    stats_mod = _get_scipy_stats()
+    if stats_mod is None:
         return t_p, w_p
     if diffs.size < 2 or not np.all(np.isfinite(diffs)):
         return t_p, w_p
 
-    t_result = _scipy_stats.ttest_rel(
+    t_result = stats_mod.ttest_rel(
         diffs,
         np.zeros_like(diffs),
         nan_policy="omit",
@@ -223,7 +279,7 @@ def paired_t_and_wilcoxon(diffs: np.ndarray) -> Tuple[Optional[float], Optional[
     non_zero = diffs[np.abs(diffs) > 1e-12]
     if non_zero.size >= 1:
         try:
-            w_result = _scipy_stats.wilcoxon(non_zero)
+            w_result = stats_mod.wilcoxon(non_zero)
             w_p = float(w_result.pvalue)
         except ValueError:
             w_p = None
@@ -261,9 +317,7 @@ def summarize_cluster_any(merged: pd.DataFrame) -> Dict[str, Any]:
         "acc_pass2": acc_pass2,
         "acc_pass2_lo": lo_pass2,
         "acc_pass2_hi": hi_pass2,
-        "delta_pp": (acc_pass2 - acc_pass1) * 100.0
-        if np.isfinite(acc_pass1) and np.isfinite(acc_pass2)
-        else np.nan,
+        "delta_pp": (acc_pass2 - acc_pass1) * 100.0 if np.isfinite(acc_pass1) and np.isfinite(acc_pass2) else np.nan,
         "wins_pass2": num_pass2_wins,
         "wins_pass1": num_pass1_wins,
         "both_correct": num_both_correct,
@@ -272,6 +326,7 @@ def summarize_cluster_any(merged: pd.DataFrame) -> Dict[str, Any]:
         "p_ttest": None,
         "p_wilcoxon": None,
     }
+
 
 def summarize_cluster_mean(merged: pd.DataFrame) -> Dict[str, Any]:
     """
@@ -333,9 +388,7 @@ def summarize_sample_level(pairs_df: pd.DataFrame) -> Dict[str, Any]:
         "acc_pass2": acc_pass2,
         "acc_pass2_lo": lo_pass2,
         "acc_pass2_hi": hi_pass2,
-        "delta_pp": (acc_pass2 - acc_pass1) * 100.0
-        if np.isfinite(acc_pass1) and np.isfinite(acc_pass2)
-        else np.nan,
+        "delta_pp": (acc_pass2 - acc_pass1) * 100.0 if np.isfinite(acc_pass1) and np.isfinite(acc_pass2) else np.nan,
         "wins_pass2": num_pass2_wins,
         "wins_pass1": num_pass1_wins,
         "both_correct": num_both_correct,

@@ -6,16 +6,16 @@ keep the main runtime and trainer implementation small and focused.
 
 from __future__ import annotations
 
+import csv
 import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-import csv
 import numpy as np
 
+from .runtime.env import TrainerCallback, torch, wandb
 from .utils.replay_buffer import ReplayBuffer
-from .grpo_runtime_env import torch, wandb, TrainerCallback
 
 
 TEXT_COMPLETION_KEYS = (
@@ -114,14 +114,16 @@ class RuntimeState:
         """Return True if vLLM uploads should currently be throttled."""
         return self.vllm_cooldown > 0 and self.last_vllm_upload_ts is not None
 
+
 class LossLoggingCallback(TrainerCallback):
     """Callback that logs selected loss metrics to W&B and a CSV."""
+
     # map keys in `logs` → names you prefer
     MAP = {
-        "loss/policy_loss":  "policy_loss",
-        "loss/value_loss":   "value_loss",
-        "loss/kl":           "kl",
-        "beta":              "beta",
+        "loss/policy_loss": "policy_loss",
+        "loss/value_loss": "value_loss",
+        "loss/kl": "kl",
+        "beta": "beta",
     }
 
     def __init__(self, output_dir: str):
@@ -163,48 +165,51 @@ class LossLoggingCallback(TrainerCallback):
         """No-op hook kept to satisfy callback interface and linting."""
         return None
 
+
 def _is_rank0(accelerator) -> bool:
     # accelerate sets .is_main_process on Accelerator
     return getattr(accelerator, "is_main_process", True)
 
+
 # ───────── EASY/CRYPTIC mixture schedule ─────────────────────────
 # warm → blend → taper
 EASY_MIX_SCHEDULE = [
-    (   0,  1.00),
+    (0, 1.00),
     (50, 0.9),
-    ( 100,  0.8),
+    (100, 0.8),
     (150, 0.7),
-    ( 200,  0.6),
+    (200, 0.6),
     (250, 0.55),
-    ( 300,  0.53),
-    ( 400,  0.51),
-    ( 500,  0.49),
-    ( 600,  0.47),
-    ( 700,  0.44),
-    ( 800,  0.42),
-    ( 900,  0.40),
-    (1000,  0.38),
-    (1100,  0.36),
-    (1200,  0.34),
-    (1300,  0.32),
-    (1400,  0.30),
-    (1500,  0.28),
-    (1600,  0.26),
-    (1700,  0.24),
-    (1800,  0.22),
-    (1900,  0.20),
-    (2000,  0.18),
-    (2100,  0.16),
-    (2200,  0.14),
-    (2300,  0.12),
-    (2400,  0.10),
-    (2500,  0.08),
-    (2600,  0.06),
-    (2700,  0.04),
-    (2800,  0.03),
-    (2900,  0.02),
-    (3000,  0.01),
+    (300, 0.53),
+    (400, 0.51),
+    (500, 0.49),
+    (600, 0.47),
+    (700, 0.44),
+    (800, 0.42),
+    (900, 0.40),
+    (1000, 0.38),
+    (1100, 0.36),
+    (1200, 0.34),
+    (1300, 0.32),
+    (1400, 0.30),
+    (1500, 0.28),
+    (1600, 0.26),
+    (1700, 0.24),
+    (1800, 0.22),
+    (1900, 0.20),
+    (2000, 0.18),
+    (2100, 0.16),
+    (2200, 0.14),
+    (2300, 0.12),
+    (2400, 0.10),
+    (2500, 0.08),
+    (2600, 0.06),
+    (2700, 0.04),
+    (2800, 0.03),
+    (2900, 0.02),
+    (3000, 0.01),
 ]
+
 
 def _to_env_schema(example: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -213,7 +218,7 @@ def _to_env_schema(example: Dict[str, Any]) -> Dict[str, Any]:
     trained on.
     """
     out: Dict[str, Any] = {
-        "prompt": example.get("prompt", []),          # ← full history
+        "prompt": example.get("prompt", []),  # ← full history
     }
 
     # carry these through if present
@@ -223,6 +228,7 @@ def _to_env_schema(example: Dict[str, Any]) -> Dict[str, Any]:
 
     return out
 
+
 def _shorten_for_log(prompt: List[Dict[str, str]], max_chars: int = 60) -> str:
     txts = [m.get("content", "") for m in prompt if m.get("role") == "user"]
     if not txts:
@@ -231,6 +237,7 @@ def _shorten_for_log(prompt: List[Dict[str, str]], max_chars: int = 60) -> str:
     if len(user_text) > max_chars:
         user_text = user_text[: max_chars - 1] + "…"
     return user_text
+
 
 def _to_float_list(value):
     if value is None:
@@ -355,6 +362,7 @@ def _label_easy_copy(ex: dict, group_id: int, copy_idx: int, total: int = 4) -> 
     ex["mix_copy_idx"] = copy_idx
     return ex
 
+
 def _summarize_val(value: Any) -> str:
     """Return a short string summary for logging/debugging values."""
     if isinstance(value, torch.Tensor):
@@ -376,6 +384,7 @@ def _default_join_messages(messages):
         content = message.get("content", "")
         parts.append(f"{role.upper()}: {content}")
     return "\n".join(parts) + "\nASSISTANT:"
+
 
 def _normalize_for_trl(example, proc=None, add_gen_prompt=True):
     example_copy = dict(example)  # copy
@@ -400,9 +409,7 @@ def _normalize_for_trl(example, proc=None, add_gen_prompt=True):
     elif isinstance(prompt_value, str):
         pass  # already fine
     else:
-        raise ValueError(
-            f"Example is missing a usable prompt; keys={list(example_copy.keys())}"
-        )
+        raise ValueError(f"Example is missing a usable prompt; keys={list(example_copy.keys())}")
 
     # ensure only string prompt is kept
     example_copy.pop("messages", None)

@@ -3,6 +3,7 @@
 """Crossword inference core utilities and unified-runner entrypoint."""
 
 import importlib
+import inspect
 import json
 import os
 import re
@@ -11,32 +12,38 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from packaging import version
+
 from src.inference.backends import HFBackend
+from src.inference.runners.unified_runner_base import run_crossword_main
+from src.inference.utils.common import finite_mean as _finite_mean
 from src.inference.utils.common import (
-    SamplingConfigBase,
-    build_extra_pass_results_for_cues,
-    finite_mean as _finite_mean,
     load_local_json_dataset,
-    repeat_for_samples as _repeat_for_samples,
-    run_generate_batch,
     require_torch,
     require_transformers,
     setup_script_logger,
 )
+from src.inference.utils.generation import SamplingConfigBase, build_extra_pass_results_for_cues
+from src.inference.utils.generation import repeat_for_samples as _repeat_for_samples
+from src.inference.utils.generation import run_generate_batch
+from src.inference.utils.math_pass_utils import DEFAULT_SECOND_PASS_PHRASE
+from src.inference.utils.math_pass_utils import RECONSIDER_PATTERNS as _RECONSIDER_PATTERNS
 from src.inference.utils.math_pass_utils import (
-    DEFAULT_SECOND_PASS_PHRASE,
-    RECONSIDER_PATTERNS as _RECONSIDER_PATTERNS,
-    add_token_and_tag_fields,
-    build_entropy_pass_base,
-    contains_canon as _contains_canon,
-    extract_blocks as _extract_blocks,
+    MathEntropySummary,
+    MathTokenStats,
+    ReconsiderationInputs,
+    assemble_reconsideration_pass_result,
+    build_reconsideration_base_kwargs,
+    build_stop_reasons,
 )
+from src.inference.utils.math_pass_utils import contains_canon as _contains_canon
+from src.inference.utils.math_pass_utils import extract_blocks as _extract_blocks
 from src.inference.utils.text_utils import find_markers_and_context as _find_markers_and_context
-from src.inference.runners.unified_runner_base import run_crossword_main
+
 
 torch = require_torch("crossword_core")
 transformers_mod = require_transformers("crossword_core")
 StoppingCriteriaList = transformers_mod.StoppingCriteriaList
+_SELF_MODULE = sys.modules[__name__]
 
 # ───────────────────────── System prompt (CROSSWORD) ─────────────────────────
 SYSTEM_PROMPT = """  You are an expert *cryptic-crossword solver*.
@@ -101,6 +108,7 @@ SYSTEM_PROMPT = """  You are an expert *cryptic-crossword solver*.
   Definition “Shoe liner” fits. Enumeration (6) OK.</think>
   <answer>INSOLE</answer>
 """
+
 
 @dataclass
 class CrosswordCapsConfig:
@@ -224,6 +232,7 @@ try:
 except (ImportError, AttributeError) as exc:
     logger.warning("DeepSpeed patch disabled (missing deps/attrs): %r", exc)
 
+
 # ───────────────────────── Prompt builders ─────────────────────────
 def chat_base_for_pass1(tokenizer, clue: str, enumeration: Optional[str]) -> str:
     """
@@ -274,6 +283,8 @@ def chat_base_for_pass2(
         tokenize=False,
         add_generation_prompt=True,
     )
+
+
 def _gen_batch(
     prefixes: List[str],
     cap: int,
@@ -287,37 +298,33 @@ def _gen_batch(
         entropy_mode=generation.config.sampling.entropy_mode,
         eos_ids=generation.config.eos_ids,
     )
-    return run_generate_batch(
-        prefixes,
-        cap,
-        stop_strs,
-        tokenizer=generation.tokenizer,
-        model=generation.model,
-        config_like=sampling_config,
-        max_length=5500,
-        torch_module=torch,
-        stopping_criteria_list_cls=StoppingCriteriaList,
-    )
+    try:
+        sig = inspect.signature(run_generate_batch)
+    except (TypeError, ValueError):  # pragma: no cover - defensive
+        sig = None
+
+    kwargs = {
+        "prefixes": prefixes,
+        "cap": cap,
+        "tokenizer": generation.tokenizer,
+        "model": generation.model,
+        "config_like": sampling_config,
+        "max_length": 5500,
+        "torch_module": torch,
+        "stopping_criteria_list_cls": StoppingCriteriaList,
+    }
+    stop_key = "stop_strings"
+    if sig and "stop_strs" in sig.parameters and "stop_strings" not in sig.parameters:
+        stop_key = "stop_strs"
+    kwargs[stop_key] = stop_strs
+    return run_generate_batch(**kwargs)
 
 
 def _norm_fields(example: dict):
     """Normalize raw record fields into (clue, answer, enumeration)."""
-    clue = (
-        example.get("clue")
-        or example.get("problem")
-        or example.get("question")
-        or example.get("prompt")
-    )
-    gold = (
-        example.get("answer")
-        or example.get("target")
-        or example.get("solution")
-    )
-    enumeration = (
-        example.get("enumeration")
-        or example.get("enum")
-        or example.get("lengths")
-    )
+    clue = example.get("clue") or example.get("problem") or example.get("question") or example.get("prompt")
+    gold = example.get("answer") or example.get("target") or example.get("solution")
+    enumeration = example.get("enumeration") or example.get("enum") or example.get("lengths")
     if isinstance(enumeration, (list, tuple)):
         enumeration = " ".join(str(part) for part in enumeration)
     return clue, gold, enumeration
@@ -342,41 +349,41 @@ def _pack_pass_result(
         cue_prefix_str=meta.get("cue_prefix_str", ""),
     )
     entropy_info = _compute_entropy_info(ent_think, ent_answer)
+    entropy_summary = MathEntropySummary(
+        overall=entropy_info["entropy_overall"],
+        think=entropy_info["entropy_think"],
+        answer=entropy_info["entropy_answer"],
+        pre_cue=None,
+        reconsider_think=None,
+        reconsider_full=None,
+    )
 
     pred_canon = _canon_cross(pred_answer_text)
     is_correct_pred = _contains_canon(pred_canon, meta.get("canon_gold"))
 
-    base = build_entropy_pass_base(
+    base_fields = build_reconsideration_base_kwargs(
         prev_output=meta.get("prev_output"),
-        full_text=full_text,
-        pred_answer_text=pred_answer_text,
         pred_canon=pred_canon,
-        entropy_overall=entropy_info["entropy_overall"],
-        entropy_think=entropy_info["entropy_think"],
-        entropy_answer=entropy_info["entropy_answer"],
-    )
-    base.update(
-        {
-            "enumeration": meta.get("enumeration"),
-            "stop_reason_think": meta.get("stop_reason_think"),
-            "stop_reason_answer": meta.get("stop_reason_answer"),
-            "has_reconsider_cue": bool(reconsider_info["markers"]),
-            "reconsider_markers": reconsider_info["markers"] or [],
-            "reconsider_pos": reconsider_info["pos_in_think"],
-            "reconsider_context": reconsider_info["reconsider_context"],
-            "reconsider_excerpt": reconsider_info["reconsider_excerpt"],
-            "is_correct_pred": is_correct_pred,
-            "is_correct_after_reconsideration": bool(reconsider_info["markers"])
-            and bool(is_correct_pred),
-        },
-    )
-    return add_token_and_tag_fields(
-        base,
-        tokens_total=len(entropy_info["tok_ents_all"]),
-        tokens_think=entropy_info["tokens_think"],
-        tokens_answer=entropy_info["tokens_answer"],
+        pred_answer_text=pred_answer_text,
         full_text=full_text,
+        entropy_summary=entropy_summary,
     )
+    inputs = ReconsiderationInputs(
+        base_fields=base_fields,
+        stop_reasons=build_stop_reasons(
+            meta.get("stop_reason_think"),
+            meta.get("stop_reason_answer"),
+        ),
+        reconsideration=reconsider_info,
+        is_correct_pred=is_correct_pred,
+        token_stats=MathTokenStats(
+            tokens_think=entropy_info["tokens_think"],
+            tokens_answer=entropy_info["tokens_answer"],
+            tokens_total=len(entropy_info["tok_ents_all"]),
+        ),
+        enumeration=meta.get("enumeration"),
+    )
+    return assemble_reconsideration_pass_result(inputs)
 
 
 def _scan_existing_problems(outpath: str) -> set[str]:
@@ -425,10 +432,7 @@ def _run_first_pass_for_batch(
     """Run the first think+answer pass for a batch."""
     total_rows = len(batch) * caps.num_samples
 
-    base1 = [
-        chat_base_for_pass1(generation.tokenizer, example["_clue"], example["_enum"])
-        for example in batch
-    ]
+    base1 = [chat_base_for_pass1(generation.tokenizer, example["_clue"], example["_enum"]) for example in batch]
     pre1_think = _repeat_for_samples(
         [prompt + "<think>\n" for prompt in base1],
         caps.num_samples,
@@ -441,8 +445,7 @@ def _run_first_pass_for_batch(
     )
 
     pre1_answer = [
-        pre1_think[row_index] + think1_texts[row_index] + "</think>\n<answer>\n"
-        for row_index in range(total_rows)
+        pre1_think[row_index] + think1_texts[row_index] + "</think>\n<answer>\n" for row_index in range(total_rows)
     ]
     answer1_texts, answer1_ents, _, _, answer1_stop = _gen_batch(
         pre1_answer,
@@ -529,14 +532,10 @@ def _run_second_pass_for_batch(
         ["</think>"],
         generation,
     )
-    think2_texts = [
-        state["cue_str"] + text for text in state["think2_texts_only"]
-    ]
+    think2_texts = [state["cue_str"] + text for text in state["think2_texts_only"]]
 
     state["pre2_answer"] = [
-        state["pre2_think"][row_index]
-        + state["think2_texts_only"][row_index]
-        + "</think>\n<answer>\n"
+        state["pre2_think"][row_index] + state["think2_texts_only"][row_index] + "</think>\n<answer>\n"
         for row_index in range(state["total_rows"])
     ]
     (
@@ -552,10 +551,7 @@ def _run_second_pass_for_batch(
         generation,
     )
     pass2_full = [
-        (
-            f"<think>{think2_texts[row_index]}</think>\n"
-            f"<answer>{state['answer2_texts'][row_index]}</answer>"
-        )
+        (f"<think>{think2_texts[row_index]}</think>\n<answer>{state['answer2_texts'][row_index]}</answer>")
         for row_index in range(state["total_rows"])
     ]
     return (
@@ -567,16 +563,23 @@ def _run_second_pass_for_batch(
     )
 
 
+@dataclass
+class ExtraPassRowContext:
+    """Bundle inputs needed to build extra-pass results for a row."""
+
+    example: Dict[str, Any]
+    canon_gold: Optional[str]
+    firstpass_choice: List[str]
+    extra_passes: List[Tuple[str, Dict[str, Any]]]
+    pass1: Dict[str, Any]
+    config: CrosswordInferenceConfig
+
+
 def _build_extra_pass_results_for_row(
     *,
-    example: Dict[str, Any],
     batch_index: int,
     row_index: int,
-    canon_gold: Optional[str],
-    firstpass_choice: List[str],
-    extra_passes: List[Tuple[str, Dict[str, Any]]],
-    pass1: Dict[str, Any],
-    config: CrosswordInferenceConfig,
+    extra_context: ExtraPassRowContext,
 ) -> Dict[str, Dict[str, Any]]:
     """Build optional multi-cue reconsideration results for a single row."""
 
@@ -585,11 +588,11 @@ def _build_extra_pass_results_for_row(
         res_dict: Dict[str, Any],
     ) -> Dict[str, Any]:
         extra_meta = {
-            "clue": example["_clue"],
-            "enumeration": example["_enum"],
+            "clue": extra_context.example["_clue"],
+            "enumeration": extra_context.example["_enum"],
             "injected_cue": True,
-            "canon_gold": canon_gold,
-            "prev_output": firstpass_choice[batch_index],
+            "canon_gold": extra_context.canon_gold,
+            "prev_output": extra_context.firstpass_choice[batch_index],
             "cue_prefix_str": cue_phrase_extra.strip(),
             "stop_reason_think": res_dict["think2_stop"][row_index],
             "stop_reason_answer": res_dict["answer2_stop"][row_index],
@@ -602,12 +605,12 @@ def _build_extra_pass_results_for_row(
         )
         extra_res["improved_over_pass1"] = bool(
             extra_res.get("is_correct_pred"),
-        ) and not bool(pass1.get("is_correct_pred"))
+        ) and not bool(extra_context.pass1.get("is_correct_pred"))
         return extra_res
 
     return build_extra_pass_results_for_cues(
-        two_pass=config.two_pass.enabled,
-        extra_passes=extra_passes,
+        two_pass=extra_context.config.two_pass.enabled,
+        extra_passes=extra_context.extra_passes,
         pack_result_for_extra=_pack_extra_result,
     )
 
@@ -662,21 +665,19 @@ def _write_results_for_example(
             ) and not bool(pass1.get("is_correct_pred"))
 
         extra_pass_results = _build_extra_pass_results_for_row(
-            example=example,
             batch_index=batch_index,
             row_index=row_index,
-            canon_gold=canon_gold,
-            firstpass_choice=context["firstpass_choice"],
-            extra_passes=context.get("extra_passes") or [],
-            pass1=pass1,
-            config=context["config"],
+            extra_context=ExtraPassRowContext(
+                example=example,
+                canon_gold=canon_gold,
+                firstpass_choice=context["firstpass_choice"],
+                extra_passes=context.get("extra_passes") or [],
+                pass1=pass1,
+                config=context["config"],
+            ),
         )
 
-        if (
-            context["config"].two_pass.enabled
-            and pass2 is not None
-            and len(extra_pass_results) >= 2
-        ):
+        if context["config"].two_pass.enabled and pass2 is not None and len(extra_pass_results) >= 2:
             extra_pass_results.setdefault("pass2c", pass2)
 
         row = {
@@ -757,13 +758,11 @@ def _process_batch(
         two_pass_cfg=config.two_pass,
     )
 
-    cue_phrase_main, second_pass_results, extra_second_passes = (
-        _compute_second_pass_results_for_crossword(
-            batch=batch,
-            firstpass_choice=firstpass_choice,
-            generation=generation,
-            config=config,
-        )
+    cue_phrase_main, second_pass_results, extra_second_passes = _compute_second_pass_results_for_crossword(
+        batch=batch,
+        firstpass_choice=firstpass_choice,
+        generation=generation,
+        config=config,
     )
 
     results_state: Dict[str, Any] = {
@@ -921,6 +920,7 @@ def run_inference_on_split(
             outpath=outpath,
         )
 
+
 def load_crossword_local(dataset_path: str):
     """
     Load crossword examples from a local JSONL file.
@@ -930,6 +930,7 @@ def load_crossword_local(dataset_path: str):
     """
     logger.info("Loading CROSSWORD JSONL from: %s", dataset_path)
     return load_local_json_dataset(dataset_path)
+
 
 # ───────────────────────── Main ─────────────────────────
 def main(argv: Optional[List[str]] = None) -> None:
@@ -941,7 +942,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     :param argv: Optional list of CLI arguments; defaults to :data:`sys.argv`.
     :returns: ``None`` after the run completes.
     """
-    run_crossword_main(lambda: sys.modules[__name__], HFBackend, argv)
+    run_crossword_main(lambda: _SELF_MODULE, HFBackend, argv)
+
 
 if __name__ == "__main__":
     main()

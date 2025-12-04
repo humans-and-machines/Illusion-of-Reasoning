@@ -12,9 +12,10 @@ imports keep working without triggering linter warnings about unused imports.
 
 from __future__ import annotations
 
-from src.annotate import _ANNOTATION_PUBLIC_API as _BASE_PUBLIC_API
-from src.annotate.core import shift_core as _core
-from src.annotate.cli import shift_cli as _cli
+from ... import _ANNOTATION_PUBLIC_API as _BASE_PUBLIC_API
+from ...cli import shift_cli as _cli
+from ...core import shift_core as _core
+
 
 # Re‑export core library primitives.
 AnnotateOpts = _core.AnnotateOpts

@@ -7,11 +7,8 @@ import importlib
 import os
 from typing import Any, Optional
 
-from .rewards_core import (
-    pure_accuracy_reward,
-    pure_accuracy_reward_math,
-    rush_solution_shaped,
-)
+from .rewards_core import pure_accuracy_reward, pure_accuracy_reward_math, rush_solution_shaped
+
 
 torch = importlib.import_module("torch")
 
@@ -24,11 +21,7 @@ def _flatten_nested_for_rewards(prompts, completions):
     flat_prompts: list[Any] = []
 
     for index, row in enumerate(completions):
-        prompt_for_row = (
-            prompts[index]
-            if isinstance(prompts, list) and len(prompts) == batch_size
-            else prompts
-        )
+        prompt_for_row = prompts[index] if isinstance(prompts, list) and len(prompts) == batch_size else prompts
         flat_completions.extend(row)
         flat_prompts.extend([prompt_for_row] * len(row))
 
@@ -38,11 +31,7 @@ def _flatten_nested_for_rewards(prompts, completions):
 def _wrap_reward_for_nested(reward_fn):
     @functools.wraps(reward_fn)
     def wrapped(*, prompts, completions, **kwargs):
-        is_nested = (
-            isinstance(completions, list)
-            and completions
-            and isinstance(completions[0], (list, tuple))
-        )
+        is_nested = isinstance(completions, list) and completions and isinstance(completions[0], (list, tuple))
         if not is_nested:
             return reward_fn(prompts=prompts, completions=completions, **kwargs)
 
@@ -53,11 +42,7 @@ def _wrap_reward_for_nested(reward_fn):
 
         def _expand_value(value):
             if isinstance(value, list) and len(value) == batch_size:
-                return [
-                    value[index]
-                    for index in range(batch_size)
-                    for _ in range(sizes[index])
-                ]
+                return [value[index] for index in range(batch_size) for _ in range(sizes[index])]
             return value
 
         nested_kwargs = {key: _expand_value(value) for key, value in kwargs.items()}
@@ -105,14 +90,9 @@ def _task_from_script_args(script_args) -> Optional[str]:
             names = []
 
     joined = " ".join(names)
-    if any(
-        token in joined
-        for token in ("rush_solution_exact", "rush_solution_shaped", "rush")
-    ):
+    if any(token in joined for token in ("rush_solution_exact", "rush_solution_shaped", "rush")):
         return "RUSH"
-    if any(
-        token in joined for token in ("pure_accuracy_reward_math", "pure_accuracy_math")
-    ) or "math" in joined:
+    if any(token in joined for token in ("pure_accuracy_reward_math", "pure_accuracy_math")) or "math" in joined:
         return "MATH"
     if any(token in joined for token in ("pure_accuracy_reward", "cross", "crypt")):
         return "CROSSWORD"
@@ -187,6 +167,30 @@ def _flatten_nested(comps):
     return flat, len(comps[0])
 
 
+def _normalize_id_sequence(seq):
+    """
+    Convert a sequence of numeric IDs into ints when they are integral.
+
+    Torch tensors sometimes surface float token IDs (e.g., default dtype),
+    which would stringify to ``[1.0, 2.0]``. For display/decoding we prefer
+    integer forms when values are effectively integers.
+    """
+    normalized = []
+    try:
+        for val in seq:
+            if isinstance(val, bool):
+                normalized.append(int(val))
+            elif isinstance(val, int):
+                normalized.append(val)
+            elif isinstance(val, float) and val.is_integer():
+                normalized.append(int(val))
+            else:
+                return list(seq)
+        return normalized
+    except (TypeError, ValueError, AttributeError):
+        return list(seq)
+
+
 def _to_text_list(items, proc=None):
     """
     Coerce a list of completions that may be str | list[int] | torch.Tensor
@@ -201,30 +205,38 @@ def _to_text_list(items, proc=None):
         if isinstance(item, str):
             out.append(item)
             continue
-        if isinstance(item, torch.Tensor):
+        if hasattr(item, "detach") and hasattr(item, "cpu") and hasattr(item, "tolist"):
             ids = item.detach().cpu().tolist()
+            ids = _normalize_id_sequence(ids)
             if proc is not None and hasattr(proc, "decode"):
-                out.append(
-                    proc.decode(
-                        ids,
-                        skip_special_tokens=True,
-                        clean_up_tokenization_spaces=False,
+                try:
+                    out.append(
+                        proc.decode(
+                            ids,
+                            skip_special_tokens=True,
+                            clean_up_tokenization_spaces=False,
+                        )
                     )
-                )
-            else:
-                out.append(str(ids))
+                    continue
+                except (TypeError, ValueError, AttributeError):
+                    pass
+            out.append(str(ids))
             continue
         if isinstance(item, (list, tuple)) and item and isinstance(item[0], int):
+            ids = _normalize_id_sequence(item)
             if proc is not None and hasattr(proc, "decode"):
-                out.append(
-                    proc.decode(
-                        list(item),
-                        skip_special_tokens=True,
-                        clean_up_tokenization_spaces=False,
+                try:
+                    out.append(
+                        proc.decode(
+                            ids,
+                            skip_special_tokens=True,
+                            clean_up_tokenization_spaces=False,
+                        )
                     )
-                )
-            else:
-                out.append(" ".join(map(str, item)))
+                    continue
+                except (TypeError, ValueError, AttributeError):
+                    pass
+            out.append(" ".join(map(str, ids)))
             continue
         out.append(str(item))
     return out

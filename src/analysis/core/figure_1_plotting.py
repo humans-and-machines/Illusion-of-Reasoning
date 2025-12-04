@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,11 +11,7 @@ import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from .figure_1_data import (
-    bootstrap_problem_ratio,
-    fit_trend_wls,
-    mark_formal_pairs,
-)
+from .figure_1_data import bootstrap_problem_ratio, fit_trend_wls, mark_formal_pairs
 from .figure_1_style import a4_size_inches, lighten_hex
 
 
@@ -89,6 +85,16 @@ class PanelBuilderContext:
     config: Dict[str, Any]
 
 
+@dataclass(frozen=True)
+class FormalRatioSeries:
+    """Series extracted from the formal ratio bootstrap."""
+
+    step: pd.Series
+    ratio: pd.Series
+    lower_ci: pd.Series
+    upper_ci: pd.Series
+
+
 def _plot_series_per_domain(
     axis,
     dfs_by_domain: Dict[str, pd.DataFrame],
@@ -105,27 +111,25 @@ def _plot_series_per_domain(
         axis.scatter(
             data_frame["step"],
             data_frame["ratio"],
-            s=(options.marker_size ** 2),
+            s=(options.marker_size**2),
             marker="o",
             color=color,
             edgecolors="none",
             label=domain,
         )
         if data_frame["lo"].notna().any() and ci_color:
-            axis.fill_between(
-                data_frame["step"],
-                data_frame["lo"],
-                data_frame["hi"],
-                alpha=options.alpha_ci,
-                color=ci_color,
-            )
+            fill_between = getattr(axis, "fill_between", None)
+            if callable(fill_between):
+                fill_between(
+                    data_frame["step"],
+                    data_frame["lo"],
+                    data_frame["hi"],
+                    alpha=options.alpha_ci,
+                    color=ci_color,
+                )
 
         trend_info = _compute_trend(data_frame)
-        trend_ok = (
-            options.add_trend
-            and np.isfinite(trend_info["slope"])
-            and trend_info["fit_steps"].size >= 2
-        )
+        trend_ok = options.add_trend and np.isfinite(trend_info["slope"]) and trend_info["fit_steps"].size >= 2
         if trend_ok:
             axis.plot(
                 trend_info["fit_steps"],
@@ -185,17 +189,14 @@ def _plot_highlights(
     steps = data_frame["step"].to_numpy(dtype=int)
     ratios = data_frame["ratio"].to_numpy(dtype=float)
     mask = np.array(
-        [
-            bool(options.highlight_map[str(domain)].get(int(step), False))
-            for step in steps
-        ],
+        [bool(options.highlight_map[str(domain)].get(int(step), False)) for step in steps],
         dtype=bool,
     )
     if mask.any():
         axis.scatter(
             steps[mask],
             ratios[mask],
-            s=(options.marker_size ** 2),
+            s=(options.marker_size**2),
             marker="o",
             color=options.highlight_color,
             edgecolors="none",
@@ -249,7 +250,7 @@ def _build_panel_specs(context: PanelBuilderContext) -> List[PanelSpec]:
         PanelSpec(
             axis=context.axes[0],
             data=context.native_by_dom,
-            title=f"\"Cue Phrases\" Detection, {model_name}",
+            title=f'"Cue Phrases" Detection, {model_name}',
             label="Words/Cue Phrases",
             y_limits=yl0,
             options=context.base_options,
@@ -325,10 +326,11 @@ def _add_ratio_legend(
                 label=domain,
             ),
         )
+        if not hasattr(handles[-1], "get_label"):
+            handles[-1].get_label = lambda lbl=domain: lbl  # type: ignore[attr-defined]
         labels.append(domain)
     any_green = bool(
-        highlight_map
-        and any(any(flag for flag in stepmap.values()) for stepmap in highlight_map.values())
+        highlight_map and any(any(flag for flag in stepmap.values()) for stepmap in highlight_map.values())
     )
     if any_green:
         handles.append(
@@ -342,6 +344,8 @@ def _add_ratio_legend(
                 label="Δ > 0 at shift",
             ),
         )
+        if not hasattr(handles[-1], "get_label"):
+            handles[-1].get_label = lambda lbl="Δ > 0 at shift": lbl  # type: ignore[attr-defined]
         labels.append("Δ > 0 at shift")
 
     legend_columns = min(
@@ -452,20 +456,16 @@ def _init_formal_grid(
     return fig, axes_arr
 
 
-def _plot_formal_cell(
-    axis,
+def _compute_formal_ratio_series(
     pair_stats_base: pd.DataFrame,
     delta_pair: Tuple[float, float],
     config: FormalSweepPlotConfig,
-    axis_flags: Tuple[bool, bool],
-) -> None:
-    """Render a single δ1/δ2 cell."""
-    delta1_value, delta2_value = delta_pair
-    show_xlabel, show_ylabel = axis_flags
+) -> FormalRatioSeries:
+    """Compute the bootstrapped formal ratio and return its key series."""
     pair_stats = mark_formal_pairs(
         pair_stats_base.copy(),
-        delta1=float(delta1_value),
-        delta2=float(delta2_value),
+        delta1=float(delta_pair[0]),
+        delta2=float(delta_pair[1]),
         min_prior_steps=config.min_prior_steps,
         delta3=config.delta3,
     )
@@ -477,35 +477,62 @@ def _plot_formal_cell(
     )
     if not isinstance(formal_df, pd.DataFrame):
         raise TypeError("bootstrap_problem_ratio must return a pandas DataFrame.")
-    ratio_df = cast(pd.DataFrame, formal_df)
+    ratio_df: pd.DataFrame = pd.DataFrame(formal_df)
+    return FormalRatioSeries(
+        step=ratio_df["step"],
+        ratio=ratio_df["ratio"],
+        lower_ci=ratio_df["lo"],
+        upper_ci=ratio_df["hi"],
+    )
+
+
+def _plot_formal_ratio(
+    axis,
+    ratio_series: FormalRatioSeries,
+    config: FormalSweepPlotConfig,
+) -> None:
+    """Plot the ratio series and CI shading for a single cell."""
     axis.plot(
-        ratio_df["step"],
-        ratio_df["ratio"],
+        ratio_series.step,
+        ratio_series.ratio,
         marker="o",
         ms=config.marker_size,
         lw=config.line_width,
         color=config.primary_color,
     )
-    if ratio_df["lo"].notna().any():
+    if ratio_series.lower_ci.notna().any():
         axis.fill_between(
-            ratio_df["step"],
-            ratio_df["lo"],
-            ratio_df["hi"],
+            ratio_series.step,
+            ratio_series.lower_ci,
+            ratio_series.upper_ci,
             alpha=config.alpha_ci,
             color=config.ci_color,
         )
+
+
+def _format_delta_title(delta_pair: Tuple[float, float], delta3: Optional[float]) -> str:
+    delta1_value, delta2_value = delta_pair
+    delta3_str = f", δ3={delta3:.2f}" if delta3 is not None else ""
+    return f"δ1={delta1_value:.2f}, δ2={delta2_value:.2f}{delta3_str}"
+
+
+def _plot_formal_cell(
+    axis,
+    pair_stats_base: pd.DataFrame,
+    delta_pair: Tuple[float, float],
+    config: FormalSweepPlotConfig,
+    axis_flags: Tuple[bool, bool],
+) -> None:
+    """Render a single δ1/δ2 cell."""
+    ratio_series = _compute_formal_ratio_series(pair_stats_base, delta_pair, config)
+    _plot_formal_ratio(axis, ratio_series, config)
     axis.set_ylim(0.0, config.ymax)
     axis.grid(True, alpha=0.35)
-    if show_xlabel:
+    if axis_flags[0]:
         axis.set_xlabel("Training step")
-    if show_ylabel:
+    if axis_flags[1]:
         axis.set_ylabel('Formal "Aha!" ratio')
-    delta3_str = f", δ3={config.delta3:.2f}" if config.delta3 is not None else ""
-    axis.set_title(
-        f"δ1={delta1_value:.2f}, δ2={delta2_value:.2f}{delta3_str}",
-        fontsize=12,
-        pad=6,
-    )
+    axis.set_title(_format_delta_title(delta_pair, config.delta3), fontsize=12, pad=6)
 
 
 def _formal_grid_handles(config: FormalSweepPlotConfig) -> Tuple[Line2D, Patch]:
@@ -535,11 +562,8 @@ def _finalize_formal_grid(fig, config: FormalSweepPlotConfig) -> None:
         frameon=False,
         bbox_to_anchor=(0.5, 0.15),
     )
-    fig.suptitle(
-        f'Formal "Aha!" ratio sweep (problem-level)\n{config.dataset}, {config.model}',
-        y=0.995,
-        fontsize=12,
-    )
+    suptitle_text = f'Formal "Aha!" ratio sweep\n{config.dataset}, {config.model}'
+    fig.suptitle(suptitle_text, y=0.995, fontsize=12)
     fig.tight_layout(rect=[0, 0.08, 1, 0.96])
     fig.savefig(config.out_png)
     if config.a4_pdf:

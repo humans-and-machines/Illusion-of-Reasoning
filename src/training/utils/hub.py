@@ -15,10 +15,13 @@
 # limitations under the License.
 """Lightweight helpers for interacting with the Hugging Face Hub."""
 
+from __future__ import annotations
+
 import logging
 import re
 from concurrent.futures import Future
 from typing import Any, Optional
+
 
 try:  # pragma: no cover - optional dependency
     from transformers import AutoConfig as _AutoConfig
@@ -28,17 +31,16 @@ except ImportError:  # pragma: no cover - type-check / lint env
 AutoConfig = _AutoConfig
 
 try:  # pragma: no cover - optional dependency
-    from huggingface_hub import (
-        create_branch as _create_branch,
-        create_repo as _create_repo,
-        get_safetensors_metadata as _get_safetensors_metadata,
-        list_repo_commits as _list_repo_commits,
-        list_repo_files as _list_repo_files,
-        list_repo_refs as _list_repo_refs,
-        repo_exists as _repo_exists,
-        upload_folder as _upload_folder,
-    )
+    from huggingface_hub import create_branch as _create_branch
+    from huggingface_hub import create_repo as _create_repo
+    from huggingface_hub import get_safetensors_metadata as _get_safetensors_metadata
+    from huggingface_hub import list_repo_commits as _list_repo_commits
+    from huggingface_hub import list_repo_files as _list_repo_files
+    from huggingface_hub import list_repo_refs as _list_repo_refs
+    from huggingface_hub import repo_exists as _repo_exists
+    from huggingface_hub import upload_folder as _upload_folder
 except ImportError:  # pragma: no cover - type-check / lint env
+
     def _hub_unavailable(*_args: Any, **_kwargs: Any) -> Any:
         msg = "huggingface_hub is required for Hub utilities."
         raise ImportError(msg)
@@ -71,10 +73,12 @@ except ImportError:  # pragma: no cover - type-check / lint env
 HfHubHTTPError = _HfHubHTTPError
 
 try:  # pragma: no cover - optional dependency
-    from trl import GRPOConfig as _GRPOConfig, SFTConfig as _SFTConfig
+    from trl import GRPOConfig as _GRPOConfig
+    from trl import SFTConfig as _SFTConfig
 except ImportError:  # pragma: no cover - type-check / lint env
     # Re-use our local configuration dataclasses when ``trl`` is unavailable.
-    from ..configs import GRPOConfig as _GRPOConfig, SFTConfig as _SFTConfig
+    from ..configs import GRPOConfig as _GRPOConfig
+    from ..configs import SFTConfig as _SFTConfig
 
 GRPOConfig = _GRPOConfig
 SFTConfig = _SFTConfig
@@ -191,10 +195,7 @@ def get_gpu_count_for_vllm(
     ``num_gpus``; this routine decreases ``num_gpus`` until that holds.
     """
     if AutoConfig is None:
-        msg = (
-            "transformers.AutoConfig is required for get_gpu_count_for_vllm; "
-            "install transformers."
-        )
+        msg = "transformers.AutoConfig is required for get_gpu_count_for_vllm; install transformers."
         raise RuntimeError(msg)
 
     config = AutoConfig.from_pretrained(

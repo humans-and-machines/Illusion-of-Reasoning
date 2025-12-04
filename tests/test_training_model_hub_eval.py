@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
+
 model_utils = pytest.importorskip("src.training.utils.model_utils")
 configs_mod = pytest.importorskip("src.training.configs")
 
@@ -27,6 +28,28 @@ def _import_eval_utils():
         return importlib.import_module("src.training.utils.evaluation")
     except TypeError:
         pytest.skip("src.training.utils.evaluation not importable on this Python version")
+
+
+def test_import_hub_utils_skips_on_typeerror(monkeypatch):
+    import importlib
+
+    def raise_typeerror(_name):
+        raise TypeError("boom")
+
+    monkeypatch.setattr(importlib, "import_module", raise_typeerror)
+    with pytest.raises(pytest.skip.Exception):
+        _import_hub_utils()
+
+
+def test_import_eval_utils_skips_on_typeerror(monkeypatch):
+    import importlib
+
+    def raise_typeerror(_name):
+        raise TypeError("boom")
+
+    monkeypatch.setattr(importlib, "import_module", raise_typeerror)
+    with pytest.raises(pytest.skip.Exception):
+        _import_eval_utils()
 
 
 def test_get_tokenizer_uses_auto_tokenizer_and_chat_template(monkeypatch):
@@ -63,7 +86,6 @@ def test_get_tokenizer_uses_auto_tokenizer_and_chat_template(monkeypatch):
 
 def test_resolve_torch_dtype_and_build_model_kwargs(monkeypatch):
     import sys
-    import types
 
     class FakeTorch:
         float16 = "float16-dtype"
@@ -146,6 +168,44 @@ def test_get_model_uses_auto_model_and_build_kwargs(monkeypatch):
     assert model.kwargs["use_cache"] is False
 
 
+def test_get_model_populates_device_map_when_quantized(monkeypatch):
+    import sys
+    import types
+
+    class FakeAutoModel:
+        @classmethod
+        def from_pretrained(cls, model_name_or_path, **kwargs):
+            return SimpleNamespace(name=model_name_or_path, kwargs=kwargs)
+
+    fake_transformers = types.SimpleNamespace(AutoModelForCausalLM=FakeAutoModel)
+    monkeypatch.setitem(sys.modules, "transformers", fake_transformers)
+
+    class FakeTrl:
+        @staticmethod
+        def get_quantization_config(_model_args):
+            return {"bits": 4}
+
+        @staticmethod
+        def get_kbit_device_map():
+            return {"auto": True}
+
+    monkeypatch.setitem(sys.modules, "trl", FakeTrl)
+
+    model_args = SimpleNamespace(
+        model_name_or_path="quant-model",
+        model_revision=None,
+        trust_remote_code=False,
+        attn_implementation="sdpa",
+        torch_dtype="auto",
+    )
+    training_args = configs_mod.SFTConfig()
+    training_args.gradient_checkpointing = False
+
+    model = model_utils.get_model(model_args, training_args)
+    assert model.kwargs["quantization_config"] == {"bits": 4}
+    assert model.kwargs["device_map"] == {"auto": True}
+
+
 def test_push_to_hub_revision_calls_hub_functions(monkeypatch, tmp_path):
     hub_utils = _import_hub_utils()
     calls = {}
@@ -198,6 +258,7 @@ def test_push_to_hub_revision_calls_hub_functions(monkeypatch, tmp_path):
 
     fut = hub_utils.push_to_hub_revision(training_args, extra_ignore_patterns=["*.tmp"])
     assert isinstance(fut, object)
+    fut.add_done_callback(lambda *_args, **_kwargs: None)
 
     assert calls["create_repo"][0] == "org/model"
     assert calls["list_repo_commits"] == "org/model"
@@ -215,6 +276,7 @@ def test_push_to_hub_revision_calls_hub_functions(monkeypatch, tmp_path):
 
 def test_check_hub_revision_exists_raises_when_readme_present(monkeypatch):
     hub_utils = _import_hub_utils()
+
     def fake_repo_exists(_repo_id):
         return True
 
@@ -240,6 +302,7 @@ def test_check_hub_revision_exists_raises_when_readme_present(monkeypatch):
 
 def test_check_hub_revision_exists_no_error_when_no_readme(monkeypatch):
     hub_utils = _import_hub_utils()
+
     def fake_repo_exists(_repo_id):
         return True
 
@@ -263,8 +326,37 @@ def test_check_hub_revision_exists_no_error_when_no_readme(monkeypatch):
     hub_utils.check_hub_revision_exists(args)
 
 
+def test_check_hub_revision_exists_calls_list_files_when_revision_present(monkeypatch):
+    hub_utils = _import_hub_utils()
+    calls = {}
+
+    def fake_repo_exists(_repo_id):
+        return True
+
+    def fake_list_refs(_repo_id):
+        return SimpleNamespace(branches=[SimpleNamespace(name="main")])
+
+    def fake_list_files(repo_id, revision):
+        calls["list_repo_files"] = (repo_id, revision)
+        return ["NOT_README"]
+
+    monkeypatch.setattr(hub_utils, "repo_exists", fake_repo_exists)
+    monkeypatch.setattr(hub_utils, "list_repo_refs", fake_list_refs)
+    monkeypatch.setattr(hub_utils, "list_repo_files", fake_list_files)
+
+    args = SimpleNamespace(
+        hub_model_id="org/model",
+        hub_model_revision="main",
+        push_to_hub_revision=True,
+        overwrite_hub_revision=False,
+    )
+    hub_utils.check_hub_revision_exists(args)
+    assert calls["list_repo_files"] == ("org/model", "main")
+
+
 def test_get_param_count_from_repo_id_pattern_fallback(monkeypatch):
     hub_utils = _import_hub_utils()
+
     def failing_metadata(_repo_id):
         raise OSError("no metadata")
 
@@ -278,6 +370,7 @@ def test_get_param_count_from_repo_id_pattern_fallback(monkeypatch):
 
 def test_get_gpu_count_for_vllm_uses_autoconfig(monkeypatch):
     hub_utils = _import_hub_utils()
+
     class FakeConfig:
         def __init__(self, num_attention_heads):
             self.num_attention_heads = num_attention_heads

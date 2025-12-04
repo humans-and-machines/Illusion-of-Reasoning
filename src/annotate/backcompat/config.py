@@ -8,4 +8,5 @@ New code should import from :mod:`src.annotate` or
 
 from ..infra.config import load_azure_config, load_sandbox_config
 
+
 __all__ = ["load_azure_config", "load_sandbox_config"]

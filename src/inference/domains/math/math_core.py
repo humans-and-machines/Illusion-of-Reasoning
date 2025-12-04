@@ -25,11 +25,12 @@ Other features (unchanged)
 """
 
 import re
-from importlib import import_module
 from dataclasses import dataclass
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple, TYPE_CHECKING
+from importlib import import_module
+from typing import TYPE_CHECKING, Any, DefaultDict, Dict, List, Optional, Tuple
 
 from src.inference.backends import _load_torch_and_transformers
+from src.inference.utils._torch_stubs import TorchStub
 from src.inference.utils.common import (
     DEFAULT_SECOND_PASS_PHRASE,
     PassOutputs,
@@ -38,24 +39,39 @@ from src.inference.utils.common import (
     build_second_pass_think_prefixes,
     empty_pass_outputs,
     extract_problem_and_answer,
-    finite_mean as _finite_mean,
-    pack_math_pass_result as _pack_math_pass_result,
-    run_generate_batch,
-    scan_existing_pass1_results,
-    setup_script_logger,
 )
+from src.inference.utils.common import finite_mean as _finite_mean
+from src.inference.utils.common import pack_math_pass_result as _pack_math_pass_result
+from src.inference.utils.common import require_torch as _require_torch
+from src.inference.utils.common import run_generate_batch, scan_existing_pass1_results, setup_script_logger
+from src.inference.utils.math_pass_utils import MathPassMeta
 from src.inference.utils.task_registry import MATH_SYSTEM_PROMPT
 
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    import torch
-    from torch.nn import functional as F  # type: ignore[unused-import]
-    from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteriaList
+    torch = TorchStub()  # type: ignore[assignment]
+    try:
+        from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteriaList
+    except ImportError:  # pragma: no cover - optional at type-check time
+        AutoModelForCausalLM = AutoTokenizer = StoppingCriteriaList = (  # type: ignore[assignment]
+            Any
+        )
+else:
+    # Ensure a usable inference_mode exists for stubbed torch in tests.
+    try:  # pragma: no cover - exercised in stub environments
+        _require_torch("math_core")
+    except ImportError:
+        pass
 
 # ───────────────────────── System prompt ─────────────────────────
 SYSTEM_PROMPT = MATH_SYSTEM_PROMPT
 
 # ───────────────────────── Utilities ─────────────────────────
 _fmean = _finite_mean
+
+
+# Reuse the shared dataclass to avoid drift between inference helpers.
+MathPassMetaArgs = MathPassMeta
 
 
 @dataclass
@@ -250,6 +266,7 @@ class MathInferenceConfig:
         """
         return self.two_pass_cfg.answer_cap
 
+
 # ───────────────────────── Logging ─────────────────────────
 logger = setup_script_logger(__name__)
 
@@ -299,6 +316,7 @@ def chat_base_for_pass2(tokenizer, problem: str, prev_output: str, cue: str) -> 
         tokenize=False,
         add_generation_prompt=True,
     )
+
 
 # ─────────────────────────── Results scanning ───────────────────────────
 # >>> RESUME/FILL LOGIC <<<
@@ -436,7 +454,9 @@ def _gen_batch(
         values, and the remaining elements hold backend-specific outputs and
         per-row stop reasons.
     """
-    torch_mod, _, _, stopping_criteria_list_cls = _load_torch_and_transformers()
+    torch_mod, _, _, stopping_criteria_list_cls = _load_torch_and_transformers(
+        require_transformers=False,
+    )
     return run_generate_batch(
         prefixes=batch_spec.prefixes,
         cap=batch_spec.cap,
@@ -477,11 +497,7 @@ def _build_work_items_for_slice(
         have = existing_samples.get(problem, set())
         if len(have) >= config.num_samples:
             continue
-        missing_indices = [
-            sample_idx
-            for sample_idx in range(config.num_samples)
-            if sample_idx not in have
-        ]
+        missing_indices = [sample_idx for sample_idx in range(config.num_samples) if sample_idx not in have]
         if not missing_indices:
             continue
         example_copy = dict(raw_example)
@@ -494,32 +510,25 @@ def _build_work_items_for_slice(
 
 def _pack_pass_result(
     *,
-    problem: str,
     full_text: str,
     ent_think: List[float],
     ent_answer: List[float],
-    injected_cue: bool,
-    canon_gold: Optional[str],
-    prev_output: Optional[str],
-    cue_prefix_str: str,
-    stop_reason_think: Optional[str],
-    stop_reason_answer: Optional[str],
+    meta_args: MathPassMetaArgs,
 ) -> Dict[str, Any]:
     """
     Convenience wrapper around :func:`pack_math_pass_result`.
 
-    This preserves the older, more explicit keyword-based interface used in
-    tests while delegating to the shared packing helpers in
-    :mod:`src.inference.utils.math_pass_utils`.
+    This preserves the older, explicit interface used in tests while delegating
+    to the shared packing helpers in :mod:`src.inference.utils.math_pass_utils`.
     """
     meta = build_math_pass_meta(
-        problem=problem,
-        canon_gold=canon_gold,
-        injected_cue=injected_cue,
-        prev_output=prev_output,
-        cue_prefix_str=cue_prefix_str,
-        stop_reason_think=stop_reason_think,
-        stop_reason_answer=stop_reason_answer,
+        problem=meta_args.problem,
+        canon_gold=meta_args.canon_gold,
+        injected_cue=meta_args.injected_cue,
+        prev_output=meta_args.prev_output,
+        cue_prefix_str=meta_args.cue_prefix_str,
+        stop_reason_think=meta_args.stop_reason_think,
+        stop_reason_answer=meta_args.stop_reason_answer,
     )
     return _pack_math_pass_result(
         full_text=full_text,
@@ -542,10 +551,7 @@ def _build_pass1_prefixes(
         ``prefixes`` are the think-prefix prompts and the index arrays map rows
         back to their originating examples and sample indices.
     """
-    base_prompts = [
-        chat_base_for_pass1(tokenizer, item["_normalized_problem"])
-        for item in work_items
-    ]
+    base_prompts = [chat_base_for_pass1(tokenizer, item["_normalized_problem"]) for item in work_items]
 
     pre1_think: List[str] = []
     row_to_ex_idx: List[int] = []
@@ -671,11 +677,7 @@ def _select_first_pass_choice(
         if prev_text is not None:
             return prev_text
 
-    new_indices = sorted(
-        sample_idx
-        for (example_idx, sample_idx) in mapping
-        if example_idx == ex_idx
-    )
+    new_indices = sorted(sample_idx for (example_idx, sample_idx) in mapping if example_idx == ex_idx)
     if new_indices:
         prev_text = mapping.get((ex_idx, new_indices[0]))
         if prev_text is not None:
@@ -823,9 +825,7 @@ def _run_pass2_for_batch(
 def _norm_fields(example: dict) -> Tuple[Optional[str], Optional[str]]:
     """Normalize raw record fields into a (problem, gold_answer) pair."""
     problem, gold = extract_problem_and_answer(example)
-    if gold and not any(
-        key in example for key in ("answer", "final_answer", "target", "boxed_answer", "solution")
-    ):
+    if gold and not any(key in example for key in ("answer", "final_answer", "target", "boxed_answer", "solution")):
         match = re.search(r"\\boxed\{([^}]*)\}", str(gold))
         if not match:
             match = re.search(r"\\boxed\(([^)]*)\)", str(gold))
@@ -834,16 +834,23 @@ def _norm_fields(example: dict) -> Tuple[Optional[str], Optional[str]]:
     return problem, gold
 
 
+@dataclass
+class ExtraPassRowContext:
+    """Bundle the inputs needed to pack extra-pass outputs for a row."""
+
+    prob: str
+    canon_gold: Optional[str]
+    layout: BatchLayout
+    context: BatchWriteContext
+    extra_passes: Optional[List[Tuple[str, PassOutputs]]]
+    pass1_result: Dict[str, Any]
+
+
 def _build_extra_pass_results_for_row(
     *,
     row_index: int,
-    prob: str,
-    canon_gold: Optional[str],
-    layout: BatchLayout,
-    context: BatchWriteContext,
-    extra_passes: Optional[List[Tuple[str, PassOutputs]]],
-    pass1_result: Dict[str, Any],
-    ) -> Dict[str, Dict[str, Any]]:
+    row_context: ExtraPassRowContext,
+) -> Dict[str, Dict[str, Any]]:
     """
     Thin wrapper delegating to the implementation in ``math_core_runner``.
     """
@@ -851,12 +858,7 @@ def _build_extra_pass_results_for_row(
 
     return math_core_runner.build_extra_pass_results_for_row(
         row_index=row_index,
-        prob=prob,
-        canon_gold=canon_gold,
-        layout=layout,
-        context=context,
-        extra_passes=extra_passes,
-        pass1_result=pass1_result,
+        row_context=row_context,
     )
 
 

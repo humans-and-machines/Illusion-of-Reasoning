@@ -14,16 +14,16 @@ import pandas as pd
 from ..common.pass_extraction import extract_pass_answer
 from ..io import iter_records_from_file
 from ..labels import aha_gpt_for_rec
-from ..utils import (
-    FormalThresholds,
-    formal_flags_with_gain,
-    nat_step_from_path,
-)
-from . import FORMAL_REQUIRED_COLUMNS
-from . import make_formal_thresholds
+from ..utils import FormalThresholds, formal_flags_with_gain, nat_step_from_path
+from . import FORMAL_REQUIRED_COLUMNS, build_formal_thresholds_from_args
+from . import make_formal_thresholds as _make_formal_thresholds
+
 
 ExportKey = Tuple[str, str, int]
 EXPORT_REQUIRED_COLUMNS = FORMAL_REQUIRED_COLUMNS | {"aha_formal", "n_samples"}
+
+# Legacy alias for tests importing directly from this module.
+make_formal_thresholds = _make_formal_thresholds
 
 
 def _formal_flags_for_group(
@@ -61,7 +61,7 @@ def mark_formal_pairs(
     sorted_frame = problem_step_df.sort_values(group_keys + ["step"]).reset_index(drop=True).copy()
     flags = np.zeros(len(sorted_frame), dtype=int)
 
-    thresholds = make_formal_thresholds(
+    thresholds = build_formal_thresholds_from_args(
         delta1=delta1,
         delta2=delta2,
         min_prior_steps=min_prior_steps,
@@ -124,9 +124,12 @@ def bootstrap_problem_ratio(
             },
         )
     return pd.DataFrame(rows).sort_values("step")
+
+
 @dataclass
 class FormalExportMeta:
     """Metadata describing the dataset/model associated with an export."""
+
     dataset: str
     model: str
 
@@ -134,6 +137,7 @@ class FormalExportMeta:
 @dataclass
 class FormalAhaExportConfig:
     """Configuration describing how formal AHA events should be exported."""
+
     meta: FormalExportMeta
     thresholds: FormalThresholds
     gpt_keys: List[str]
@@ -164,13 +168,9 @@ def _build_export_index(
         frame_with_domain["aha_formal"] == 1,
         ["domain", "problem", "step"],
     ]
-    targets = {
-        (str(row["domain"]), str(row["problem"]), int(row["step"]))
-        for _, row in target_rows.iterrows()
-    }
+    targets = {(str(row["domain"]), str(row["problem"]), int(row["step"])) for _, row in target_rows.iterrows()}
     index_map = {
-        (str(row["domain"]), str(row["problem"]), int(row["step"])): row
-        for _, row in frame_with_domain.iterrows()
+        (str(row["domain"]), str(row["problem"]), int(row["step"])): row for _, row in frame_with_domain.iterrows()
     }
     return targets, index_map
 
@@ -199,11 +199,7 @@ def _build_event_dict(
     config: FormalAhaExportConfig,
 ) -> Dict[str, Any]:
     domain, problem, step = key
-    p_plus = (
-        float(row["p_correct_given_shift"])
-        if np.isfinite(row["p_correct_given_shift"])
-        else None
-    )
+    p_plus = float(row["p_correct_given_shift"]) if np.isfinite(row["p_correct_given_shift"]) else None
     p_base = float(row["freq_correct"])
     delta_gain = p_plus - p_base if p_plus is not None else None
     thresholds = config.thresholds
@@ -391,10 +387,7 @@ def build_positive_delta_flags(
         mask = np.isfinite(sub["p_correct_given_shift"].to_numpy())
         mask &= sub["aha_any_gpt"].to_numpy() == 1
         if mask.any():
-            delta = (
-                sub.loc[mask, "p_correct_given_shift"].to_numpy()
-                - sub.loc[mask, "freq_correct"].to_numpy()
-            )
+            delta = sub.loc[mask, "p_correct_given_shift"].to_numpy() - sub.loc[mask, "freq_correct"].to_numpy()
             flag = bool(np.nanmean(delta) > 0.12)
         else:
             flag = False
@@ -405,6 +398,8 @@ def build_positive_delta_flags(
 __all__ = [
     "FormalExportMeta",
     "FormalAhaExportConfig",
+    "make_formal_thresholds",
+    "build_formal_thresholds_from_args",
     "mark_formal_pairs",
     "bootstrap_problem_ratio",
     "export_formal_aha_json_with_text",

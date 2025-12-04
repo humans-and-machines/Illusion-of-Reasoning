@@ -95,9 +95,7 @@ def test_annotate_file_respects_max_calls(tmp_path, monkeypatch):
 
     # Only one LLM-style annotation should have been applied.
     assert call_counter["count"] == 1
-    annotated_flags = [
-        bool(row.get("pass1", {}).get("annotated", False)) for row in new_rows
-    ]
+    annotated_flags = [bool(row.get("pass1", {}).get("annotated", False)) for row in new_rows]
     assert sum(annotated_flags) == 1
 
 
@@ -148,7 +146,7 @@ def test_json_from_text_parses_plain_and_embedded_objects():
     plain = '{"a": 1, "b": 2}'
     assert annotate_mod._json_from_text(plain) == {"a": 1, "b": 2}
 
-    embedded = "noise before {\"c\": 3} noise after"
+    embedded = 'noise before {"c": 3} noise after'
     assert annotate_mod._json_from_text(embedded) == {"c": 3}
 
 
@@ -158,7 +156,7 @@ def test_json_from_text_returns_none_on_invalid_json():
 
 
 def test_nat_step_from_path_extracts_integer_or_none():
-    from src.annotate.core.shift_core import nat_step_from_path, scan_jsonl
+    from src.annotate.core.shift_core import nat_step_from_path
 
     assert nat_step_from_path("step00050_test.jsonl") == 50
     assert nat_step_from_path("no_step_here.jsonl") is None

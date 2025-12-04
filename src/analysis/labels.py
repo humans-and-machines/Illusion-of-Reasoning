@@ -36,6 +36,7 @@ AHA_KEYS_BROAD: List[str] = AHA_KEYS_CANONICAL + [
 # Native (words-based) Aha
 # ---------------------------------------------------------------------------
 
+
 def aha_words(pass1: Dict[str, Any]) -> int:
     """
     Words-based Aha flag from pass1.
@@ -54,6 +55,7 @@ def aha_words(pass1: Dict[str, Any]) -> int:
 # ---------------------------------------------------------------------------
 # GPT / LLM-based shift labels (sample-level)
 # ---------------------------------------------------------------------------
+
 
 def aha_gpt_canonical(pass1: Dict[str, Any], rec: Dict[str, Any]) -> int:
     """

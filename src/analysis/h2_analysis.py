@@ -20,11 +20,7 @@ from typing import List, Optional
 import pandas as pd
 
 from src.analysis.common.uncertainty import standardize_uncertainty_with_stats
-from src.analysis.h2_analysis_glm import (
-    StepwiseGlmConfig,
-    compute_pooled_step_effects,
-    fit_stepwise_glms,
-)
+from src.analysis.h2_analysis_glm import StepwiseGlmConfig, compute_pooled_step_effects, fit_stepwise_glms
 from src.analysis.h2_analysis_loader import load_pass1_rows
 from src.analysis.io import scan_jsonl_files
 
@@ -244,6 +240,7 @@ def _plot_pooled_effects(pooled_df: pd.DataFrame, out_dir: str) -> None:
 
     _configure_matplotlib()
     import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel
+
     fig, axis = plt.subplots(figsize=(7.8, 4.6), dpi=140)
     axis.plot(pooled_df["step"], pooled_df["aha_effect"], marker="o")
     axis.set_xlabel("Training step")
@@ -261,21 +258,12 @@ def _summarize_outputs(out_dir: str, samples_csv: str) -> None:
     print(f"Wrote step regression CSV: {os.path.join(out_dir, 'h2_step_regression.csv')}")
     print("Plots written:")
     print("  h2_diag_panel.png")
-    print(
-        "  aha_coef_vs_step.png, aha_ame_vs_step.png, "
-        "uncertainty_coef_vs_step.png, naive_delta_vs_step.png"
-    )
+    print("  aha_coef_vs_step.png, aha_ame_vs_step.png, uncertainty_coef_vs_step.png, naive_delta_vs_step.png")
     print("  aha_ame_with_ci.png, aha_ame_grid.png (if grid used elsewhere)")
     print("  h2_pooled_aha_by_step.png")
-    print(
-        "  h2_aha_vs_uncertainty_buckets__*.png/.pdf, "
-        "h2_uncertainty_hist_100bins__*.png/.pdf"
-    )
+    print("  h2_aha_vs_uncertainty_buckets__*.png/.pdf, h2_uncertainty_hist_100bins__*.png/.pdf")
     print("CSVs:")
-    print(
-        "  h2_balance_by_step.csv, h2_ame_grid.csv, "
-        "h2_fdr_summary.txt, h2_pooled_aha_by_step.csv"
-    )
+    print("  h2_balance_by_step.csv, h2_ame_grid.csv, h2_fdr_summary.txt, h2_pooled_aha_by_step.csv")
     print("  h2_aha_vs_uncertainty_buckets.csv, h2_uncertainty_hist_100bins.csv")
 
 

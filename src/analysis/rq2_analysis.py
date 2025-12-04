@@ -86,8 +86,7 @@ def build_argparser() -> argparse.ArgumentParser:
     """Build and return the argument parser for the RQ2 analysis entrypoint."""
     parser = argparse.ArgumentParser(
         description=(
-            "RQ2: Analyze how the effect of reasoning shifts varies with "
-            "training stage and decoding temperature."
+            "RQ2: Analyze how the effect of reasoning shifts varies with training stage and decoding temperature."
         ),
     )
     parser.add_argument(
@@ -116,10 +115,7 @@ def build_argparser() -> argparse.ArgumentParser:
         "--low_alias",
         type=float,
         default=0.0,
-        help=(
-            "Numerical alias for 'low' temperatures in directory names "
-            "(default: 0.0)."
-        ),
+        help=("Numerical alias for 'low' temperatures in directory names (default: 0.0)."),
     )
     parser.add_argument(
         "--no_temp",

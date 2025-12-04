@@ -28,34 +28,52 @@ import argparse
 import os
 import random
 import sys
-from importlib import import_module
+from dataclasses import dataclass
 from functools import partial
+from importlib import import_module
 from typing import Any, Dict
 
-from src.inference.gateways.base import setup_gateway_logger
-from src.inference.utils.gateway_utils import (
-    append_jsonl_row,
-    build_math_gateway_arg_parser,
-    build_math_gateway_messages,
-    build_math_gateway_row_base,
-    build_usage_dict,
-    call_with_gateway_retries,
-    iter_math_gateway_samples,
-    parse_openai_chat_response,
-    prepare_math_gateway_dataset_from_args,
-    require_datasets,
-)
-from src.inference.utils.math_pass_utils import (
-    canon_math as _canon_math,
-    extract_blocks as _extract_blocks,
-    valid_tag_structure as _valid_tag_structure,
-)
 from src.inference.domains.math.math_core import load_math500
+from src.inference.gateways.base import setup_gateway_logger
+from src.inference.utils import gateway_utils as _gateway_utils
+from src.inference.utils.math_pass_utils import canon_math as _canon_math
+from src.inference.utils.math_pass_utils import extract_blocks as _extract_blocks
+from src.inference.utils.math_pass_utils import valid_tag_structure as _valid_tag_structure
 from src.inference.utils.task_registry import MATH_SYSTEM_PROMPT
 
 
-Dataset, load_dataset = require_datasets()
+DATASET_TYPE, load_dataset = _gateway_utils.require_datasets()
 logger = setup_gateway_logger(__name__)
+
+# Bind gateway helpers with a defensive RetryContext fallback so stubbed tests
+# lacking the attribute do not fail at import time.
+append_jsonl_row = _gateway_utils.append_jsonl_row
+build_math_gateway_arg_parser = _gateway_utils.build_math_gateway_arg_parser
+build_math_gateway_messages = _gateway_utils.build_math_gateway_messages
+build_math_gateway_row_base = _gateway_utils.build_math_gateway_row_base
+build_usage_dict = _gateway_utils.build_usage_dict
+call_with_gateway_retries = _gateway_utils.call_with_gateway_retries
+call_with_gateway_retries_compat = getattr(
+    _gateway_utils,
+    "call_with_gateway_retries_compat",
+    None,
+)
+RetryContext = getattr(_gateway_utils, "RetryContext", None)
+if RetryContext is None:  # pragma: no cover - exercised in stubbed tests
+
+    @dataclass(frozen=True)
+    class RetryContext:  # type: ignore[redefinition]
+        """Stub retry context for environments lacking gateway RetryContext."""
+
+        logger: Any
+        sample_idx: int
+        problem_snippet: str
+        min_sleep: float | None = None
+
+
+iter_math_gateway_samples = _gateway_utils.iter_math_gateway_samples
+parse_openai_chat_response = _gateway_utils.parse_openai_chat_response
+prepare_math_gateway_dataset_from_args = _gateway_utils.prepare_math_gateway_dataset_from_args
 
 
 # ----------------------- Prompt -----------------------
@@ -140,7 +158,7 @@ def _parse_args() -> argparse.Namespace:
 def _prepare_dataset(
     args: argparse.Namespace,
     outpath: str,
-) -> tuple[Dataset, Dict[str, set[int]], str]:
+) -> tuple[DATASET_TYPE, Dict[str, set[int]], str]:
     """
     Load, optionally subsample, and shuffle the dataset.
 
@@ -176,17 +194,19 @@ def _generate_samples(client, args: argparse.Namespace, outpath: str) -> None:
         args.num_samples,
         existing,
     ):
-        text, finish_reason, usage = call_with_gateway_retries(
-            partial(_call_model, client, problem, args),
-            args=args,
+        retry_ctx = _gateway_utils.build_retry_context(
             logger=logger,
             sample_idx=sample_idx,
             problem_snippet=problem,
-            min_sleep=10.0,
+        )
+        text, finish_reason, usage = call_with_gateway_retries_compat(
+            call_with_gateway_retries,
+            partial(_call_model, client, problem, args),
+            args,
+            retry_ctx,
         )
 
         _, ans = _extract_blocks(text)
-        pred_canon = _canon_math(ans)
 
         row: Dict[str, Any] = build_math_gateway_row_base(
             problem=problem,
@@ -206,11 +226,9 @@ def _generate_samples(client, args: argparse.Namespace, outpath: str) -> None:
                 "pass1": {
                     "output": text.strip(),
                     "pred_answer": ans,
-                    "pred_answer_canon": pred_canon,
+                    "pred_answer_canon": _canon_math(ans),
                     "is_correct_pred": bool(
-                        pred_canon
-                        and row["gold_answer_canon"]
-                        and row["gold_answer_canon"] in pred_canon
+                        _canon_math(ans) and row["gold_answer_canon"] and row["gold_answer_canon"] in _canon_math(ans)
                     ),
                     "valid_tag_structure": _valid_tag_structure(text),
                     "finish_reason": finish_reason,

@@ -65,6 +65,7 @@ _deps = [
     "parameterized>=0.9.0",
     "peft>=0.14.0",
     "pytest",
+    "pytest-cov>=5.0.0",
     "python-dotenv",
     "ruff>=0.9.0",
     "safetensors>=0.3.3",
@@ -98,7 +99,7 @@ def deps_list(*pkgs):
 
 
 extras = {}
-extras["tests"] = deps_list("pytest", "parameterized", "math-verify", "jieba")
+extras["tests"] = deps_list("pytest", "pytest-cov", "parameterized", "math-verify", "jieba")
 extras["torch"] = deps_list("torch")
 extras["quality"] = deps_list("ruff", "isort", "flake8")
 extras["code"] = deps_list("jieba", "pandas", "aiofiles")

@@ -43,31 +43,21 @@ import pandas as pd
 
 from src.analysis.plotting import apply_default_style
 
+
 matplotlib.use("Agg")
 
 try:
     # Package imports
-    from .core import (
-        LoadRowsConfig,
-        iter_correct_and_shift_samples_for_config,
-    )
+    from .core import LoadRowsConfig, iter_correct_and_shift_samples_for_config
     from .core.plotting_helpers import compute_effective_max_step
     from .io import build_files_by_domain_for_args
     from .metrics import make_carpark_success_fn
-    from .utils import (
-        add_gpt_step_and_carpark_args,
-        build_mixed_root_arg_parser,
-        get_problem_id,
-        gpt_keys_for_mode,
-    )
+    from .utils import add_gpt_step_and_carpark_args, build_mixed_root_arg_parser, get_problem_id, gpt_keys_for_mode
 except ImportError:  # pragma: no cover - script fallback
     _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _ROOT not in sys.path:
         sys.path.append(_ROOT)
-    from analysis.core import (  # type: ignore
-        LoadRowsConfig,
-        iter_correct_and_shift_samples_for_config,
-    )
+    from analysis.core import LoadRowsConfig, iter_correct_and_shift_samples_for_config  # type: ignore
     from analysis.core.plotting_helpers import compute_effective_max_step  # type: ignore
     from analysis.io import build_files_by_domain_for_args  # type: ignore
     from analysis.metrics import make_carpark_success_fn  # type: ignore
@@ -116,6 +106,7 @@ class OverlayFigureConfig:
     marker_size: float
     title: str
 
+
 # ---------- Load rows ----------
 def _iter_rows(
     files_by_domain: Dict[str, List[str]],
@@ -149,6 +140,7 @@ def load_rows(
     Materialize the per-record rows for all domains into a DataFrame.
     """
     return pd.DataFrame(list(_iter_rows(files_by_domain, config)))
+
 
 # ---------- Per-step aggregation ----------
 def per_step_raw_effect(
@@ -196,10 +188,13 @@ def per_step_raw_effect(
         )
     return pd.DataFrame(rows).sort_values("step")
 
+
 # ---------- Plotters ----------
-_COLORS={"Crossword":"#1f77b4","Math":"#2ca02c","Math2":"#9467bd","Carpark":"#d62728"}
-def _color_for(dom_key:str)->str:
-    return _COLORS.get(dom_key,"C0")
+_COLORS = {"Crossword": "#1f77b4", "Math": "#2ca02c", "Math2": "#9467bd", "Carpark": "#d62728"}
+
+
+def _color_for(dom_key: str) -> str:
+    return _COLORS.get(dom_key, "C0")
 
 
 def plot_panels(
@@ -275,6 +270,7 @@ def _auto_wrap_title_to_two_lines(title: str, width: int = 42) -> str:
     lines = wrapped.splitlines()
     return "\n".join(lines[:2]) if len(lines) > 2 else wrapped
 
+
 def plot_overlay_all(
     per_step: Dict[str, pd.DataFrame],
     label_map: Dict[str, str],
@@ -294,11 +290,7 @@ def plot_overlay_all(
         constrained_layout=False,
     )
 
-    wrapped_title = (
-        _auto_wrap_title_to_two_lines(fig_config.title, width=42)
-        if fig_config.title
-        else None
-    )
+    wrapped_title = _auto_wrap_title_to_two_lines(fig_config.title, width=42) if fig_config.title else None
     if wrapped_title:
         axis.set_title(wrapped_title, pad=6)
 
@@ -336,6 +328,7 @@ def plot_overlay_all(
     fig.savefig(out_png, dpi=fig_config.dpi)
     fig.savefig(out_png.replace(".png", ".pdf"))
     plt.close(fig)
+
 
 # ---------- Main ----------
 def _parse_float_list(value_string: Optional[str]) -> Optional[List[float]]:
@@ -412,10 +405,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--plot_units",
         choices=["pp", "prob"],
         default="pp",
-        help=(
-            "Axis units: 'pp' = percentage points (×100), "
-            "'prob' = raw probabilities."
-        ),
+        help=("Axis units: 'pp' = percentage points (×100), 'prob' = raw probabilities."),
     )
     parser.add_argument(
         "--ymin_pp",
@@ -570,9 +560,7 @@ def main() -> None:
     )
     out_csv = os.path.join(
         out_dir,
-        "raw_effect_per_step__"
-        + f"{args.dataset_name}__{args.model_name}".replace(" ", "_")
-        + ".csv",
+        "raw_effect_per_step__" + f"{args.dataset_name}__{args.model_name}".replace(" ", "_") + ".csv",
     )
     table.to_csv(out_csv, index=False)
 
@@ -597,10 +585,7 @@ def main() -> None:
         out_dir,
         "raw_effect_per_step_overlay_linear.png",
     )
-    overlay_title = (
-        args.overlay_title
-        or f"Raw Effect of LLM-Detected Shifts by Training Step ({args.model_name})"
-    )
+    overlay_title = args.overlay_title or f"Raw Effect of LLM-Detected Shifts by Training Step ({args.model_name})"
     plot_overlay_all(
         per_step,
         label_map,

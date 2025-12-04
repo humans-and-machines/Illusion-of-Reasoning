@@ -3,12 +3,11 @@
 import os
 from pathlib import Path
 
+
 try:
     import nltk  # type: ignore[import-error]
 except ImportError as exc:  # pragma: no cover - optional dependency
-    raise RuntimeError(
-        "The NLTK downloader utility requires the 'nltk' package to be installed."
-    ) from exc
+    raise RuntimeError("The NLTK downloader utility requires the 'nltk' package to be installed.") from exc
 
 TARGET = str(Path(__file__).resolve().parents[3] / ".nltk_data")
 os.makedirs(TARGET, exist_ok=True)
@@ -29,9 +28,7 @@ PKGS = [
 
 for package in PKGS:
     try:
-        nltk.data.find(
-            package if "/" in package else f"corpora/{package}"
-        )
+        nltk.data.find(package if "/" in package else f"corpora/{package}")
         print(f"[nltk] already have {package}")
     except LookupError:
         print(f"[nltk] downloading {package} -> {TARGET}")

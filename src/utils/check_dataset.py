@@ -14,6 +14,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+
 _PUNCT_RE = re.compile(rf"[{re.escape(string.punctuation)}]")
 
 # training tag patterns
@@ -53,9 +54,7 @@ def _rows_from_jsonl_bytes(buf: bytes) -> List[dict]:
         obj = json.loads(text)
         raw_ans = obj.get("answer") or obj.get("solution") or obj.get("soln")
         if raw_ans is None:
-            raise ValueError(
-                f"Missing answer key in jsonl row: {list(obj.keys())}"
-            )
+            raise ValueError(f"Missing answer key in jsonl row: {list(obj.keys())}")
         rows.append(
             {
                 "problem": f"{obj['clue']}  \n<think>",
@@ -84,10 +83,7 @@ def _build_dataset_from_parts(
 ) -> Any:
     """Construct a DatasetDict from pre-parsed JSONL parts and return the desired split."""
     dataset_dict = datasets_mod.DatasetDict(
-        {
-            key: datasets_mod.Dataset.from_list(value)
-            for key, value in parts.items()
-        }
+        {key: datasets_mod.Dataset.from_list(value) for key, value in parts.items()}
     )
     return dataset_dict[split]
 

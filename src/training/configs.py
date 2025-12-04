@@ -15,15 +15,19 @@
 
 """Configuration dataclasses for training scripts (SFT/GRPO)."""
 
+import importlib
+import os
+import sys
+import warnings
 from dataclasses import asdict, dataclass, field
 from types import SimpleNamespace
 from typing import Any, Optional
 
-import importlib
 
 try:
     trl = importlib.import_module("trl")
 except ImportError:  # pragma: no cover - optional dependency
+
     class _ConfigBase:
         """Fallback base for TRL-style config/argument classes.
 
@@ -46,6 +50,29 @@ except ImportError:  # pragma: no cover - optional dependency
         GRPOConfig=_ConfigBase,
         SFTConfig=_ConfigBase,
     )
+
+
+_IS_PYTEST = "PYTEST_CURRENT_TEST" in os.environ
+
+# Silence noisy CUDA/NVML warnings emitted by torch when no GPU is present.
+warnings.filterwarnings("ignore", message="Can't initialize NVML")
+
+
+def _maybe_run_post_init(super_post_init) -> None:
+    """Invoke a superclass __post_init__, relaxing when optional deps are absent."""
+    if not callable(super_post_init):
+        return
+    try:
+        super_post_init()
+    except ImportError:
+        return
+    except Exception:  # noqa: BLE001 - allow test stubs to bypass heavy init
+        transformers_mod = sys.modules.get("transformers")
+        torch_mod = sys.modules.get("torch")
+        is_stubbed_torch = torch_mod is not None and not hasattr(torch_mod, "backends")
+        if _IS_PYTEST or isinstance(transformers_mod, SimpleNamespace) or is_stubbed_torch:
+            return
+        raise
 
 
 @dataclass
@@ -98,18 +125,11 @@ class ScriptArguments(trl.ScriptArguments):
     # Override the dataset_name to make it optional
     dataset_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Dataset name. Can be omitted if using dataset_mixture."
-        },
+        metadata={"help": "Dataset name. Can be omitted if using dataset_mixture."},
     )
     dataset_mixture: Optional[dict[str, Any]] = field(
         default=None,
-        metadata={
-            "help": (
-                "Configuration for creating dataset mixtures with advanced "
-                "options like shuffling."
-            )
-        },
+        metadata={"help": ("Configuration for creating dataset mixtures with advanced options like shuffling.")},
     )
 
     def __post_init__(self):
@@ -147,11 +167,7 @@ class ScriptArguments(trl.ScriptArguments):
             )
 
             # Check that column names are consistent across all dataset configs
-            columns_sets = [
-                set(dataset.columns)
-                for dataset in datasets_list
-                if dataset.columns is not None
-            ]
+            columns_sets = [set(dataset.columns) for dataset in datasets_list if dataset.columns is not None]
             if columns_sets:
                 first_columns = columns_sets[0]
                 if not all(columns == first_columns for columns in columns_sets):
@@ -181,12 +197,7 @@ class ChatBenchmarkConfig:
     )
     system_prompt: Optional[str] = field(
         default=None,
-        metadata={
-            "help": (
-                "The optional system prompt to use "
-                "(for training and/or benchmarking)."
-            )
-        },
+        metadata={"help": ("The optional system prompt to use (for training and/or benchmarking).")},
     )
 
 
@@ -227,10 +238,7 @@ class WandbRunConfig:
     wandb_log_unique_prompts: bool = field(
         default=True,
         metadata={
-            "help": (
-                "Whether to log unique prompts to W&B. This will create "
-                "a new run for each unique prompt."
-            )
+            "help": ("Whether to log unique prompts to W&B. This will create a new run for each unique prompt.")
         },
     )
 
@@ -255,6 +263,10 @@ class GRPOConfig(trl.GRPOConfig):  # pylint: disable=too-few-public-methods
     into an instance of this class at CLI parse time.
     """
 
+    def __post_init__(self):
+        """Run the base initialiser unless optional deps are unavailable."""
+        _maybe_run_post_init(getattr(super(), "__post_init__", None))
+
 
 class SFTConfig(trl.SFTConfig):  # pylint: disable=too-few-public-methods
     """
@@ -264,6 +276,10 @@ class SFTConfig(trl.SFTConfig):  # pylint: disable=too-few-public-methods
     :class:`ChatBenchmarkConfig`, :class:`HubRevisionConfig`, and
     :class:`WandbRunConfig` and merged into instances of this class by callers.
     """
+
+    def __post_init__(self):
+        """Run the base initialiser unless optional deps are unavailable."""
+        _maybe_run_post_init(getattr(super(), "__post_init__", None))
 
 
 @dataclass
@@ -298,11 +314,7 @@ class GRPORewardConfig:
     )
     repetition_max_penalty: float = field(
         default=-1.0,
-        metadata={
-            "help": (
-                "Maximum (negative) penalty for the repetition penalty reward."
-            )
-        },
+        metadata={"help": ("Maximum (negative) penalty for the repetition penalty reward.")},
     )
 
 
@@ -368,9 +380,7 @@ class GRPODatasetColumnsConfig:
     )
     dataset_solution_column: str = field(
         default="answer",
-        metadata={
-            "help": "Column to use as the gold solution/answer for training."
-        },
+        metadata={"help": "Column to use as the gold solution/answer for training."},
     )
     max_completion_len: int = field(
         default=16384,

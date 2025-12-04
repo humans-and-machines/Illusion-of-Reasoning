@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+
 configs = pytest.importorskip("src.training.configs")
 
 
@@ -99,3 +100,13 @@ def test_merge_dataclass_attributes_overwrites_and_flattens():
     # Later configs overwrite earlier ones for shared keys.
     assert target.shared == 20
 
+
+def test_merge_dataclass_attributes_ignores_none():
+    @dataclass
+    class C:
+        c: int = 3
+
+    target = SimpleNamespace()
+    out = configs.merge_dataclass_attributes(target, None, C())
+    assert out is target
+    assert target.c == 3

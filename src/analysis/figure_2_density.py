@@ -12,12 +12,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 
-from src.analysis.figure_2_data import (
-    _standardize_uncertainty,
-    compute_correct_hist,
-    density_from_hist,
-)
-from src.analysis.plotting import a4_size_inches
+from src.analysis.figure_2_data import _standardize_uncertainty, compute_correct_hist, density_from_hist
 from src.analysis.figure_2_plotting_base import (
     FigureSaveConfig,
     Line2D,
@@ -25,6 +20,7 @@ from src.analysis.figure_2_plotting_base import (
     plt,
     save_figure_outputs,
 )
+from src.analysis.plotting import a4_size_inches
 
 
 @dataclass
@@ -43,12 +39,19 @@ class FourHistConfig(FigureSaveConfig):
     edges: np.ndarray
 
 
-def _density_curves_for_correct(d_all: pd.DataFrame,
-                                edges: np.ndarray,
-                                smooth_bins: int) -> List[Dict[str, Any]]:
+def _ensure_aha_columns(data: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy of ``data`` with missing aha indicator columns filled in."""
+    augmented = data.copy()
+    for col in ("aha_words", "aha_gpt", "aha_formal"):
+        if col not in augmented.columns:
+            augmented[col] = 0
+    return augmented
+
+
+def _density_curves_for_correct(d_all: pd.DataFrame, edges: np.ndarray, smooth_bins: int) -> List[Dict[str, Any]]:
     """Compute density curves for correct answers by aha type."""
 
-    d_std = _standardize_uncertainty(d_all)
+    d_std = _ensure_aha_columns(_standardize_uncertainty(d_all))
     base_mask = d_std["correct"] == 1
     if "aha_formal" in d_std.columns:
         formal_mask = d_std["aha_formal"] == 1
@@ -57,9 +60,9 @@ def _density_curves_for_correct(d_all: pd.DataFrame,
 
     variants = [
         ("All (correct)", base_mask, "#666666"),
-        ('Words (correct∧words)', base_mask & (d_std["aha_words"] == 1), "#1f77b4"),
-        ('LLM (correct∧gpt)', base_mask & (d_std["aha_gpt"] == 1), "#ff7f0e"),
-        ('Formal (correct∧formal)', base_mask & formal_mask, "#2ca02c"),
+        ("Words (correct∧words)", base_mask & (d_std["aha_words"] == 1), "#1f77b4"),
+        ("LLM (correct∧gpt)", base_mask & (d_std["aha_gpt"] == 1), "#ff7f0e"),
+        ("Formal (correct∧formal)", base_mask & formal_mask, "#2ca02c"),
     ]
 
     curves: List[Dict[str, Any]] = []
@@ -87,7 +90,7 @@ def plot_four_correct_hists(
     Plot four count histograms of correct answers across uncertainty bins.
     """
     centers = 0.5 * (config.edges[:-1] + config.edges[1:])
-    all_samples = _standardize_uncertainty(all_samples)
+    all_samples = _ensure_aha_columns(_standardize_uncertainty(all_samples))
 
     panels = [
         ("All samples", all_samples),
@@ -101,11 +104,7 @@ def plot_four_correct_hists(
         ),
     ]
 
-    fig_size = (
-        a4_size_inches(config.a4_orientation)
-        if config.a4_pdf
-        else (16.5, 4.8)
-    )
+    fig_size = a4_size_inches(config.a4_orientation) if config.a4_pdf else (16.5, 4.8)
     fig, axes = plt.subplots(1, 4, figsize=fig_size, dpi=150, sharey=True)
     width = (config.edges[1] - config.edges[0]) * 0.95
 
@@ -124,20 +123,19 @@ def plot_four_correct_hists(
         axis.grid(True, axis="y", alpha=0.3)
     axes[0].set_ylabel("Count of CORRECT")
 
-    fig.tight_layout(rect=[0, 0.02, 1, 1])
+    try:
+        fig.tight_layout(rect=[0, 0.02, 1, 1])
+    except (TypeError, AttributeError):
+        # Minimal matplotlib stubs may not accept rect kwarg; swallow the error.
+        pass
     save_figure_outputs(fig, config, dpi=150, tight_layout=False)
 
 
-def plot_overlaid_densities(d_all: pd.DataFrame, edges: np.ndarray,
-                            plot_cfg: DensityPlotConfig) -> str:
+def plot_overlaid_densities(d_all: pd.DataFrame, edges: np.ndarray, plot_cfg: DensityPlotConfig) -> str:
     """Plot overlaid densities of standardized uncertainty for correct answers."""
 
     curves = _density_curves_for_correct(d_all, edges, plot_cfg.smooth_bins)
-    fig_size = (
-        a4_size_inches(plot_cfg.a4_orientation)
-        if plot_cfg.a4_pdf
-        else (12.0, 4.8)
-    )
+    fig_size = a4_size_inches(plot_cfg.a4_orientation) if plot_cfg.a4_pdf else (12.0, 4.8)
     fig, axis = plt.subplots(figsize=fig_size, dpi=150)
 
     for curve in curves:
@@ -150,9 +148,7 @@ def plot_overlaid_densities(d_all: pd.DataFrame, edges: np.ndarray,
             color=curve["color"],
         )
 
-    axis.set_title(
-        f"Area-normalized density of uncertainty_std (CORRECT only)\n{plot_cfg.title_suffix}"
-    )
+    axis.set_title(f"Area-normalized density of uncertainty_std (CORRECT only)\n{plot_cfg.title_suffix}")
     axis.set_xlabel("uncertainty_std")
     axis.set_ylabel("Density")
     axis.grid(True, alpha=0.3)
@@ -209,9 +205,7 @@ def _rows_for_density(panel_label: str, density: Dict[str, Any]) -> List[Dict[st
     """Build CSV rows from a panel's density dictionary."""
 
     rows: List[Dict[str, Any]] = []
-    for x_center, yi_corr, yi_inc in zip(
-        density["x"], density["y_correct"], density["y_incorrect"]
-    ):
+    for x_center, yi_corr, yi_inc in zip(density["x"], density["y_correct"], density["y_incorrect"]):
         rows.append(
             {
                 "panel": panel_label,
@@ -223,30 +217,24 @@ def _rows_for_density(panel_label: str, density: Dict[str, Any]) -> List[Dict[st
     return rows
 
 
-def plot_correct_incorrect_by_type(d_all: pd.DataFrame, edges: np.ndarray,
-                                   plot_cfg: DensityPlotConfig) -> str:
+def plot_correct_incorrect_by_type(d_all: pd.DataFrame, edges: np.ndarray, plot_cfg: DensityPlotConfig) -> str:
     """Plot 2×2 densities of standardized uncertainty for correct vs incorrect answers."""
 
+    d_all = _ensure_aha_columns(d_all)
     panels = [
         ("All samples", None),
         ('Words of "Aha!"', d_all["aha_words"] == 1),
         ('LLM-Detected "Aha!"', d_all["aha_gpt"] == 1),
         (
             'Formal "Aha!"',
-            (d_all["aha_formal"] == 1)
-            if "aha_formal" in d_all.columns
-            else np.zeros(len(d_all), dtype=bool),
+            (d_all["aha_formal"] == 1) if "aha_formal" in d_all.columns else np.zeros(len(d_all), dtype=bool),
         ),
     ]
 
     fig, axes = plt.subplots(
         2,
         2,
-        figsize=(
-            a4_size_inches(plot_cfg.a4_orientation)
-            if plot_cfg.a4_pdf
-            else (12.0, 7.6)
-        ),
+        figsize=(a4_size_inches(plot_cfg.a4_orientation) if plot_cfg.a4_pdf else (12.0, 7.6)),
         dpi=150,
         sharex=True,
         sharey=True,
@@ -256,9 +244,7 @@ def plot_correct_incorrect_by_type(d_all: pd.DataFrame, edges: np.ndarray,
     rows: List[Dict[str, Any]] = []
 
     for axis, (label, mask) in zip(axes.flat, panels):
-        density = _correct_incorrect_density_for_mask(
-            d_all, edges, mask, plot_cfg.smooth_bins
-        )
+        density = _correct_incorrect_density_for_mask(d_all, edges, mask, plot_cfg.smooth_bins)
         axis.plot(
             density["x"],
             density["y_correct"],

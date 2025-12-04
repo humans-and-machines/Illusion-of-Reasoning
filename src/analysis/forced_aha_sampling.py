@@ -10,14 +10,11 @@ from typing import Callable, Optional, Tuple
 
 import pandas as pd
 
+
 def prepare_forced_aha_samples(
     args,
-    load_root_samples: Callable[
-        [str, Optional[str], str, str, Optional[str]], pd.DataFrame
-    ],
-    load_single_root_samples: Callable[
-        [str, Optional[str], str, Optional[str]], Tuple[pd.DataFrame, pd.DataFrame]
-    ],
+    load_root_samples: Callable[[str, Optional[str], str, str, Optional[str]], pd.DataFrame],
+    load_single_root_samples: Callable[[str, Optional[str], str, Optional[str]], Tuple[pd.DataFrame, pd.DataFrame]],
 ) -> Tuple[str, pd.DataFrame, pd.DataFrame]:
     """
     Create output directory and load pass1/pass2 samples for the forced-aha analysis.

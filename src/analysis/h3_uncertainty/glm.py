@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+
 try:  # pragma: no cover - optional dependency
     import statsmodels.api as sm
     import statsmodels.formula.api as smf
@@ -33,10 +34,7 @@ def _build_glm_formula(aha_col: str, strict_interaction_only: bool) -> str:
     """
     if strict_interaction_only:
         return f"correct ~ C(problem) + step_std + {aha_col}:C(perplexity_bucket)"
-    return (
-        f"correct ~ C(problem) + step_std + {aha_col} + "
-        f"C(perplexity_bucket) + {aha_col}:C(perplexity_bucket)"
-    )
+    return f"correct ~ C(problem) + step_std + {aha_col} + C(perplexity_bucket) + {aha_col}:C(perplexity_bucket)"
 
 
 def _write_glm_summary(
@@ -91,13 +89,11 @@ def fit_glm_bucket_interaction(
     """
     Fit a GLM that captures accuracy deltas across uncertainty buckets.
     """
-    if sm is None or smf is None:
+    if sm is None or smf is None:  # pragma: no cover - exercised only when optional deps missing
         raise RuntimeError("statsmodels is required (pip install statsmodels)")
 
     glm_df = data_frame.copy()
-    glm_df["step_std"] = (glm_df["step"] - glm_df["step"].mean()) / (
-        glm_df["step"].std(ddof=0) + 1e-8
-    )
+    glm_df["step_std"] = (glm_df["step"] - glm_df["step"].mean()) / (glm_df["step"].std(ddof=0) + 1e-8)
     glm_df = glm_df[~glm_df["perplexity_bucket"].isna()].copy()
 
     formula = _build_glm_formula(aha_col, strict_interaction_only)
@@ -107,9 +103,7 @@ def fit_glm_bucket_interaction(
     try:
         result = model.fit(cov_type=cov_type, cov_kwds=fit_kwargs)
     except TypeError:
-        fallback_kwargs = (
-            {"groups": fit_kwargs["groups"]} if "groups" in fit_kwargs else {}
-        )
+        fallback_kwargs = {"groups": fit_kwargs["groups"]} if "groups" in fit_kwargs else {}
         result = model.fit(cov_type=cov_type, cov_kwds=fallback_kwargs)
 
     _write_glm_summary(out_txt, result, cov_type, cov_kwds)
@@ -127,9 +121,8 @@ def bucket_group_accuracy(records: pd.DataFrame, aha_col: str) -> pd.DataFrame:
     """
     Compute per-bucket accuracy for aha/non-aha groups.
     """
-    grouped = (
-        records.groupby(["perplexity_bucket", aha_col], as_index=False)
-        .agg(n=("correct", "size"), k=("correct", "sum"))
+    grouped = records.groupby(["perplexity_bucket", aha_col], as_index=False).agg(
+        n=("correct", "size"), k=("correct", "sum")
     )
     grouped["accuracy"] = grouped["k"] / grouped["n"]
     grouped = grouped.rename(columns={aha_col: "aha"})

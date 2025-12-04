@@ -47,10 +47,20 @@ def apply_default_style(extra: Mapping[str, object] | None = None) -> None:
 
     Optionally, pass a small dict of overrides via extra.
     """
+    mpl.rcdefaults()
     params = dict(DEFAULT_STYLE)
     if extra:
         params.update(extra)
     mpl.rcParams.update(params)
+    mpl.rcParams["axes.titlesize"] = params.get(
+        "axes.titlesize",
+        mpl.rcParams.get("axes.titlesize"),
+    )
+    if extra:
+        # Apply extras a second time to guarantee they override any downstream defaults.
+        mpl.rcParams.update(extra)
+        if "axes.titlesize" in extra:
+            mpl.rcParams["axes.titlesize"] = extra["axes.titlesize"]
 
 
 def apply_entropy_plot_style(extra: Mapping[str, object] | None = None) -> None:
@@ -78,7 +88,7 @@ def apply_paper_font_style(
     params: dict[str, object] = {
         "pdf.fonttype": 42,
         "ps.fonttype": 42,
-        "font.family": "serif",
+        "font.family": ["serif"],
         "font.serif": [
             font_family,
             "Times",
@@ -96,6 +106,8 @@ def apply_paper_font_style(
     if mathtext_fontset:
         params["mathtext.fontset"] = mathtext_fontset
     mpl.rcParams.update(params)
+    # Ensure font.family is treated as a list so rcParams indexing is stable in tests.
+    mpl.rcParams["font.family"] = ["serif"]
 
 
 def a4_size_inches(orientation: str = "landscape") -> tuple[float, float]:
@@ -112,6 +124,7 @@ def a4_size_inches(orientation: str = "landscape") -> tuple[float, float]:
 # ---------------------------------------------------------------------------
 # Small convenience helpers
 # ---------------------------------------------------------------------------
+
 
 def save_figure(
     fig: plt.Figure,

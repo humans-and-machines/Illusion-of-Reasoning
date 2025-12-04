@@ -14,6 +14,7 @@ import sys
 
 from . import math_cue_variants
 
+
 __all__ = ["math_cue_variants"]
 
 _SHIFTS_MODULE = importlib.import_module("src.annotate.backcompat.tasks.shifts")

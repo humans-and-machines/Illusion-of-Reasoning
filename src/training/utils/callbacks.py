@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import sys
 from importlib import import_module
 from types import SimpleNamespace
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from .replay_buffer import ReplayBuffer
+
 
 if TYPE_CHECKING:  # pragma: no cover - used only for static typing
     from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
@@ -16,6 +18,7 @@ else:  # pragma: no cover - runtime optional dependency
     try:
         from transformers import TrainerCallback, TrainerControl, TrainerState, TrainingArguments
     except ImportError:
+
         class TrainerCallback:
             """
             Minimal runtime stub for :class:`transformers.TrainerCallback`.
@@ -108,6 +111,7 @@ else:  # pragma: no cover - runtime optional dependency
 #  SLURM helper --------------------------------------------------------------
 # ---------------------------------------------------------------------------
 
+
 def _slurm_available() -> bool:
     try:
         subprocess.run(
@@ -120,9 +124,37 @@ def _slurm_available() -> bool:
     except FileNotFoundError:
         return False
 
+
+def _import_utils_module(submodule: str):
+    """
+    Import ``training.utils.<submodule>`` with a fallback to the ``src.*`` path.
+
+    Some test and packaging environments alias the package under ``src.training``.
+    """
+    last_exc: Exception | None = None
+    module_names = (
+        f"training.utils.{submodule}",
+        f"src.training.utils.{submodule}",
+    )
+    for mod_name in module_names:
+        try:
+            return import_module(mod_name)
+        except (ImportError, ModuleNotFoundError, AttributeError) as exc:
+            # pragma: no cover - exercised in fallback tests
+            last_exc = exc
+    for mod_name in module_names:
+        cached = sys.modules.get(mod_name)
+        if cached is not None:
+            return cached
+    if last_exc:
+        raise last_exc
+    raise ImportError(f"Unable to import training utils submodule: {submodule}")
+
+
 # ---------------------------------------------------------------------------
 #  Push-to-hub callback ------------------------------------------------------
 # ---------------------------------------------------------------------------
+
 
 class PushToHubRevisionCallback(TrainerCallback):
     """Callback that pushes a checkpoint to the hub under a step-specific tag."""
@@ -148,21 +180,22 @@ class PushToHubRevisionCallback(TrainerCallback):
 
         step_tag = f"step-{state.global_step:09d}"
         dummy = SimpleNamespace(
-            hub_model_id    = args.hub_model_id,
-            hub_model_revision = f"{args.hub_model_revision}-{step_tag}",
-            output_dir      = f"{args.output_dir}/checkpoint-{state.global_step}",
-            system_prompt   = args.system_prompt,
+            hub_model_id=args.hub_model_id,
+            hub_model_revision=f"{args.hub_model_revision}-{step_tag}",
+            output_dir=f"{args.output_dir}/checkpoint-{state.global_step}",
+            system_prompt=args.system_prompt,
         )
 
         # lazy import – avoids circular deps if huggingface_hub absent
-        hub_mod = import_module("training.utils.hub")
+        hub_mod = _import_utils_module("hub")
         push_to_hub_revision = getattr(hub_mod, "push_to_hub_revision")
         fut = push_to_hub_revision(dummy, extra_ignore_patterns=["*.pt"])
 
         # (optional) spawn benchmark job when the upload finishes
         if _slurm_available():
+
             def _after(_):
-                eval_mod = import_module("training.utils.evaluation")
+                eval_mod = _import_utils_module("evaluation")
                 run_benchmark_jobs = getattr(eval_mod, "run_benchmark_jobs")
                 self.log.info("Upload done – submitting benchmark job.")
                 dummy.benchmarks = args.benchmarks
@@ -172,9 +205,11 @@ class PushToHubRevisionCallback(TrainerCallback):
             if callback is not None:
                 callback(_after)
 
+
 # ---------------------------------------------------------------------------
 #  Success-caching callback (text-log scraper) -------------------------------
 # ---------------------------------------------------------------------------
+
 
 class SuccessCachingCallback(TrainerCallback):
     """
@@ -183,14 +218,16 @@ class SuccessCachingCallback(TrainerCallback):
 
     NOTE: Transformers never passes `trainer` via **kwargs → use `set_trainer`.
     """
+
     def __init__(self, replay_buffer: ReplayBuffer, acc_threshold: float = 0.999):
         self.buf = replay_buffer
         self.thr = acc_threshold
-        self._trainer = None                         # will be set later
+        self._trainer = None  # will be set later
         self.log = logging.getLogger("SuccessCache")
 
         # ---------- lifecycle hooks ------------------------------------------
-    def set_trainer(self, trainer):                  # called once at start
+
+    def set_trainer(self, trainer):  # called once at start
         """Register the underlying Trainer instance."""
         self._trainer = trainer
 
@@ -209,7 +246,7 @@ class SuccessCachingCallback(TrainerCallback):
             return
 
         txt_logs = self._trainer.textual_logs  # exposed by HierarchicalGRPOTrainer
-        if not txt_logs["prompt"]:                  # empty until first eval step
+        if not txt_logs["prompt"]:  # empty until first eval step
             return
 
         # pick the accuracy reward head (name may differ in your config)
@@ -221,9 +258,11 @@ class SuccessCachingCallback(TrainerCallback):
             if acc >= self.thr:
                 self.buf.add(prompt)
 
+
 # ---------------------------------------------------------------------------
 #  Replay-buffer callback (fast path – uses training_step outputs) ----------
 # ---------------------------------------------------------------------------
+
 
 class ReplayBufferCallback(TrainerCallback):
     """Callback that pushes high-accuracy prompts into the replay buffer."""
@@ -235,10 +274,10 @@ class ReplayBufferCallback(TrainerCallback):
         accuracy_key: str = "crossword_accuracy_reward",
         threshold: float = 1.0,
     ):
-        self.buf  = replay_buffer
-        self.tok  = tokenizer
-        self.key  = accuracy_key
-        self.thr  = threshold
+        self.buf = replay_buffer
+        self.tok = tokenizer
+        self.key = accuracy_key
+        self.thr = threshold
         print("[ReplayBufferCallback] registered ✔️", flush=True)
 
     def buffer_size(self) -> int:
@@ -265,30 +304,29 @@ class ReplayBufferCallback(TrainerCallback):
                 added += 1
 
         local_rank = args.local_rank if args.local_rank != -1 else 0
-        num_replay = (
-            int(is_replay_flags.sum().item())
-            if is_replay_flags is not None
-            else 0
-        )
+        num_replay = int(is_replay_flags.sum().item()) if is_replay_flags is not None else 0
 
         print(
             f"[ReplayBufferCallback][rank{local_rank}] added {added} new • "
             f"{num_replay}/{len(ids_batch)} replay • buffer = {len(self.buf)}",
             flush=True,
         )
+
+
 # ---------------------------------------------------------------------------
 #  Registry ------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 
 CALLBACKS = {
     "push_to_hub_revision": PushToHubRevisionCallback,
-    "caching_callback"    : SuccessCachingCallback,
+    "caching_callback": SuccessCachingCallback,
     "replay_buffer_callback": ReplayBufferCallback,
 }
 
 # ---------------------------------------------------------------------------
 #  Factory -------------------------------------------------------------------
 # ---------------------------------------------------------------------------
+
 
 def get_callbacks(
     train_cfg,
@@ -319,9 +357,7 @@ def get_callbacks(
 
         elif name == "replay_buffer_callback":
             if replay_buffer is None or tokenizer is None:
-                raise ValueError(
-                    "ReplayBufferCallback requires `replay_buffer` and `tokenizer`."
-                )
+                raise ValueError("ReplayBufferCallback requires `replay_buffer` and `tokenizer`.")
             cb_list.append(cls(replay_buffer=replay_buffer, tokenizer=tokenizer))
 
         else:

@@ -49,15 +49,42 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from src.analysis.io import iter_records_from_file, scan_files_step_only
-from src.analysis.metrics import carpark_success_from_soft_reward, extract_correct
-from src.analysis.utils import (
-    add_carpark_threshold_args,
-    add_common_plot_args,
-    coerce_bool,
-    entropy_from_pass1,
-    step_from_rec_or_path,
-)
+
+try:  # pragma: no cover - optional dependency for tests
+    from src.analysis.io import iter_records_from_file, scan_files_step_only
+except ImportError as _IO_IMPORT_ERROR:  # type: ignore[misc]  # pragma: no cover
+    ITER_RECORDS_FROM_FILE = None  # type: ignore[assignment]
+    SCAN_FILES_STEP_ONLY = None  # type: ignore[assignment]
+else:
+    _IO_IMPORT_ERROR = None
+    ITER_RECORDS_FROM_FILE = iter_records_from_file  # type: ignore[assignment]
+    SCAN_FILES_STEP_ONLY = scan_files_step_only  # type: ignore[assignment]
+try:  # pragma: no cover - optional dependency for tests
+    from src.analysis.metrics import carpark_success_from_soft_reward, extract_correct
+    from src.analysis.utils import (
+        add_carpark_threshold_args,
+        add_common_plot_args,
+        coerce_bool,
+        entropy_from_pass1,
+        step_from_rec_or_path,
+    )
+except ImportError as _UTILS_IMPORT_ERROR:  # type: ignore[misc]  # pragma: no cover
+    CARPARK_SUCCESS_FROM_SOFT_REWARD = None  # type: ignore[assignment]
+    EXTRACT_CORRECT = None  # type: ignore[assignment]
+    ADD_CARPARK_THRESHOLD_ARGS = None  # type: ignore[assignment]
+    ADD_COMMON_PLOT_ARGS = None  # type: ignore[assignment]
+    COERCE_BOOL = None  # type: ignore[assignment]
+    ENTROPY_FROM_PASS1 = None  # type: ignore[assignment]
+    STEP_FROM_REC_OR_PATH = None  # type: ignore[assignment]
+else:
+    _UTILS_IMPORT_ERROR = None
+    CARPARK_SUCCESS_FROM_SOFT_REWARD = carpark_success_from_soft_reward  # type: ignore[assignment]
+    EXTRACT_CORRECT = extract_correct  # type: ignore[assignment]
+    ADD_CARPARK_THRESHOLD_ARGS = add_carpark_threshold_args  # type: ignore[assignment]
+    ADD_COMMON_PLOT_ARGS = add_common_plot_args  # type: ignore[assignment]
+    COERCE_BOOL = coerce_bool  # type: ignore[assignment]
+    ENTROPY_FROM_PASS1 = entropy_from_pass1  # type: ignore[assignment]
+    STEP_FROM_REC_OR_PATH = step_from_rec_or_path  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional dependency
     from src.analysis import rq3_analysis as _rq3_analysis_module
@@ -98,13 +125,19 @@ def pass2_triggered(pass2_data: Dict[str, Any]) -> int:
     """Return 1 iff pass-2 was explicitly triggered via an injected cue."""
     has_cue = coerce_bool(pass2_data.get("has_reconsider_cue"))
     markers = pass2_data.get("reconsider_markers") or []
-    has_injected_cue = ("injected_cue" in markers) if isinstance(
-        markers,
-        (list, tuple),
-    ) else False
+    has_injected_cue = (
+        ("injected_cue" in markers)
+        if isinstance(
+            markers,
+            (list, tuple),
+        )
+        else False
+    )
     return int(has_cue == 1 and has_injected_cue)
 
+
 # -------------------------- Aggregation logic --------------------------
+
 
 def _build_row_for_record(
     path: str,
@@ -119,13 +152,7 @@ def _build_row_for_record(
         return None
 
     # Prefer canonical pass2; fall back to multi-cue variants if needed.
-    pass2_data = (
-        rec.get("pass2")
-        or rec.get("pass2c")
-        or rec.get("pass2b")
-        or rec.get("pass2a")
-        or {}
-    )
+    pass2_data = rec.get("pass2") or rec.get("pass2c") or rec.get("pass2b") or rec.get("pass2a") or {}
 
     step = step_from_rec_or_path(rec, path)
     if carpark_cfg.min_step is not None and step < carpark_cfg.min_step:
@@ -204,9 +231,7 @@ def load_dataframe(
 
     dataframe = pd.DataFrame(rows)
     # drop rows with no entropy or p1 correctness
-    dataframe = dataframe[
-        pd.notna(dataframe["entropy"]) & pd.notna(dataframe["p1_correct"])
-    ]
+    dataframe = dataframe[pd.notna(dataframe["entropy"]) & pd.notna(dataframe["p1_correct"])]
     return dataframe
 
 
@@ -229,17 +254,25 @@ def summarize_for_figure(
         right=False,
         include_lowest=True,
     )
-    grp_top = df_top.groupby("_bin", observed=False).agg(
-        N=("p1_shift", "size"),
-        shift_share=("p1_shift", "mean"),
-    ).reset_index()
+    grp_top = (
+        df_top.groupby("_bin", observed=False)
+        .agg(
+            N=("p1_shift", "size"),
+            shift_share=("p1_shift", "mean"),
+        )
+        .reset_index()
+    )
 
     # ---- Bottom panel: gated reconsideration success vs entropy (group-level) ----
-    grouped = dataframe.copy().groupby("group_id", as_index=False).agg(
-        entropy_mean=("entropy", "mean"),
-        p1_any_correct=("p1_correct", lambda x: int(np.nansum(x) > 0)),
-        p2_any_correct_triggered=("p2_correct", lambda x: int(np.nansum(x) > 0)),
-        any_trigger=("p2_triggered", lambda x: int(np.nansum(x) > 0)),
+    grouped = (
+        dataframe.copy()
+        .groupby("group_id", as_index=False)
+        .agg(
+            entropy_mean=("entropy", "mean"),
+            p1_any_correct=("p1_correct", lambda x: int(np.nansum(x) > 0)),
+            p2_any_correct_triggered=("p2_correct", lambda x: int(np.nansum(x) > 0)),
+            any_trigger=("p2_triggered", lambda x: int(np.nansum(x) > 0)),
+        )
     )
     grouped = grouped[grouped["any_trigger"] == 1].copy()
     grouped["_bin"] = pd.cut(
@@ -280,11 +313,10 @@ def summarize_for_figure(
             },
         )
 
-    df_bot = (
-        grouped.groupby(["_bin", "_stratum"], observed=False)
-        .apply(_agg)
-        .reset_index()
-    )
+    try:
+        df_bot = grouped.groupby(["_bin", "_stratum"], observed=False).apply(_agg, include_groups=False).reset_index()
+    except TypeError:  # pragma: no cover - older pandas
+        df_bot = grouped.groupby(["_bin", "_stratum"], observed=False).apply(_agg).reset_index()
 
     return grp_top, df_bot
 
@@ -356,10 +388,7 @@ def _plot_bottom_panel(
         count_map = dict(
             zip(
                 stratum_frame["_bin"],
-                (
-                    0 if pd.isna(count) else int(count)
-                    for count in stratum_frame["N"]
-                ),
+                (0 if pd.isna(count) else int(count) for count in stratum_frame["N"]),
             ),
         )
 
@@ -463,7 +492,9 @@ def plot_figure(
     fig.savefig(config.out_pdf, dpi=config.dpi, bbox_inches="tight")
     plt.close(fig)
 
+
 # ------------------------------- Main ---------------------------------
+
 
 def _maybe_run_rq3(args: argparse.Namespace) -> None:
     """
@@ -572,8 +603,7 @@ def main() -> None:
         "--run_rq3",
         action="store_true",
         help=(
-            "Also run the core RQ3 analysis (src.analysis.rq3_analysis) on "
-            "--scan_root before building this figure."
+            "Also run the core RQ3 analysis (src.analysis.rq3_analysis) on --scan_root before building this figure."
         ),
     )
 
@@ -606,6 +636,7 @@ def main() -> None:
     grp_top, df_bot = summarize_for_figure(dataframe, bins=bins)
 
     _save_outputs(args, grp_top, df_bot, bins)
+
 
 if __name__ == "__main__":
     main()

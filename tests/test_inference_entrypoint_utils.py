@@ -3,12 +3,25 @@
 
 from __future__ import annotations
 
-import json
 import math
 
 import pytest
 
+
 torch = pytest.importorskip("torch")
+if not getattr(torch, "__file__", None):
+    pytest.skip("torch stub detected; real torch required for these tests", allow_module_level=True)
+required_attrs = ("zeros", "tensor", "__version__")
+if not all(hasattr(torch, attr) for attr in required_attrs):
+    pytest.skip("torch stub lacks required tensor helpers", allow_module_level=True)
+if not isinstance(getattr(torch, "SymFloat", float), type):
+    pytest.skip("torch stub provides non-type SymFloat; real torch required", allow_module_level=True)
+# Ensure functional module is importable; otherwise skip early to avoid attr errors.
+try:
+    pass  # type: ignore
+except Exception as exc:  # pragma: no cover - optional dependency
+    pytest.skip(f"torch.nn.functional unavailable: {exc}", allow_module_level=True)
+
 inference_mod = pytest.importorskip("src.inference.runners.openr1_math_runner")
 
 

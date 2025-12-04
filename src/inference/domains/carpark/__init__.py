@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from . import carpark_board, carpark_cli, carpark_core, carpark_data, carpark_solver
 
+
 __all__ = [
     "carpark_board",
     "carpark_cli",
@@ -16,4 +17,3 @@ __all__ = [
     "carpark_data",
     "carpark_solver",
 ]
-

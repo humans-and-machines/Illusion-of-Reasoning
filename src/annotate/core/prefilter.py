@@ -3,6 +3,7 @@
 import re
 from typing import List, Optional, Tuple
 
+
 RE_THINK = re.compile(r"(?si)<think>(.*?)</think>")
 RE_ANSWER = re.compile(r"(?si)<answer>(.*?)</answer>")
 

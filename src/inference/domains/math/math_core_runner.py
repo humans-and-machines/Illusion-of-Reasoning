@@ -21,8 +21,10 @@ from src.inference.domains.math.math_core import (
     BatchLayout,
     BatchWriteContext,
     ExistingPassState,
+    ExtraPassRowContext,
     MathInferenceConfig,
     MathInferenceContext,
+    MathPassMetaArgs,
     SecondPassInputs,
     TwoPassBatchOutputs,
     _build_first_pass_choice,
@@ -32,40 +34,28 @@ from src.inference.domains.math.math_core import (
     _run_pass2_for_batch,
     logger,
 )
+from src.inference.utils.common import PassOutputs, build_second_pass_cue_strings
+from src.inference.utils.common import canon_math as _canon_math
 from src.inference.utils.common import (
-    PassOutputs,
-    build_extra_pass_results_for_cues,
-    build_second_pass_cue_strings,
     extract_problem_and_answer,
     load_local_json_dataset,
+    locked_file,
     require_datasets,
     scan_existing_pass1_results,
-    locked_file,
 )
-from src.inference.utils.common import canon_math as _canon_math
+from src.inference.utils.generation import build_extra_pass_results_for_cues
 
 
 def _build_extra_pass_results_for_row(
     *,
     row_index: int,
-    prob: str,
-    canon_gold: Optional[str],
-    layout: BatchLayout,
-    context: BatchWriteContext,
-    extra_passes: Optional[List[Tuple[str, PassOutputs]]],
-    pass1_result: Dict[str, Any],
+    row_context: ExtraPassRowContext,
 ) -> Dict[str, Dict[str, Any]]:
     """
     Pack optional multi-cue reconsideration results for a single row.
 
     :param row_index: Index of the row within the batch outputs.
-    :param prob: Normalized problem text for this row.
-    :param canon_gold: Canonicalized gold answer, if available.
-    :param layout: Batch layout relating rows to examples and samples.
-    :param context: Batch write context containing configuration and cues.
-    :param extra_passes: Optional list of ``(cue_str, PassOutputs)`` pairs for
-        additional reconsideration passes.
-    :param pass1_result: Packed pass-1 result dictionary for this row.
+    :param row_context: Inputs needed to pack the extra pass outputs.
     :returns: Mapping from cue tags (for example, ``\"pass2a\"``) to packed
         result dictionaries for each extra pass.
     """
@@ -75,29 +65,31 @@ def _build_extra_pass_results_for_row(
         outputs_extra: PassOutputs,
     ) -> Dict[str, Any]:
         extra_res = _pack_pass_result(
-            problem=prob,
             full_text=outputs_extra.full_texts[row_index],
             ent_think=outputs_extra.ent_think[row_index],
             ent_answer=outputs_extra.ent_answer[row_index],
-            injected_cue=True,
-            canon_gold=canon_gold,
-            prev_output=context.firstpass_choice_text_per_ex[
-                layout.row_to_ex_idx[row_index]
-            ],
-            cue_prefix_str=cue_str_extra,
-            stop_reason_think=outputs_extra.stop_reason_think[row_index],
-            stop_reason_answer=outputs_extra.stop_reason_answer[row_index],
+            meta_args=MathPassMetaArgs(
+                problem=row_context.prob,
+                canon_gold=row_context.canon_gold,
+                injected_cue=True,
+                prev_output=row_context.context.firstpass_choice_text_per_ex[
+                    row_context.layout.row_to_ex_idx[row_index]
+                ],
+                cue_prefix_str=cue_str_extra,
+                stop_reason_think=outputs_extra.stop_reason_think[row_index],
+                stop_reason_answer=outputs_extra.stop_reason_answer[row_index],
+            ),
         )
         extra_res["improved_over_pass1"] = bool(
             extra_res.get("is_correct_pred"),
         ) and not bool(
-            pass1_result.get("is_correct_pred"),
+            row_context.pass1_result.get("is_correct_pred"),
         )
         return extra_res
 
     return build_extra_pass_results_for_cues(
-        two_pass=context.config.two_pass,
-        extra_passes=extra_passes,
+        two_pass=row_context.context.config.two_pass,
+        extra_passes=row_context.extra_passes,
         pack_result_for_extra=_pack_extra_result,
     )
 
@@ -124,33 +116,35 @@ def _write_results_for_batch(
             item = layout.work_items[layout.row_to_ex_idx[row_index]]
 
             pass1_result = _pack_pass_result(
-                problem=item["_normalized_problem"],
                 full_text=full_row,
                 ent_think=outputs.pass1.ent_think[row_index],
                 ent_answer=outputs.pass1.ent_answer[row_index],
-                injected_cue=False,
-                canon_gold=_canon_math(item["_normalized_gold"]),
-                prev_output=None,
-                cue_prefix_str="",
-                stop_reason_think=outputs.pass1.stop_reason_think[row_index],
-                stop_reason_answer=outputs.pass1.stop_reason_answer[row_index],
+                meta_args=MathPassMetaArgs(
+                    problem=item["_normalized_problem"],
+                    canon_gold=_canon_math(item["_normalized_gold"]),
+                    injected_cue=False,
+                    prev_output=None,
+                    cue_prefix_str="",
+                    stop_reason_think=outputs.pass1.stop_reason_think[row_index],
+                    stop_reason_answer=outputs.pass1.stop_reason_answer[row_index],
+                ),
             )
 
             pass2_result = None
             if context.config.two_pass and outputs.pass2 is not None:
                 pass2_result = _pack_pass_result(
-                    problem=item["_normalized_problem"],
                     full_text=outputs.pass2.full_texts[row_index],
                     ent_think=outputs.pass2.ent_think[row_index],
                     ent_answer=outputs.pass2.ent_answer[row_index],
-                    injected_cue=True,
-                    canon_gold=_canon_math(item["_normalized_gold"]),
-                    prev_output=context.firstpass_choice_text_per_ex[
-                        layout.row_to_ex_idx[row_index]
-                    ],
-                    cue_prefix_str=context.cue_strs[-1] if context.cue_strs else "",
-                    stop_reason_think=outputs.pass2.stop_reason_think[row_index],
-                    stop_reason_answer=outputs.pass2.stop_reason_answer[row_index],
+                    meta_args=MathPassMetaArgs(
+                        problem=item["_normalized_problem"],
+                        canon_gold=_canon_math(item["_normalized_gold"]),
+                        injected_cue=True,
+                        prev_output=context.firstpass_choice_text_per_ex[layout.row_to_ex_idx[row_index]],
+                        cue_prefix_str=context.cue_strs[-1] if context.cue_strs else "",
+                        stop_reason_think=outputs.pass2.stop_reason_think[row_index],
+                        stop_reason_answer=outputs.pass2.stop_reason_answer[row_index],
+                    ),
                 )
                 pass2_result["improved_over_pass1"] = bool(
                     pass2_result.get("is_correct_pred"),
@@ -160,20 +154,18 @@ def _write_results_for_batch(
 
             extra_pass_results: Dict[str, Dict[str, Any]] = _build_extra_pass_results_for_row(
                 row_index=row_index,
-                prob=item["_normalized_problem"],
-                canon_gold=_canon_math(item["_normalized_gold"]),
-                layout=layout,
-                context=context,
-                extra_passes=extra_passes,
-                pass1_result=pass1_result,
+                row_context=ExtraPassRowContext(
+                    prob=item["_normalized_problem"],
+                    canon_gold=_canon_math(item["_normalized_gold"]),
+                    layout=layout,
+                    context=context,
+                    extra_passes=extra_passes,
+                    pass1_result=pass1_result,
+                ),
             )
 
             # For convenience, expose the main pass2 as pass2c when we have ≥3 cues.
-            if (
-                context.config.two_pass
-                and outputs.pass2 is not None
-                and len(context.cue_strs) >= 3
-            ):
+            if context.config.two_pass and outputs.pass2 is not None and len(context.cue_strs) >= 3:
                 extra_pass_results.setdefault("pass2c", pass2_result)
 
             row_dict: Dict[str, Any] = {
@@ -197,9 +189,7 @@ def _write_results_for_batch(
                 item["_normalized_problem"],
                 set(),
             ).add(sample_idx)
-            context.existing_state.existing_pass1[
-                (item["_normalized_problem"], sample_idx)
-            ] = pass1_result["output"]
+            context.existing_state.existing_pass1[(item["_normalized_problem"], sample_idx)] = pass1_result["output"]
 
     filled = sum(len(item["_todo_samples"]) for item in layout.work_items)
     logger.info(
@@ -207,6 +197,13 @@ def _write_results_for_batch(
         filled,
         len(layout.work_items),
     )
+
+
+def _select_examples(examples, start: int, end: int):
+    """Return a slice of examples even when given a plain list."""
+    if hasattr(examples, "select"):
+        return examples.select(range(start, end))
+    return list(examples[start:end])
 
 
 def _compute_second_pass_outputs(
@@ -391,7 +388,7 @@ def run_inference_on_split(
             start_idx,
             end_idx - 1,
         )
-        slice_ds = examples.select(range(start_idx, end_idx))
+        slice_ds = _select_examples(examples, start_idx, end_idx)
         _run_inference_batch(
             slice_ds=slice_ds,
             context=context,
@@ -431,6 +428,11 @@ def load_math500(cache_dir: str, split: str, seed: int, dataset_path: Optional[s
         try:
             logger.info("Trying remote MATH-500 candidate: %s", repo)
             ds_full = load_dataset(repo, split=split, cache_dir=cache_dir)
+            # Some test stubs return plain lists; accept them directly.
+            if not hasattr(ds_full, "column_names"):
+                logger.info("Loaded MATH-500 from %s | N=%d", repo, len(ds_full))
+                return ds_full
+
             colnames = set(ds_full.column_names)
 
             def _norm(example):

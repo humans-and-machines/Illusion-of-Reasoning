@@ -24,49 +24,43 @@ Everything else is as before (step caps, robust correctness, per-temp CSV+plot).
 """
 
 import argparse
+import concurrent.futures as cf
+import importlib
 import os
 import sys
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
-import concurrent.futures as cf
-import importlib
 import numpy as np
 import pandas as pd
 from numpy.linalg import LinAlgError
 
 from src.analysis.core import discover_roots_for_temp_args
-from src.analysis.io import scan_files_step_only, iter_records_from_file
+from src.analysis.io import iter_records_from_file, scan_files_step_only
 from src.analysis.labels import aha_gpt_for_rec
-from src.analysis.metrics import (
-    extract_correct,
-    make_carpark_success_fn,
-    shift_conditional_counts,
-)
+from src.analysis.metrics import extract_correct, make_carpark_success_fn, shift_conditional_counts
 from src.analysis.temperature_effects_cli import build_temperature_effects_arg_parser
-from src.analysis.utils import (
-    coerce_float,
-    extract_pass1_and_step,
-    get_problem_id as _get_problem_id,
-    gpt_keys_for_mode,
-    nat_step_from_path,
-    step_from_record_if_within_bounds,
-)
+from src.analysis.utils import coerce_float, extract_pass1_and_step
+from src.analysis.utils import get_problem_id as _get_problem_id
+from src.analysis.utils import gpt_keys_for_mode, nat_step_from_path, step_from_record_if_within_bounds
+
 
 # Matplotlib + global styling (lazy import to avoid hard dependency at import time)
 mpl = importlib.import_module("matplotlib")
 plt = importlib.import_module("matplotlib.pyplot")
-mpl.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "Times", "Nimbus Roman No9 L"],
-    "font.size": 14,
-    "axes.titlesize": 14,
-    "axes.labelsize": 14,
-    "legend.fontsize": 14,
-    "xtick.labelsize": 14,
-    "ytick.labelsize": 14,
-    "pdf.fonttype": 42,   # embed TrueType
-    "ps.fonttype": 42,
-})
+mpl.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["Times New Roman", "Times", "Nimbus Roman No9 L"],
+        "font.size": 14,
+        "axes.titlesize": 14,
+        "axes.labelsize": 14,
+        "legend.fontsize": 14,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "pdf.fonttype": 42,  # embed TrueType
+        "ps.fonttype": 42,
+    }
+)
 
 # ---------- constants ----------
 
@@ -110,6 +104,7 @@ def _extract_soft_reward(record: Dict[str, Any], pass1_data: Dict[str, Any]) -> 
     Extract a soft_reward value from either the record or the pass-1 object.
     """
     return coerce_float(record.get("soft_reward", pass1_data.get("soft_reward")))
+
 
 # ---------- stats ----------
 
@@ -163,9 +158,7 @@ def _average_marginal_effect_for_shift(res) -> Tuple[float, float]:
     try:
         shift_index = exog_names.index("shift")
     except ValueError:
-        shift_index = max(
-            idx for idx, name in enumerate(exog_names) if "shift" in name
-        )
+        shift_index = max(idx for idx, name in enumerate(exog_names) if "shift" in name)
 
     design_matrix = res.model.exog.copy()
     params_vector = res.params.to_numpy()
@@ -188,6 +181,7 @@ def ame_glm_temp(sub_all_temps: pd.DataFrame) -> Tuple[float, float]:
     res = _fit_shift_glm(glm_df)
     return _average_marginal_effect_for_shift(res)
 
+
 # ---------- PARALLEL WORKER ----------
 
 
@@ -195,6 +189,7 @@ class ParallelConfig(NamedTuple):
     """
     Configuration for parallel loading and gating of records.
     """
+
     gpt_keys: List[str]
     gpt_subset_native: bool
     min_step: Optional[int]
@@ -315,11 +310,7 @@ def load_rows_parallel(
             columns=["domain", "problem_id", "step", "temp", "correct", "shift"],
         )
 
-    exec_cls = (
-        cf.ProcessPoolExecutor
-        if parallel_cfg.parallel_mode == "process"
-        else cf.ThreadPoolExecutor
-    )
+    exec_cls = cf.ProcessPoolExecutor if parallel_cfg.parallel_mode == "process" else cf.ThreadPoolExecutor
     rows_all: List[Dict[str, Any]] = []
     chunksize = parallel_cfg.chunksize
     workers = parallel_cfg.workers
@@ -337,6 +328,7 @@ def load_rows_parallel(
                 rows_all.extend(res)
     return pd.DataFrame(rows_all)
 
+
 # ---------- NEW: per-temperature raw-effect computation & plotting ----------
 
 
@@ -347,17 +339,12 @@ def per_temp_delta(df_temp_dom: pd.DataFrame) -> Tuple[float, float, int, int]:
     _, _, prob_shift, prob_no_shift = shift_conditional_counts(df_temp_dom)
     n_shift = int((df_temp_dom["shift"] == 1).sum())
     n_no_shift = int((df_temp_dom["shift"] == 0).sum())
-    if (
-        not (np.isfinite(prob_shift) and np.isfinite(prob_no_shift))
-        or n_shift == 0
-        or n_no_shift == 0
-    ):
+    if not (np.isfinite(prob_shift) and np.isfinite(prob_no_shift)) or n_shift == 0 or n_no_shift == 0:
         return (np.nan, np.nan, n_shift, n_no_shift)
     delta = (prob_shift - prob_no_shift) * 100.0
     se_pp = 100.0 * float(
         np.sqrt(
-            (prob_shift * (1 - prob_shift)) / n_shift
-            + (prob_no_shift * (1 - prob_no_shift)) / n_no_shift,
+            (prob_shift * (1 - prob_shift)) / n_shift + (prob_no_shift * (1 - prob_no_shift)) / n_no_shift,
         ),
     )
     return (delta, se_pp, n_shift, n_no_shift)
@@ -367,6 +354,7 @@ class PlotConfig(NamedTuple):
     """
     Configuration for plotting raw effects vs temperature.
     """
+
     pertemp_df: pd.DataFrame
     out_png: str
     out_pdf: Optional[str]
@@ -381,6 +369,12 @@ def make_plot(config: PlotConfig) -> None:
     Plot raw effects vs temperature for each domain.
     """
     fig, axis = plt.subplots(figsize=(5, 3), constrained_layout=True)
+    if isinstance(axis, (list, tuple, np.ndarray)):
+        axis = axis[0]
+
+    # Lightweight matplotlib stubs used in tests may lack errorbar; fall back to plot.
+    if not hasattr(axis, "errorbar"):
+        axis.errorbar = getattr(axis, "plot", lambda *a, **k: None)  # type: ignore[attr-defined]
 
     # Series order; empty ones are skipped automatically
     series = [
@@ -390,16 +384,10 @@ def make_plot(config: PlotConfig) -> None:
         ("Carpark", "C3", "o"),
     ]
     for dom_key, color, marker in series:
-        sub = config.pertemp_df[
-            config.pertemp_df["domain_key"] == dom_key
-        ].copy()
+        sub = config.pertemp_df[config.pertemp_df["domain_key"] == dom_key].copy()
         if sub.empty:
             continue
-        sub = (
-            sub.set_index("temp")
-            .reindex(sorted(set(config.x_temps_sorted)))
-            .reset_index()
-        )
+        sub = sub.set_index("temp").reindex(sorted(set(config.x_temps_sorted))).reset_index()
         axis.errorbar(
             sub["temp"],
             sub["delta_pp"],
@@ -436,11 +424,14 @@ def make_plot(config: PlotConfig) -> None:
     )
     axis.grid(True, axis="y", alpha=0.25)
 
-    fig.subplots_adjust(bottom=0.28)
+    adjust = getattr(fig, "subplots_adjust", None)
+    if callable(adjust):
+        adjust(bottom=0.28)
     fig.savefig(config.out_png, dpi=config.dpi, bbox_inches="tight")
     if config.out_pdf:
         fig.savefig(config.out_pdf, dpi=config.dpi, bbox_inches="tight")
     plt.close(fig)
+
 
 # ---------- main ----------
 
@@ -458,13 +449,7 @@ def _compute_out_dir(args: argparse.Namespace) -> str:
     """
     if args.out_dir:
         return args.out_dir
-    guess = args.scan_root or (
-        args.crossword_tpl
-        or args.math_tpl
-        or args.math2_tpl
-        or args.carpark_tpl
-        or "."
-    )
+    guess = args.scan_root or (args.crossword_tpl or args.math_tpl or args.math2_tpl or args.carpark_tpl or ".")
     return os.path.join(guess if isinstance(guess, str) else ".", "temperature_effects")
 
 
@@ -515,9 +500,7 @@ def _discover_files_for_temp(
     """
     files_by_domain: Dict[str, List[str]] = {}
     discover_keys = (
-        ["Crossword", "Math", "Math2", "Carpark"]
-        if args.include_math2
-        else ["Crossword", "Math", "Carpark"]
+        ["Crossword", "Math", "Math2", "Carpark"] if args.include_math2 else ["Crossword", "Math", "Carpark"]
     )
     for dom in discover_keys:
         path = domain_map.get(dom)
@@ -580,8 +563,7 @@ def _log_loaded_rows(df_temp: pd.DataFrame, temp_value: float) -> None:
         n_dom = int((df_temp["domain"] == dom_show).sum())
         summary_parts.append(f"{dom_show}={n_dom}")
     print(
-        f"[info] loaded rows @ T={temp_value}: "
-        + ", ".join(summary_parts),
+        f"[info] loaded rows @ T={temp_value}: " + ", ".join(summary_parts),
     )
 
 
@@ -757,10 +739,7 @@ def _write_outputs(
     tab = _summarize_domains(domain_frames, label_map)
 
     slug = f"{args.dataset_name}__{args.model_name}".replace(" ", "_")
-    out_dir_final = (
-        args.out_dir
-        or os.path.join(args.scan_root or ".", "temperature_effects")
-    )
+    out_dir_final = args.out_dir or os.path.join(args.scan_root or ".", "temperature_effects")
     os.makedirs(out_dir_final, exist_ok=True)
     out_csv = os.path.join(out_dir_final, f"temperature_shift_table__{slug}.csv")
     _emit_domain_table(tab, out_csv)
@@ -769,8 +748,12 @@ def _write_outputs(
         return
 
     pertemp = pd.DataFrame(pertemp_rows)
-    pertemp["domain"] = pertemp["domain_key"].map(label_map).fillna(
-        pertemp["domain_key"],
+    pertemp["domain"] = (
+        pertemp["domain_key"]
+        .map(label_map)
+        .fillna(
+            pertemp["domain_key"],
+        )
     )
     pertemp_csv = os.path.join(
         out_dir_final,
@@ -798,10 +781,7 @@ def _write_outputs(
             pertemp_df=pertemp,
             out_png=png_path,
             out_pdf=pdf_path,
-            title=(
-                args.plot_title
-                or f"Raw effect vs temperature — {args.model_name}"
-            ),
+            title=(args.plot_title or f"Raw effect vs temperature — {args.model_name}"),
             x_temps_sorted=x_temps_sorted,
             label_map=label_map,
             dpi=args.dpi,
@@ -811,12 +791,16 @@ def _write_outputs(
     print(f"Saved plot PDF -> {pdf_path}")
 
 
-def main() -> None:
+def main(argv: Optional[List[str]] = None) -> None:
     """
     Entry point: parse CLI args, run analysis, and emit outputs.
     """
     parser = _build_arg_parser()
-    args = parser.parse_args()
+    parsed_args = argv if argv is not None else (sys.argv[1:] if hasattr(sys, "argv") else None)
+    try:
+        args = parser.parse_args(args=parsed_args)
+    except TypeError:
+        args = parser.parse_args()
 
     out_dir = _compute_out_dir(args)
     os.makedirs(out_dir, exist_ok=True)
@@ -824,26 +808,18 @@ def main() -> None:
     gpt_subset_native, gpt_keys = _compute_gpt_keys(args)
 
     # Step cap (hard cap 1000)
-    max_step_eff = (
-        HARD_MAX_STEP
-        if args.max_step is None
-        else min(args.max_step, HARD_MAX_STEP)
-    )
+    max_step_eff = HARD_MAX_STEP if args.max_step is None else min(args.max_step, HARD_MAX_STEP)
     if args.max_step is None or args.max_step > HARD_MAX_STEP:
         print(
-            f"[info] Capping max_step to {max_step_eff} "
-            f"(hard cap = {HARD_MAX_STEP}).",
+            f"[info] Capping max_step to {max_step_eff} (hard cap = {HARD_MAX_STEP}).",
         )
 
-    carpark_op = args.carpark_success_op
-    carpark_thr = args.carpark_soft_threshold
     skip_set = {substr.lower() for substr in args.skip_substr} | SKIP_DIR_DEFAULT
 
     roots_by_temp = _discover_roots(args, skip_set)
     if not roots_by_temp:
         sys.exit(
-            "No usable folders discovered. "
-            "Check --scan_root or templates + temps.",
+            "No usable folders discovered. Check --scan_root or templates + temps.",
         )
 
     ctx = AnalysisContext(
@@ -851,8 +827,8 @@ def main() -> None:
         gpt_subset_native=gpt_subset_native,
         gpt_keys=gpt_keys,
         max_step_eff=max_step_eff,
-        carpark_op=carpark_op,
-        carpark_thr=carpark_thr,
+        carpark_op=args.carpark_success_op,
+        carpark_thr=args.carpark_soft_threshold,
         skip_set=skip_set,
     )
     domain_frames, pertemp_rows, x_temps_sorted = _collect_domain_and_pertemp(

@@ -99,8 +99,7 @@ def build_argparser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         description=(
-            "RQ3: Analyze how uncertainty and forced reconsideration interact "
-            "with accuracy (H3 + cue-variant export)."
+            "RQ3: Analyze how uncertainty and forced reconsideration interact with accuracy (H3 + cue-variant export)."
         ),
     )
     parser.add_argument(
@@ -131,10 +130,7 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--export_cues",
         action="store_true",
-        help=(
-            "Export a flat CSV with one row per (sample, cue_variant) using "
-            "export_cue_variants."
-        ),
+        help=("Export a flat CSV with one row per (sample, cue_variant) using export_cue_variants."),
     )
     parser.add_argument(
         "--passes",

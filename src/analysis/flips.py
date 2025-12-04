@@ -66,20 +66,12 @@ def main() -> None:
         description="List problems that flip from wrong at init_step to correct at final_step"
     )
     parser.add_argument(
-        "--results_root", required=True,
-        help="Root directory of your GRPO outputs (contains 'analysis/' subfolder)"
+        "--results_root", required=True, help="Root directory of your GRPO outputs (contains 'analysis/' subfolder)"
     )
+    parser.add_argument("--init_step", type=int, default=50, help="First step to check (default: 50)")
+    parser.add_argument("--final_step", type=int, default=850, help="Final step to check (default: 850)")
     parser.add_argument(
-        "--init_step", type=int, default=50,
-        help="First step to check (default: 50)"
-    )
-    parser.add_argument(
-        "--final_step", type=int, default=850,
-        help="Final step to check (default: 850)"
-    )
-    parser.add_argument(
-        "--output", default="flips.csv",
-        help="CSV file to write the flip examples (default: flips.csv)"
+        "--output", default="flips.csv", help="CSV file to write the flip examples (default: flips.csv)"
     )
     args = parser.parse_args()
 
@@ -94,20 +86,21 @@ def main() -> None:
         final_step=args.final_step,
     )
     total_flips = flips.shape[0]
-    print(f"Found {total_flips} flips out of {total_candidates} trajectories "
-          f"(wrong@{args.init_step} → correct@{args.final_step})\n")
+    print(
+        f"Found {total_flips} flips out of {total_candidates} trajectories "
+        f"(wrong@{args.init_step} → correct@{args.final_step})\n"
+    )
 
     if total_flips == 0:
         return
 
     # 5) select and rename columns for clarity
-    cols = [
-        "output", "entropy", "has_recheck", "reason"
+    cols = ["output", "entropy", "has_recheck", "reason"]
+    out = flips.reset_index()[
+        ["problem", "sample_idx"]
+        + [f"{col}_{args.init_step}" for col in cols]
+        + [f"{col}_{args.final_step}" for col in cols]
     ]
-    out = flips.reset_index()[[
-        "problem","sample_idx"
-    ] + [f"{col}_{args.init_step}" for col in cols]
-      + [f"{col}_{args.final_step}" for col in cols]]
 
     # print the first few
     pd.set_option("display.max_colwidth", 50)
@@ -116,6 +109,7 @@ def main() -> None:
     # 6) save to CSV
     out.to_csv(args.output, index=False)
     print(f"\nSaved full flip list ({total_flips} rows) to {args.output}")
+
 
 if __name__ == "__main__":
     main()

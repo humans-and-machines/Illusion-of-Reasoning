@@ -7,16 +7,12 @@ Shared helpers for discovering 7B/8B roots based on model/domain/temp tokens.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 from typing import Dict, List
 
-from src.analysis.common.model_utils import (
-    MODEL_LABELS,
-    detect_domain,
-    detect_model_key,
-    detect_temperature,
-)
+from src.analysis.common.model_utils import MODEL_LABELS, detect_domain, detect_model_key, detect_temperature
+
 
 @dataclass(frozen=True)
 class DiscoveryConfig:
@@ -43,9 +39,7 @@ def _print_discovered_roots(mapping: Dict[str, Dict[float, Dict[str, str]]]) -> 
         label = MODEL_LABELS.get(model_key, model_key)
         print(f"  [{label}]")
         for temperature_value in sorted(temps_map):
-            print(
-                f"    temp {temperature_value}: {list(temps_map[temperature_value].keys())}"
-            )
+            print(f"    temp {temperature_value}: {list(temps_map[temperature_value].keys())}")
 
 
 def discover_roots_7b8b(

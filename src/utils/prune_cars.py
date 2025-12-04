@@ -54,6 +54,7 @@ from _prune_common import (
 # Utility: file + JSON helpers
 # ---------------------------
 
+
 def should_consider_filename(filename: str, globs: List[str]) -> bool:
     """Return True if the filename should be considered for pruning."""
     if not globs:
@@ -94,6 +95,7 @@ class CarparkOptions:
 # ---------------------------
 # Core prune routines
 # ---------------------------
+
 
 def prune_file_carpark_by_idx(
     path: str,
@@ -154,10 +156,7 @@ def main() -> None:
         "--carpark-only",
         action="store_true",
         default=True,
-        help=(
-            "Touch only files whose path contains any --only-path-contains "
-            "substrings (default)."
-        ),
+        help=("Touch only files whose path contains any --only-path-contains substrings (default)."),
     )
 
     # Carpark controls

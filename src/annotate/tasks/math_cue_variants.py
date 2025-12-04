@@ -31,16 +31,16 @@ import os
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from ...common.jsonl_utils import iter_jsonl_lines
+
 
 def _load_records(path: str) -> List[Dict]:
     """Load a JSONL file into a list of Python dicts."""
     records: List[Dict] = []
     with open(path, "r", encoding="utf-8") as file_handle:
-        for line in file_handle:
-            line = line.strip()
-            if not line:
-                continue
-            records.append(json.loads(line))
+        for obj in iter_jsonl_lines(file_handle, strict=True):
+            if isinstance(obj, dict):
+                records.append(obj)
     return records
 
 
@@ -86,12 +86,7 @@ def _entropy_quartile(
     quartile_3: Optional[float],
 ) -> Optional[int]:
     """Map an entropy value to quartile index 1..4, or None if undefined."""
-    if (
-        entropy is None
-        or quartile_1 is None
-        or quartile_2 is None
-        or quartile_3 is None
-    ):
+    if entropy is None or quartile_1 is None or quartile_2 is None or quartile_3 is None:
         return None
 
     value = float(entropy)

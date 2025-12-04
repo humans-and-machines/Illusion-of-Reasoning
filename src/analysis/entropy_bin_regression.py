@@ -1,41 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Entropy bin regression (per-domain GLM + optional plots/tables).
 
-"""
- 
- # pylint: disable=too-many-lines
-entropy_bin_regression.py
-─────────────────────────
-Builds a per-sample dataset with:
-  domain, problem, step, sample,
-  shift_at_1, correct_at_1, entropy_at_1,
-  entropy_bin_at_1, entropy_bin_label,
-  correct_at_2
+Builds rows with domain, problem, step, sample, shift_at_1, correct_at_1,
+entropy_at_1, entropy_bin_at_1, entropy_bin_label, correct_at_2.
 
-Per-domain regressions (run twice per domain):
-  correct_at_2 ~ correct_at_1 + C(entropy_bin_label) + C(problem)
-(GLM Binomial logit). Cluster-robust SEs by problem; fallback to HC1 if needed.
+Per-domain regressions (run twice): correct_at_2 ~ correct_at_1 +
+  C(entropy_bin_label) + C(problem). Uses cluster-robust SEs; HC1 fallback.
 
-Binning options:
-  • --fixed_bins "0,0.75,1.25,2,inf"   (takes precedence)
-  • --binning {uniform,quantile} with --bins K
-  • --equal_n_bins                     (rank-based equal-count bins;
-                                         exact quartiles when --bins 4)
-      • --bin_scope {global,domain}    (equal N overall vs within each domain)
-      • --tie_break {stable,random}    (stable = deterministic; random = tiny jitter)
-      • --random_seed 42               (for random tie-break)
+Binning options: --fixed_bins takes precedence; otherwise --binning
+  {uniform,quantile} with --bins K, or --equal_n_bins with bin_scope, tie_break,
+  random_seed controls.
 
-Entropy modes at pass-1 (controls entropy_at_1):
-  • sum       : entropy_think + entropy_answer
-                (preferred when parts exist; else fallback to 'entropy')
-  • think     : entropy_think (fallback to 'entropy')
-  • answer    : entropy_answer (fallback to 'entropy')
-  • combined  : 'entropy' field as-is (fallback to avg(parts) if helpful)
+Entropy modes: sum (think+answer), think, answer, combined.
 
-Outputs (per domain & per entropy mode):
-  rows__<slug>__<domain>__<mode>.csv
-  model_{none|false}__<slug>__<domain>__<mode>.txt
-  bin_contrasts__{none|false}__<slug>__<domain>__<mode>.csv
+Outputs per domain/mode: rows__<slug>__<domain>__<mode>.csv,
+  model_{none|false}__<slug>__<domain>__<mode>.txt,
+  bin_contrasts__{none|false}__<slug>__<domain>__<mode>.csv,
   bin_contrasts__<slug>__<domain>__<mode>.{png,pdf}
 """
 
@@ -50,18 +31,36 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 
+
 try:
     import statsmodels.api as sm
     import statsmodels.formula.api as smf
-except (ImportError, ModuleNotFoundError) as error:
-    sys.exit("statsmodels is required: pip install statsmodels\n" + str(error))
-from statsmodels.tools.sm_exceptions import PerfectSeparationError
+    from statsmodels.tools.sm_exceptions import PerfectSeparationError
+except (ImportError, ModuleNotFoundError):
+    # Optional dependency; functions that need statsmodels will raise when called.
+    sm = None  # type: ignore[assignment]
+    smf = None  # type: ignore[assignment]
+    PerfectSeparationError = Exception  # type: ignore[assignment]
 
-from src.analysis.io import iter_records_from_file, scan_files_step_only
-from src.analysis.metrics import (
-    carpark_success_from_soft_reward,
-    extract_correct,
-)
+try:
+    import src.analysis.io as _io_mod
+
+    scan_files_step_only = getattr(_io_mod, "scan_files_step_only")
+    iter_records_from_file = getattr(_io_mod, "iter_records_from_file")
+    if scan_files_step_only is None or iter_records_from_file is None:
+        raise AttributeError("missing io helpers")
+except (ImportError, AttributeError):  # pragma: no cover - tests stub this
+
+    def scan_files_step_only(*_args, **_kwargs):
+        """Stub scan_files_step_only used when src.analysis.io is unavailable."""
+        raise ImportError("scan_files_step_only unavailable")
+
+    def iter_records_from_file(*_args, **_kwargs):
+        """Stub iter_records_from_file used when src.analysis.io is unavailable."""
+        return []
+
+
+from src.analysis.metrics import carpark_success_from_soft_reward, extract_correct
 from src.analysis.utils import (
     add_common_plot_args,
     coerce_bool,
@@ -102,6 +101,7 @@ class RowBuildConfig:
     min_step: Optional[int]
     max_step: Optional[int]
 
+
 # ------------------------------- Path & step helpers -------------------------------
 
 SKIP_DIR_DEFAULT = {"compare-1shot", "1shot", "hf_cache", "__pycache__"}
@@ -115,6 +115,7 @@ def scan_files(root: str, split_substr: Optional[str], skip_substrings: Set[str]
 
 # ------------------------------- Coercion utils -------------------------------
 
+
 def both_get(pass_dict: Dict[str, Any], rec: Dict[str, Any], key: str, default=None):
     """Return a value from the pass dict if present, otherwise fall back to rec."""
     value = pass_dict.get(key, None)
@@ -127,7 +128,9 @@ def parse_comma_list(text: Optional[str]) -> List[str]:
         return []
     return [token.strip() for token in text.split(",") if token.strip()]
 
+
 # ------------------------------- Domain / record parsing -------------------------------
+
 
 def domain_from_path(path: str) -> str:
     """Return a coarse domain label inferred from a file path."""
@@ -137,6 +140,7 @@ def domain_from_path(path: str) -> str:
     if ("carpark" in lower_path) or ("rush" in lower_path) or ("parking" in lower_path):
         return "Carpark"
     return "Math"
+
 
 def get_problem(rec: Dict[str, Any]) -> Optional[str]:
     """Return a stable problem identifier string for logging/aggregation."""
@@ -167,7 +171,9 @@ def get_sample(rec: Dict[str, Any]) -> Optional[str]:
     except (TypeError, ValueError):
         return f"s{str(sample_index)}"
 
+
 # ------------------------------- Entropy at pass-1 -------------------------------
+
 
 def entropy_from_pass1(pass_one: Dict[str, Any], mode: str = "sum") -> Optional[float]:
     """
@@ -183,35 +189,22 @@ def entropy_from_pass1(pass_one: Dict[str, Any], mode: str = "sum") -> Optional[
 
     entropy_estimate = entropy_combined_value
     if mode == "sum":
-        parts = [
-            value
-            for value in (entropy_think_value, entropy_answer_value)
-            if value is not None
-        ]
-        if parts:
-            entropy_estimate = float(sum(parts))
+        parts = [value for value in (entropy_think_value, entropy_answer_value) if value is not None]
+        entropy_estimate = float(sum(parts)) if parts else entropy_combined_value
     elif mode == "think":
-        entropy_estimate = (
-            entropy_think_value if entropy_think_value is not None else entropy_combined_value
-        )
+        entropy_estimate = entropy_think_value if entropy_think_value is not None else entropy_combined_value
     elif mode == "answer":
-        entropy_estimate = (
-            entropy_answer_value
-            if entropy_answer_value is not None
-            else entropy_combined_value
-        )
+        entropy_estimate = entropy_answer_value if entropy_answer_value is not None else entropy_combined_value
     elif mode == "combined":
         if entropy_combined_value is not None:
             entropy_estimate = entropy_combined_value
         elif entropy_think_value is not None and entropy_answer_value is not None:
             entropy_estimate = 0.5 * (entropy_think_value + entropy_answer_value)
         else:
-            entropy_estimate = (
-                entropy_think_value
-                if entropy_think_value is not None
-                else entropy_answer_value
-            )
+            entropy_estimate = entropy_think_value if entropy_think_value is not None else entropy_answer_value
+
     return entropy_estimate
+
 
 # shift_at_1 (canonical by default)
 def compute_shift_at_1(
@@ -232,7 +225,9 @@ def compute_shift_at_1(
         return None
     return 1 if any(observed_flags) else 0
 
+
 # ------------------------------- Build rows (no binning yet) -------------------------------
+
 
 def _build_row_for_record(
     record: Dict[str, Any],
@@ -325,7 +320,9 @@ def build_rows(
     model_df["correct_at_2"] = model_df["correct_at_2"].astype(int)
     return model_df
 
+
 # ------------------------------- Binning --------------------------------------
+
 
 def parse_fixed_bins(bin_text: Optional[str]) -> Optional[List[float]]:
     """Return explicit bin edges parsed from the CLI string or None when unset."""
@@ -345,6 +342,7 @@ def parse_fixed_bins(bin_text: Optional[str]) -> Optional[List[float]]:
         raise SystemExit("--fixed_bins must provide at least two edges (e.g., 0,1,2,inf).")
     return out
 
+
 def compute_edges(
     values: np.ndarray,
     binning: str,
@@ -355,7 +353,10 @@ def compute_edges(
     if fixed is not None:
         return fixed
     if binning == "uniform":
-        low_edge, high_edge = float(np.nanmin(values)), float(np.nanmax(values))
+        finite_values = values[np.isfinite(values)]
+        if finite_values.size == 0:
+            raise SystemExit("Uniform binning requires at least one finite value.")
+        low_edge, high_edge = float(np.nanmin(finite_values)), float(np.nanmax(finite_values))
         if not np.isfinite(low_edge) or not np.isfinite(high_edge):
             raise SystemExit("Non-finite min/max for uniform bins.")
         if high_edge <= low_edge:
@@ -371,6 +372,7 @@ def compute_edges(
         return edges
     raise SystemExit(f"Unknown --binning '{binning}'.")
 
+
 def label_interval(interval):
     """Return a string label for a pandas Interval or propagate NaN."""
     if pd.isna(interval):
@@ -381,6 +383,7 @@ def label_interval(interval):
         return f"[{interval.left:g},{interval.right:g})"
     except AttributeError:
         return np.nan
+
 
 def apply_binning_cut(
     data_frame: pd.DataFrame,
@@ -406,7 +409,9 @@ def apply_binning_cut(
     )
     return data_frame
 
+
 # -------- Equal-N (rank-based) binning with tie-breaking (global or per-domain) --------
+
 
 def _rank_based_bins(series_values: pd.Series, bins: int, tie_break: str, seed: int) -> np.ndarray:
     """Assign rank-based bin ids with optional jitter tie-breaking."""
@@ -432,6 +437,7 @@ def _rank_based_bins(series_values: pd.Series, bins: int, tie_break: str, seed: 
     out[mask.values] = idx
     return out
 
+
 def apply_equal_n_binning(
     data_frame: pd.DataFrame,
     bins: int,
@@ -441,6 +447,7 @@ def apply_equal_n_binning(
 ) -> pd.DataFrame:
     """Assign equal-count bins either globally or per-domain with tie-breaking."""
     data_frame = data_frame.copy()
+
     def _apply(sub: pd.DataFrame) -> pd.DataFrame:
         idx = _rank_based_bins(sub["entropy_at_1"], bins=bins, tie_break=tie_break, seed=seed)
         sub = sub.copy()
@@ -462,6 +469,7 @@ def apply_equal_n_binning(
         sub["entropy_bin_at_1"] = pd.Categorical(id_lookup, dtype=id_cat)
         sub.drop(columns=["_bin_id"], inplace=True)
         return sub
+
     if scope == "domain":
         parts = []
         for _, group_df in data_frame.groupby("domain"):
@@ -471,23 +479,20 @@ def apply_equal_n_binning(
         data_frame = _apply(data_frame)
     return data_frame
 
+
 # ------------------------------- Modeling helpers -------------------------------
+
 
 def prune_subset(sub: pd.DataFrame, min_rows_per_problem: int = 2) -> pd.DataFrame:
     """Remove problems lacking sufficient rows or outcome variation."""
     if sub.empty:
         return sub
-    grouped = (
-        sub.groupby("problem")["correct_at_2"]
-        .agg(n="size", nunq="nunique")
-        .reset_index()
-    )
+    grouped = sub.groupby("problem")["correct_at_2"].agg(n="size", nunq="nunique").reset_index()
     keep = grouped[(grouped["n"] >= min_rows_per_problem) & (grouped["nunq"] > 1)]["problem"]
     dropped = len(grouped) - len(keep)
     if dropped > 0:
         print(
-            f"[prune] Dropping {dropped} problem(s) with <{min_rows_per_problem} "
-            "rows or no outcome variation.",
+            f"[prune] Dropping {dropped} problem(s) with <{min_rows_per_problem} rows or no outcome variation.",
         )
     sub = sub[sub["problem"].isin(keep)].copy()
     if "entropy_bin_label" in sub.columns and hasattr(sub["entropy_bin_label"], "cat"):
@@ -501,6 +506,8 @@ def fit_clustered_glm(
     cluster_col: str,
 ):
     """Fit a GLM with cluster-robust SEs and fallback to HC1 if needed."""
+    if sm is None or smf is None:
+        raise ImportError("statsmodels is required: pip install statsmodels")
     model = smf.glm(formula=formula, data=data_frame, family=sm.families.Binomial())
     try:
         result = model.fit(cov_type="cluster", cov_kwds={"groups": data_frame[cluster_col]})
@@ -513,6 +520,7 @@ def fit_clustered_glm(
         result = model.fit(cov_type="HC1")
         covariance_used = "HC1"
     return result, result.summary().as_text(), covariance_used
+
 
 def compute_bin_ame(
     result,
@@ -540,47 +548,60 @@ def compute_bin_ame(
         out_rows.append({"bin": bin_label, "ame": ame, "n_rows": int(len(cur))})
     return pd.DataFrame(out_rows)
 
+
 # ------------------------------- Plotting -------------------------------
+
 
 def plot_bin_contrasts(plot_inputs: BinContrastPlotInputs, dpi: int = 300) -> None:
     """Render AME bar plots comparing bin contrasts for two shift subsets."""
-    bins = (
-        list(plot_inputs.ame_none["bin"])
-        if not plot_inputs.ame_none.empty
-        else list(plot_inputs.ame_false["bin"])
-    )
+    bins = list(plot_inputs.ame_none["bin"]) if not plot_inputs.ame_none.empty else list(plot_inputs.ame_false["bin"])
     bin_positions = np.arange(len(bins))
     width = 0.38
 
     fig, axis = plt.subplots(figsize=(7.0, 4.0))
-    if not plot_inputs.ame_none.empty:
-        axis.bar(
+    bar_fn = getattr(axis, "bar", None)
+    if bar_fn and not plot_inputs.ame_none.empty:
+        bar_fn(
             bin_positions - width / 2,
             plot_inputs.ame_none["ame"].values,
             width,
             label="shift_at_1 is None",
         )
-    if not plot_inputs.ame_false.empty:
-        axis.bar(
+    if bar_fn and not plot_inputs.ame_false.empty:
+        bar_fn(
             bin_positions + width / 2,
             plot_inputs.ame_false["ame"].values,
             width,
             label="shift_at_1 == 0",
         )
 
-    axis.set_xticks(bin_positions, bins, rotation=0)
-    axis.set_ylabel("AME (Δ pp vs baseline bin)")
-    axis.set_title(plot_inputs.title)
-    axis.grid(True, axis="y", alpha=0.3)
-    axis.axhline(0.0, linewidth=1, color="black")
+    xticks_fn = getattr(axis, "set_xticks", None)
+    if xticks_fn:
+        xticks_fn(bin_positions, bins, rotation=0)
+    ylabel_fn = getattr(axis, "set_ylabel", None)
+    if ylabel_fn:
+        ylabel_fn("AME (Δ pp vs baseline bin)")
+    title_fn = getattr(axis, "set_title", None)
+    if title_fn:
+        title_fn(plot_inputs.title)
+    grid_fn = getattr(axis, "grid", None)
+    if grid_fn:
+        grid_fn(True, axis="y", alpha=0.3)
+    axhline_fn = getattr(axis, "axhline", None)
+    if axhline_fn:
+        axhline_fn(0.0, linewidth=1, color="black")
 
-    axis.legend(loc="best")
+    legend_fn = getattr(axis, "legend", None)
+    if legend_fn:
+        legend_fn(loc="best")
     fig.tight_layout()
     fig.savefig(plot_inputs.out_png, dpi=dpi, bbox_inches="tight")
     fig.savefig(plot_inputs.out_pdf, bbox_inches="tight")
     plt.close(fig)
 
+
 # ------------------------------- Main ---------------------------------
+
 
 def build_arg_parser() -> argparse.ArgumentParser:
     """Return the CLI argument parser for entropy-bin regression analyses."""
@@ -752,8 +773,7 @@ def _fit_subset_and_save(
     """Prune, fit, and persist a GLM for a specific subset."""
     if subset_df.empty:
         print(
-            f"[{context.domain}:{context.entropy_mode}:{subset_tag}] "
-            "subset empty; skipping model.",
+            f"[{context.domain}:{context.entropy_mode}:{subset_tag}] subset empty; skipping model.",
         )
         return subset_df
 
@@ -834,8 +854,7 @@ def _process_domain(
         print(df_dom["shift_at_1"].value_counts(dropna=False).to_string())
         for tag in ("none", "false", "true"):
             print(
-                f"[{context.domain}:{context.entropy_mode}:{tag}] "
-                f"subset rows: {len(subsets[tag])}",
+                f"[{context.domain}:{context.entropy_mode}:{tag}] subset rows: {len(subsets[tag])}",
             )
 
     for tag in ("none", "false", "true"):
@@ -878,10 +897,7 @@ def _process_domain(
         out_dir,
         f"bin_contrasts__{context.slug_mode}__{context.domain}.pdf",
     )
-    title = (
-        f"{context.domain} — Entropy-bin contrasts (Δ pp vs baseline) — "
-        f"{args.model_name} [{context.entropy_mode}]"
-    )
+    title = f"{context.domain} — Entropy-bin contrasts (Δ pp vs baseline) — {args.model_name} [{context.entropy_mode}]"
     plot_data = BinContrastPlotInputs(
         ame_none=ame_none,
         ame_false=ame_false,

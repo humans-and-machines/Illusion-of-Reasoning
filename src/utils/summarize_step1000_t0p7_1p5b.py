@@ -16,19 +16,22 @@ Bin logic
 • --binning {equal_count|equal_width}, default equal_count (quantiles per domain)
 • Samples missing either entropy_think/entropy_answer are skipped from binning
 """
-from dataclasses import dataclass
+
 import argparse
 import json
 import os
 import re
 from bisect import bisect_right
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
+
 
 DOM_MAP = {
     "carpark": "Carpark",
-    "xword":   "Crossword",
-    "math":    "Math",
+    "xword": "Crossword",
+    "math": "Math",
 }
+
 
 def nat_step_from_path(path: str) -> Optional[int]:
     """Extract the training step number from a path like .../step1000/...."""
@@ -178,8 +181,10 @@ def extract_problem_key(record: Dict[str, Any]) -> str:
             return str(value)
     return f"__line_{id(record)}"
 
+
 def p1_think_answer_value(pass1_record: Dict[str, Any], combine: str) -> Optional[float]:
     """Combine entropy_think and entropy_answer for pass-1 using sum or mean."""
+
     def _to_float(value: Any) -> Optional[float]:
         try:
             return float(value)
@@ -257,6 +262,7 @@ def bin_label(index: int, edges: List[float]) -> str:
     if index < num_bins - 1:
         return f"[{low:.3f}, {high:.3f})"
     return f"[{low:.3f}, {high:.3f}]"
+
 
 # ---------- per-bin aggregator ----------
 
@@ -488,11 +494,7 @@ def _populate_bin_aggregates(
 
         # Prefer canonical pass2; fall back to multi-cue variants when present.
         pass2_section = (
-            record.get("pass2")
-            or record.get("pass2c")
-            or record.get("pass2b")
-            or record.get("pass2a")
-            or {}
+            record.get("pass2") or record.get("pass2c") or record.get("pass2b") or record.get("pass2a") or {}
         )
         _update_pass2_agg(agg, prob_key, pass2_section, gold, config)
 
@@ -520,16 +522,10 @@ def _update_pass1_agg(
     sr1 = get_soft(pass1_record)
     if sr1 is not None:
         agg.n1_soft += 1
-        if (
-            config.conditional.soft_threshold is not None
-            and sr1 >= config.conditional.soft_threshold
-        ):
+        if config.conditional.soft_threshold is not None and sr1 >= config.conditional.soft_threshold:
             agg.c1_soft += 1
 
-    if (
-        config.conditional.use_soft_for_conditionals
-        and config.conditional.soft_threshold is not None
-    ):
+    if config.conditional.use_soft_for_conditionals and config.conditional.soft_threshold is not None:
         ok1_cond = (sr1 is not None) and (sr1 >= config.conditional.soft_threshold)
     else:
         ok1_cond = bool(ok1_hard) if ok1_hard is not None else False
@@ -557,16 +553,10 @@ def _update_pass2_agg(
     sr2 = get_soft(pass2_section)
     if sr2 is not None:
         agg.n2_soft += 1
-        if (
-            config.conditional.soft_threshold is not None
-            and sr2 >= config.conditional.soft_threshold
-        ):
+        if config.conditional.soft_threshold is not None and sr2 >= config.conditional.soft_threshold:
             agg.c2_soft += 1
 
-    if (
-        config.conditional.use_soft_for_conditionals
-        and config.conditional.soft_threshold is not None
-    ):
+    if config.conditional.use_soft_for_conditionals and config.conditional.soft_threshold is not None:
         ok2_cond = (sr2 is not None) and (sr2 >= config.conditional.soft_threshold)
     else:
         ok2_cond = bool(ok2_hard) if ok2_hard is not None else False
@@ -603,7 +593,7 @@ def summarize_dir_binned(
 # ---------- pretty helpers ----------
 def fmt_prob(num: int, den: int) -> str:
     """Format num/den as a probability, or '-' if undefined."""
-    return "-" if den == 0 else f"{num/den:.3f}"
+    return "-" if den == 0 else f"{num / den:.3f}"
 
 
 def yes_no_na(num_total: int, num_yes: int) -> str:
@@ -635,7 +625,9 @@ def domain_order_key(label: str) -> int:
     order = {"xword": 0, "math": 1, "carpark": 2}
     return order.get(tok, 99)
 
+
 # ---------- main ----------
+
 
 def build_arg_parser() -> argparse.ArgumentParser:
     """Create and configure the CLI argument parser."""
@@ -660,10 +652,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--split",
         default=None,
-        help=(
-            "Only include files whose names contain this substring "
-            "(e.g., 'test')."
-        ),
+        help=("Only include files whose names contain this substring (e.g., 'test')."),
     )
     parser.add_argument(
         "--recompute",
@@ -675,18 +664,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--soft-threshold",
         type=float,
         default=None,
-        help=(
-            "If set, also compute soft accuracy columns where "
-            "soft_reward >= τ."
-        ),
+        help=("If set, also compute soft accuracy columns where soft_reward >= τ."),
     )
     parser.add_argument(
         "--none-right-col",
         action="store_true",
-        help=(
-            "Add 'none_right_p1' (within-bin; semantics aligned "
-            "with conditionals)."
-        ),
+        help=("Add 'none_right_p1' (within-bin; semantics aligned with conditionals)."),
     )
     parser.add_argument(
         "--cond-col",
@@ -696,10 +679,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--cond-soft-domains",
         default="",
-        help=(
-            "Comma-separated domains whose conditionals use "
-            "SOFT>=τ (e.g., 'carpark')."
-        ),
+        help=("Comma-separated domains whose conditionals use SOFT>=τ (e.g., 'carpark')."),
     )
     parser.add_argument(
         "--bins",
@@ -711,10 +691,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--combine",
         choices=["sum", "mean"],
         default="sum",
-        help=(
-            "Combine pass-1 entropy_think and entropy_answer "
-            "via 'sum' or 'mean'."
-        ),
+        help=("Combine pass-1 entropy_think and entropy_answer via 'sum' or 'mean'."),
     )
     parser.add_argument(
         "--binning",
@@ -896,8 +873,7 @@ def main() -> None:
     dirs = find_model_dirs(args.results_root, args.temperature)
     if not dirs:
         print(
-            f"No matching GRPO-1.5B * temp-{args.temperature:g} "
-            "result folders found.",
+            f"No matching GRPO-1.5B * temp-{args.temperature:g} result folders found.",
         )
         return
 

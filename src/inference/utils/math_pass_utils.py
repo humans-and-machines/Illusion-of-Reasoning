@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from src.inference.utils.text_utils import find_markers_and_context
 
@@ -99,11 +99,7 @@ def canon_math(value: Optional[str]) -> Optional[str]:
         return None
     canonical = value.strip()
     canonical = (
-        canonical.replace("–", "-")
-        .replace("—", "-")
-        .replace("−", "-")
-        .replace("π", "pi")
-        .replace("\\pi", "pi")
+        canonical.replace("–", "-").replace("—", "-").replace("−", "-").replace("π", "pi").replace("\\pi", "pi")
     )
     canonical = RE_LATEX_CMDS.sub("", canonical)
     canonical = RE_LATEX_FRAC.sub(r"\1/\2", canonical)
@@ -141,11 +137,7 @@ def finite_mean(values: Iterable[float]) -> Optional[float]:
     :param values: Iterable of numeric values.
     :returns: Mean of finite values, or ``None`` if no finite values are present.
     """
-    finite_values = [
-        float(value)
-        for value in values
-        if not math.isnan(float(value)) and math.isfinite(float(value))
-    ]
+    finite_values = [float(value) for value in values if not math.isnan(float(value)) and math.isfinite(float(value))]
     return (sum(finite_values) / len(finite_values)) if finite_values else None
 
 
@@ -155,9 +147,7 @@ def build_entropy_pass_base(
     full_text: str,
     pred_answer_text: str,
     pred_canon: Optional[str],
-    entropy_overall: Optional[float],
-    entropy_think: Optional[float],
-    entropy_answer: Optional[float],
+    entropy_summary: "MathEntropySummary",
 ) -> Dict[str, Any]:
     """
     Common core for per-pass result dicts with entropy stats and prediction fields.
@@ -166,9 +156,7 @@ def build_entropy_pass_base(
     :param full_text: Full model output including tags.
     :param pred_answer_text: Extracted answer text for this pass.
     :param pred_canon: Canonicalized predicted answer.
-    :param entropy_overall: Overall token-level entropy value.
-    :param entropy_think: Entropy restricted to ``<think>`` tokens.
-    :param entropy_answer: Entropy restricted to ``<answer>`` tokens.
+    :param entropy_summary: Aggregated entropy statistics for this pass.
     :returns: Dictionary containing core prediction and entropy fields.
     """
     return {
@@ -176,9 +164,9 @@ def build_entropy_pass_base(
         "output": full_text,
         "pred_answer": pred_answer_text,
         "pred_answer_canon": pred_canon,
-        "entropy": entropy_overall,
-        "entropy_think": entropy_think,
-        "entropy_answer": entropy_answer,
+        "entropy": entropy_summary.overall,
+        "entropy_think": entropy_summary.think,
+        "entropy_answer": entropy_summary.answer,
     }
 
 
@@ -212,15 +200,32 @@ def add_token_and_tag_fields(
     return base
 
 
+def finalize_pass_fields(
+    base: Dict[str, Any],
+    reconsideration_fields: Dict[str, Any],
+    *,
+    token_stats: MathTokenStats,
+    full_text: str,
+) -> Dict[str, Any]:
+    """
+    Merge reconsideration data and token/tag metadata into a pass result dict.
+    """
+    base.update(reconsideration_fields)
+    return add_token_and_tag_fields(
+        base,
+        tokens_total=token_stats.tokens_total,
+        tokens_think=token_stats.tokens_think,
+        tokens_answer=token_stats.tokens_answer,
+        full_text=full_text,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Reconsideration patterns / default cues
 # ---------------------------------------------------------------------------
 DEFAULT_SECOND_PASS_PHRASE = " ||| ".join(
     [
-        (
-            "Hold on, this reasoning might be wrong. "
-            "Let's go back and check each step carefully."
-        ),
+        ("Hold on, this reasoning might be wrong. Let's go back and check each step carefully."),
         (
             "Actually, this approach doesn't look correct. "
             "Let's restart and work through the solution more systematically."
@@ -455,30 +460,146 @@ def _summarize_math_entropies(
     )
 
 
-def _build_math_pass_meta_kwonly(
+def build_reconsideration_fields(
     *,
-    problem: str,
-    canon_gold: Optional[str],
-    injected_cue: bool,
+    stop_reasons: Mapping[str, Optional[str]],
+    reconsideration: Optional[Mapping[str, Any]],
+    is_correct_pred: bool,
+    entropy_summary: Optional[MathEntropySummary] = None,
+    enumeration: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Assemble reconsideration-related fields shared by math and crossword passes.
+    """
+    reconsideration = reconsideration or {}
+    markers_list = list(reconsideration.get("markers", [])) if reconsideration else []
+    reconsider_context = reconsideration.get(
+        "reconsider_context",
+        reconsideration.get("context"),
+    )
+    reconsider_excerpt = reconsideration.get(
+        "reconsider_excerpt",
+        reconsideration.get("excerpt"),
+    )
+    fields: Dict[str, Any] = {
+        "stop_reason_think": stop_reasons.get("think"),
+        "stop_reason_answer": stop_reasons.get("answer"),
+        "has_reconsider_cue": bool(markers_list),
+        "reconsider_markers": markers_list,
+        "reconsider_pos": reconsideration.get("pos_in_think"),
+        "reconsider_context": reconsider_context,
+        "reconsider_excerpt": reconsider_excerpt,
+        "is_correct_pred": is_correct_pred,
+        "is_correct_after_reconsideration": bool(markers_list) and bool(is_correct_pred),
+    }
+    if enumeration is not None:
+        fields["enumeration"] = enumeration
+    if entropy_summary is not None:
+        fields.update(
+            {
+                "entropy_pre_cue": entropy_summary.pre_cue,
+                "entropy_reconsider_think": entropy_summary.reconsider_think,
+                "entropy_reconsider_full": entropy_summary.reconsider_full,
+            },
+        )
+    return fields
+
+
+def build_reconsideration_base_kwargs(
+    *,
     prev_output: Optional[str],
-    cue_prefix_str: str,
-    stop_reason_think: Optional[str],
-    stop_reason_answer: Optional[str],
-) -> MathPassMeta:
+    full_text: str,
+    pred_answer_text: str,
+    pred_canon: str,
+    entropy_summary: Optional[MathEntropySummary],
+) -> Dict[str, Any]:
+    """
+    Common kwargs used when assembling reconsideration-aware pass results.
+    """
+    return {
+        "prev_output": prev_output,
+        "full_text": full_text,
+        "pred_answer_text": pred_answer_text,
+        "pred_canon": pred_canon,
+        "entropy_summary": entropy_summary,
+    }
+
+
+def build_stop_reasons(
+    stop_think: Optional[str],
+    stop_answer: Optional[str],
+) -> Dict[str, Optional[str]]:
+    """Helper to normalize stop reasons into a consistent mapping."""
+    return {
+        "think": stop_think,
+        "answer": stop_answer,
+    }
+
+
+@dataclass(frozen=True)
+class ReconsiderationInputs:
+    """
+    Normalized inputs used to package reconsideration-aware pass results.
+    """
+
+    base_fields: Mapping[str, Any]
+    stop_reasons: Mapping[str, Optional[str]]
+    reconsideration: Optional[Mapping[str, Any]]
+    is_correct_pred: bool
+    token_stats: MathTokenStats
+    enumeration: Optional[str] = None
+
+
+def assemble_reconsideration_pass_result(inputs: ReconsiderationInputs) -> Dict[str, Any]:
+    """
+    Shared helper to package entropy/reconsideration fields into a pass result.
+    """
+    base = build_entropy_pass_base(
+        prev_output=inputs.base_fields.get("prev_output"),
+        full_text=inputs.base_fields["full_text"],
+        pred_answer_text=inputs.base_fields["pred_answer_text"],
+        pred_canon=inputs.base_fields["pred_canon"],
+        entropy_summary=inputs.base_fields.get("entropy_summary"),
+    )
+    reconsideration_fields = build_reconsideration_fields(
+        stop_reasons=inputs.stop_reasons,
+        reconsideration=inputs.reconsideration,
+        is_correct_pred=inputs.is_correct_pred,
+        entropy_summary=inputs.base_fields.get("entropy_summary"),
+        enumeration=inputs.enumeration,
+    )
+    return finalize_pass_fields(
+        base,
+        reconsideration_fields,
+        token_stats=inputs.token_stats,
+        full_text=inputs.base_fields["full_text"],
+    )
+
+
+def _build_math_pass_meta_kwonly(meta_kwargs: Dict[str, Any]) -> MathPassMeta:
     """
     Internal helper that constructs :class:`MathPassMeta` from keyword-only args.
     """
-    return MathPassMeta(
-        **{
-            "problem": problem,
-            "canon_gold": canon_gold,
-            "injected_cue": injected_cue,
-            "prev_output": prev_output,
-            "cue_prefix_str": cue_prefix_str,
-            "stop_reason_think": stop_reason_think,
-            "stop_reason_answer": stop_reason_answer,
-        },
-    )
+    required_keys = {
+        "problem",
+        "canon_gold",
+        "injected_cue",
+        "prev_output",
+        "cue_prefix_str",
+        "stop_reason_think",
+        "stop_reason_answer",
+    }
+    missing = required_keys.difference(meta_kwargs)
+    if missing:
+        missing_list = ", ".join(sorted(missing))
+        raise TypeError(f"build_math_pass_meta() missing required keyword arguments: {missing_list}")
+
+    unexpected = set(meta_kwargs).difference(required_keys)
+    if unexpected:
+        unexpected_list = ", ".join(sorted(unexpected))
+        raise TypeError(f"build_math_pass_meta() got unexpected keyword arguments: {unexpected_list}")
+
+    return MathPassMeta(**meta_kwargs)
 
 
 def build_math_pass_meta(*args, **kwargs) -> MathPassMeta:
@@ -521,8 +642,7 @@ def build_math_pass_meta(*args, **kwargs) -> MathPassMeta:
     if args:
         if len(args) != 7:
             raise TypeError(
-                "build_math_pass_meta() expected 7 positional arguments, "
-                f"got {len(args)}",
+                f"build_math_pass_meta() expected 7 positional arguments, got {len(args)}",
             )
         (
             problem,
@@ -543,7 +663,7 @@ def build_math_pass_meta(*args, **kwargs) -> MathPassMeta:
             "stop_reason_answer": stop_reason_answer,
         }
 
-    return _build_math_pass_meta_kwonly(**kwargs)
+    return _build_math_pass_meta_kwonly(kwargs)
 
 
 def pack_math_pass_result(
@@ -563,9 +683,7 @@ def pack_math_pass_result(
     :returns: Dictionary representing a single math pass result.
     """
     tok_ents_all, token_stats = _compute_math_token_stats(ent_think, ent_answer)
-    think, answer = extract_blocks(full_text)
-    think_text = think or ""
-    pred_answer_text = answer or ""
+    think_text, pred_answer_text = (segment or "" for segment in extract_blocks(full_text))
 
     reconsider_info = _compute_math_reconsideration_info(
         think_text,
@@ -583,36 +701,21 @@ def pack_math_pass_result(
     pred_canon = canon_math(pred_answer_text)
     is_correct_pred = contains_canon(pred_canon, meta.canon_gold)
 
-    base = build_entropy_pass_base(
+    base_fields = build_reconsideration_base_kwargs(
         prev_output=meta.prev_output,
         full_text=full_text,
         pred_answer_text=pred_answer_text,
         pred_canon=pred_canon,
-        entropy_overall=entropy_summary.overall,
-        entropy_think=entropy_summary.think,
-        entropy_answer=entropy_summary.answer,
+        entropy_summary=entropy_summary,
     )
-    base.update(
-        {
-            "entropy_pre_cue": entropy_summary.pre_cue,
-            "entropy_reconsider_think": entropy_summary.reconsider_think,
-            "entropy_reconsider_full": entropy_summary.reconsider_full,
-            "stop_reason_think": meta.stop_reason_think,
-            "stop_reason_answer": meta.stop_reason_answer,
-            "has_reconsider_cue": bool(reconsider_info.markers),
-            "reconsider_markers": reconsider_info.markers,
-            "reconsider_pos": reconsider_info.pos_in_think,
-            "reconsider_context": reconsider_info.context,
-            "reconsider_excerpt": reconsider_info.excerpt,
-            "is_correct_pred": is_correct_pred,
-            "is_correct_after_reconsideration": bool(reconsider_info.markers)
-            and bool(is_correct_pred),
-        },
+    inputs = ReconsiderationInputs(
+        base_fields=base_fields,
+        stop_reasons=build_stop_reasons(
+            meta.stop_reason_think,
+            meta.stop_reason_answer,
+        ),
+        reconsideration=vars(reconsider_info),
+        is_correct_pred=is_correct_pred,
+        token_stats=token_stats,
     )
-    return add_token_and_tag_fields(
-        base,
-        tokens_total=token_stats.tokens_total,
-        tokens_think=token_stats.tokens_think,
-        tokens_answer=token_stats.tokens_answer,
-        full_text=full_text,
-    )
+    return assemble_reconsideration_pass_result(inputs)

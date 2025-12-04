@@ -31,9 +31,7 @@ def standardize_uncertainty(
     """
     mean_uncertainty, std_uncertainty = _uncertainty_stats(data, source_col)
     standardized = data.copy()
-    standardized[dest_col] = (standardized[source_col] - mean_uncertainty) / (
-        std_uncertainty + 1e-8
-    )
+    standardized[dest_col] = (standardized[source_col] - mean_uncertainty) / (std_uncertainty + 1e-8)
     return standardized
 
 
@@ -47,9 +45,7 @@ def standardize_uncertainty_with_stats(
     """
     mean_uncertainty, std_uncertainty = _uncertainty_stats(data, source_col)
     standardized = data.copy()
-    standardized[dest_col] = (standardized[source_col] - mean_uncertainty) / (
-        std_uncertainty + 1e-8
-    )
+    standardized[dest_col] = (standardized[source_col] - mean_uncertainty) / (std_uncertainty + 1e-8)
     return standardized, mean_uncertainty, std_uncertainty
 
 

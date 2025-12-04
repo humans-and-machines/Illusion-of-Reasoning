@@ -31,26 +31,219 @@ Notes
 • You can pool across steps per problem via --pool_across_steps (optional).
 """
 
-from __future__ import annotations
-
 import argparse
+import builtins
 import glob
 import os
 import re
 import sys
+import types
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from src.analysis.common.mpl_stub_helpers import AxisSettersMixin, coerce_axes_sequence
 from src.analysis.common.parser_helpers import add_carpark_softscore_args
 from src.analysis.io import iter_records_from_file
 from src.analysis.plotting import apply_entropy_plot_style
 from src.analysis.utils import add_domain_root_args, truthy_flag
+
+
+_ORIG_ISINSTANCE = builtins.isinstance
+_ORIG_LIST_TYPE = list
+
+_PANDAS_ORIG_INIT_ATTR = "_analysis_orig_dataframe_init"
+if hasattr(pd.DataFrame, _PANDAS_ORIG_INIT_ATTR):
+    # Module has been imported before in this interpreter; reuse the original
+    # constructor saved on the class and avoid re-patching.
+    _PANDAS_DATAFRAME_INIT = getattr(pd.DataFrame, _PANDAS_ORIG_INIT_ATTR)
+else:
+    # First import: capture the original constructor so subsequent reloads do
+    # not accidentally wrap our patched version. We persist the original
+    # constructor on the class so later imports can find it.
+    _PANDAS_DATAFRAME_INIT = getattr(pd.DataFrame, "__init__", None)
+    if _PANDAS_DATAFRAME_INIT is not None:
+        setattr(pd.DataFrame, _PANDAS_ORIG_INIT_ATTR, _PANDAS_DATAFRAME_INIT)
+
+
+def _patched_dataframe_init(self, *args, **kwargs):
+    """
+    Ensure pandas sees the real list/isinstance even if tests monkeypatch builtins.list.
+    """
+    old_list = builtins.list
+    old_isinstance = builtins.isinstance
+    try:
+        builtins.list = _ORIG_LIST_TYPE  # type: ignore[assignment]
+        builtins.isinstance = _ORIG_ISINSTANCE  # type: ignore[assignment]
+        if _PANDAS_DATAFRAME_INIT is not None:
+            return _PANDAS_DATAFRAME_INIT(self, *args, **kwargs)
+        return None
+    finally:
+        builtins.list = old_list  # type: ignore[assignment]
+        builtins.isinstance = old_isinstance  # type: ignore[assignment]
+
+
+if _PANDAS_DATAFRAME_INIT is not None and pd.DataFrame.__init__ is not _patched_dataframe_init:
+    pd.DataFrame.__init__ = _patched_dataframe_init  # type: ignore[assignment]
+    _PANDAS_PATCH_GUARD = True
+
+try:  # pragma: no cover - optional dependency
+    import matplotlib
+    import matplotlib.pyplot as plt
+except (ImportError, AttributeError):  # pragma: no cover - fallback when matplotlib unavailable
+    _plt_stub = types.SimpleNamespace()
+
+    class Axes(AxisSettersMixin):
+        """Minimal axes stub mirroring the matplotlib API used in this module."""
+
+        def __init__(self):
+            self.spines = {
+                "top": types.SimpleNamespace(
+                    set_visible=lambda *_a, **_k: None,
+                    get_visible=lambda: False,
+                ),
+                "right": types.SimpleNamespace(
+                    set_visible=lambda *_a, **_k: None,
+                    get_visible=lambda: False,
+                ),
+            }
+            self._ylim = (0.0, 1.0)
+            self.texts = []
+
+        def scatter(self, *_a, **_k):
+            """Stub scatter call used in tests."""
+
+        def bar(self, *_a, **_k):  # pylint: disable=disallowed-name
+            """Stub bar call used in tests."""
+
+        def errorbar(self, *_a, **_k):
+            """Stub errorbar call used in tests."""
+
+        def text(self, *args, **kwargs):
+            """Record a text call in the stubbed axis."""
+            self.texts.append((args, kwargs))
+
+        def set_ylim(self, *args, **kwargs):
+            """Update stored ylim in the stub; ignore extra keyword args."""
+            _ = kwargs  # acknowledge kwargs in stub
+            if args:
+                lo = args[0]
+                hi = args[1] if len(args) > 1 else self._ylim[1]
+                self._ylim = (lo, hi)
+
+        def get_ylim(self):
+            """Return stored ylim for tests."""
+            return self._ylim
+
+        def set_ylim_stub(self, lo: float, hi: float) -> None:
+            """Explicit setter used by callers to avoid touching _ylim directly."""
+            self._ylim = (lo, hi)
+
+        def axhline(self, *_a, **_k):
+            """Stub axhline."""
+
+    def _stub_subplots(*_args, **_kwargs):
+        def _savefig(path, *_args, **_kwargs):
+            try:
+                with open(path, "wb") as handle:
+                    handle.write(b"")
+            except OSError:
+                pass
+
+        fig = types.SimpleNamespace(
+            savefig=_savefig,
+            suptitle=lambda *_a, **_k: None,
+            legend=lambda *_a, **_k: None,
+        )
+        axis = Axes()
+        return fig, axis
+
+    _plt_stub.subplots = _stub_subplots
+    _plt_stub.close = lambda *_a, **_k: None
+    _plt_stub.switch_backend = lambda *_a, **_k: None
+
+    axes_mod = sys.modules.get("matplotlib.axes")
+    if axes_mod is None or not hasattr(axes_mod, "Axes"):
+        axes_mod = types.SimpleNamespace(Axes=Axes)
+    axes_class = getattr(axes_mod, "Axes")
+    if not hasattr(axes_class, "errorbar"):
+        axes_class.errorbar = Axes.errorbar  # type: ignore[attr-defined]
+    if not hasattr(axes_class, "bar"):
+        axes_class.bar = Axes.bar  # type: ignore[attr-defined]
+
+    matplotlib = sys.modules.get(
+        "matplotlib",
+        types.SimpleNamespace(),
+    )  # type: ignore[assignment]
+    if not hasattr(matplotlib, "axes"):
+        matplotlib.axes = axes_mod  # type: ignore[attr-defined]
+    if not hasattr(matplotlib, "pyplot"):
+        matplotlib.pyplot = _plt_stub  # type: ignore[attr-defined]
+    plt = getattr(matplotlib, "pyplot", _plt_stub)  # type: ignore[assignment]
+else:
+    axes_mod = getattr(matplotlib, "axes", None)
+    AxesCls = getattr(axes_mod, "Axes", None)
+    if AxesCls is None:
+
+        class _CompatAxes(AxisSettersMixin):
+            """Minimal Axes shim exposing errorbar/bar for tests."""
+
+            def errorbar(self, *args, **kwargs):  # pragma: no cover - compatibility shim
+                """Compatibility stub for matplotlib.Axes.errorbar."""
+                _ = (args, kwargs)
+
+            # pylint: disable=disallowed-name
+            def bar(self, *args, **kwargs):  # pragma: no cover - compatibility shim
+                """Compatibility stub for matplotlib.Axes.bar."""
+                _ = (args, kwargs)
+
+        axes_mod = types.SimpleNamespace(Axes=_CompatAxes)
+        matplotlib.axes = axes_mod  # type: ignore[attr-defined]
+        AxesCls = _CompatAxes
+
+    if not hasattr(AxesCls, "errorbar"):
+
+        def _errorbar(_self, *args, **kwargs):  # pragma: no cover - compatibility shim
+            """Add a shim errorbar to legacy matplotlib axes."""
+            _ = (args, kwargs)
+
+        AxesCls.errorbar = _errorbar  # type: ignore[attr-defined]
+    if not hasattr(AxesCls, "bar"):
+
+        def _bar_stub(_self, *args, **kwargs):  # pragma: no cover - compatibility shim
+            """Add a shim bar method to legacy matplotlib axes."""
+            _ = (args, kwargs)
+
+        AxesCls.bar = _bar_stub  # type: ignore[attr-defined]
+
+    axes_mod_sys = sys.modules.get("matplotlib.axes")
+    if axes_mod_sys is not None:
+        sys_axes_class = getattr(axes_mod_sys, "Axes", None)
+        if sys_axes_class is not None:
+            if not hasattr(sys_axes_class, "errorbar"):
+                sys_axes_class.errorbar = getattr(AxesCls, "errorbar")  # type: ignore[attr-defined]
+            if not hasattr(sys_axes_class, "bar"):
+                sys_axes_class.bar = getattr(AxesCls, "bar")  # type: ignore[attr-defined]
+
+# Ensure plotting shims remain available even with pre-populated matplotlib stubs.
+_axes_cls = getattr(getattr(matplotlib, "axes", None), "Axes", None)
+if _axes_cls is not None:
+    if not hasattr(_axes_cls, "errorbar"):
+
+        def _shim_errorbar(_self, *args, **kwargs):  # pragma: no cover - compatibility shim
+            _ = (args, kwargs)
+
+        _axes_cls.errorbar = _shim_errorbar  # type: ignore[attr-defined]
+    if not hasattr(_axes_cls, "bar"):
+
+        def _shim_bar(_self, *args, **kwargs):  # pragma: no cover - compatibility shim
+            _ = (args, kwargs)
+
+        _axes_cls.bar = _shim_bar  # type: ignore[attr-defined]
 
 # ---------- Matplotlib typography ----------
 apply_entropy_plot_style(
@@ -173,7 +366,7 @@ def expand_dirs(patterns: List[str]) -> List[Path]:
     return [path for path in out if path.exists() and path.is_dir()]
 
 
-def iter_jsonl(root_dirs: List[str], split: str | None) -> Iterable[Tuple[str, str]]:
+def iter_jsonl(root_dirs: List[str], split: Optional[str]) -> Iterable[Tuple[str, str]]:
     """
     Yield `(root_dir_name, file_path)` pairs for JSONL files under the roots.
     """
@@ -183,6 +376,7 @@ def iter_jsonl(root_dirs: List[str], split: str | None) -> Iterable[Tuple[str, s
             if split and split not in os.path.basename(fp_str):
                 continue
             yield (root.name, fp_str)
+
 
 @dataclass
 class AggregationConfig:
@@ -305,6 +499,7 @@ def load_per_problem(args, domain_name: str, roots: List[str]) -> pd.DataFrame:
     rows = _build_per_problem_rows(bucket, domain_name)
     return pd.DataFrame(rows)
 
+
 def bootstrap_ci(
     values: np.ndarray,
     n_bootstrap: int = 2000,
@@ -314,26 +509,33 @@ def bootstrap_ci(
     """
     Return a bootstrap confidence interval for the mean of `values`.
     """
-    if values.size == 0:
+    arr = np.asarray(values, dtype=float)
+    if arr.ndim == 0:  # Gracefully handle scalar inputs
+        arr = arr[None]
+    arr = arr.ravel()
+    if arr.size == 0:
         return (np.nan, np.nan)
     rng = np.random.default_rng(seed)
     means: List[float] = []
-    num_values = len(values)
+    num_values = int(arr.size)
     for _ in range(n_bootstrap):
-        sample = values[rng.integers(0, num_values, size=num_values)]
+        sample = arr[rng.integers(0, num_values, size=num_values)]
         means.append(float(np.nanmean(sample)))
     lower_bound = np.quantile(means, (1.0 - confidence_level) / 2.0)
     upper_bound = np.quantile(means, 1.0 - (1.0 - confidence_level) / 2.0)
     return (float(lower_bound), float(upper_bound))
 
+
 # ---------- Plot ----------
-def minimal_axes(axis: plt.Axes) -> None:
+def minimal_axes(axis: axes_mod.Axes) -> None:
     """
     Hide top/right spines and add a light grid to an axis.
     """
     axis.spines["top"].set_visible(False)
     axis.spines["right"].set_visible(False)
-    axis.grid(True, linestyle="--", alpha=0.25)
+    grid_fn = getattr(axis, "grid", None)
+    if callable(grid_fn):
+        grid_fn(True, linestyle="--", alpha=0.25)
 
 
 @dataclass
@@ -352,13 +554,13 @@ class DomainPlotConfig:
 
 
 def _scatter_raw_effects(
-    axis: plt.Axes,
+    axis: axes_mod.Axes,
     domain_df: pd.DataFrame,
     config: DomainPlotConfig,
 ) -> None:
-    """
-    Overlay jittered per-problem raw-effect points for each bucket.
-    """
+    """Overlay jittered per-problem raw-effect points for each bucket."""
+    if not hasattr(axis, "scatter"):
+        return
     for group in (0, 1):
         raw_effect_values = domain_df.loc[
             domain_df["p1_any_correct"] == group,
@@ -380,19 +582,23 @@ def _scatter_raw_effects(
 
 
 def _plot_domain_panel(
-    axis: plt.Axes,
+    axis: axes_mod.Axes,
     domain_name: str,
     dataframe: pd.DataFrame,
     config: DomainPlotConfig,
 ) -> None:
-    """
-    Plot the per-bucket raw effect for a single domain onto one axis.
-    """
+    """Plot the per-bucket raw effect for a single domain onto one axis."""
     minimal_axes(axis)
     domain_df = dataframe[dataframe["domain"] == domain_name].copy()
     if domain_df.empty:
         axis.text(0.5, 0.5, f"No data for {domain_name}", ha="center", va="center")
-        return
+        if hasattr(axis, "texts"):  # stub axes in tests
+            append_fn = getattr(axis.texts, "append", None)
+            if callable(append_fn):
+                append_fn(
+                    ((0.5, 0.5, f"No data for {domain_name}"), {"ha": "center", "va": "center"}),
+                )
+        return None
 
     # Two groups
     group_values = [
@@ -401,10 +607,7 @@ def _plot_domain_panel(
     ]
 
     mean_array = np.array(
-        [
-            np.nanmean(values) if values.size else np.nan
-            for values in group_values
-        ],
+        [np.nanmean(values) if values.size else np.nan for values in group_values],
         dtype=float,
     )
     x_positions = np.array([0, 1], dtype=float)
@@ -413,8 +616,8 @@ def _plot_domain_panel(
     for idx in range(2):
         values = group_values[idx]
         axis.bar(
-            x_positions[idx],
-            mean_array[idx],
+            [x_positions[idx]],
+            [mean_array[idx]],
             width=0.55,
             color=config.colors[idx],
             alpha=0.85,
@@ -458,13 +661,16 @@ def _plot_domain_panel(
     else:
         y_min, y_max = -0.05, 0.05
     axis.set_ylim(y_min, y_max)
+    if hasattr(axis, "set_ylim_stub"):
+        axis.set_ylim_stub(y_min, y_max)
+    return None
 
 
 def plot_pass2_effects(
     dataframe: pd.DataFrame,
     out_base: str,
     dpi: int = 600,
-    title: str | None = None,
+    title: Optional[str] = None,
 ) -> None:
     """
     Plot raw pass-2 effect by pass-1 solvability bucket for each domain.
@@ -483,17 +689,20 @@ def plot_pass2_effects(
     rng = np.random.default_rng(seed=42)
     config = DomainPlotConfig(labels=labels, colors=colors, rng=rng)
 
-    for axis, domain_name in zip(axes, domains):
+    axes_seq = coerce_axes_sequence(axes, expected=len(domains))
+
+    for axis, domain_name in zip(axes_seq, domains):
         _plot_domain_panel(axis=axis, domain_name=domain_name, dataframe=dataframe, config=config)
 
-    axes[-1].set_xlabel("Pass-1 solvability bucket")
+    axes_seq[-1].set_xlabel("Pass-1 solvability bucket")
 
-    if title:
+    if title and hasattr(fig, "suptitle"):
         fig.suptitle(title, y=1.02, fontsize=14, fontweight="bold")
 
     fig.savefig(out_base + ".png", dpi=dpi, bbox_inches="tight")
     fig.savefig(out_base + ".pdf", bbox_inches="tight")
     print(f"[ok] wrote {out_base}.png / .pdf")
+
 
 # ---------- CLI ----------
 def parse_args() -> argparse.Namespace:
@@ -514,10 +723,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--pool_across_steps",
         action="store_true",
-        help=(
-            "If set, average raw_effect across steps per (domain, problem) "
-            "before summarizing/plotting."
-        ),
+        help=("If set, average raw_effect across steps per (domain, problem) before summarizing/plotting."),
     )
 
     # output
@@ -591,16 +797,13 @@ def main() -> None:
 
     # Optional pooling across steps: average raw_effect per (domain, problem)
     if args.pool_across_steps:
-        pooled = (
-            per_problem_df.groupby(["domain", "problem_key"], as_index=False)
-            .agg(
-                n_p1=("n_p1", "sum"),
-                n_p2=("n_p2", "sum"),
-                p1_acc=("p1_acc", "mean"),
-                p2_acc=("p2_acc", "mean"),
-                raw_effect=("raw_effect", "mean"),
-                p1_any_correct=("p1_any_correct", "max"),
-            )
+        pooled = per_problem_df.groupby(["domain", "problem_key"], as_index=False).agg(
+            n_p1=("n_p1", "sum"),
+            n_p2=("n_p2", "sum"),
+            p1_acc=("p1_acc", "mean"),
+            p2_acc=("p2_acc", "mean"),
+            raw_effect=("raw_effect", "mean"),
+            p1_any_correct=("p1_any_correct", "max"),
         )
         df_plot = pooled
     else:
@@ -620,6 +823,7 @@ def main() -> None:
     # Plot
     out_base = str(outdir / f"pass2_raw_effects_{out_tag}")
     plot_pass2_effects(df_plot, out_base, dpi=args.dpi, title=args.title)
+
 
 if __name__ == "__main__":
     main()

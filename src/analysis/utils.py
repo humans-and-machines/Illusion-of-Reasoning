@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 """
 Shared low-level helpers for analysis scripts.
@@ -16,10 +17,60 @@ import os
 import re
 import sys
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
+
+
+# Allow references like ``src.analysis.utils.utils`` in environments that expect
+# module-name aliases to be present on the module object.
+utils = sys.modules[__name__]
+_UNCERTAINTY_MODULE = None
+
+
+def _load_uncertainty_module():
+    """
+    Lazy-load the uncertainty helpers to avoid mandatory heavy deps at import time.
+    """
+    global _UNCERTAINTY_MODULE  # pylint: disable=global-statement
+    if _UNCERTAINTY_MODULE is None:
+        _UNCERTAINTY_MODULE = import_module("src.analysis.common.uncertainty")
+    return _UNCERTAINTY_MODULE
+
+
+def standardize_uncertainty(
+    data,
+    source_col: str = "uncertainty",
+    dest_col: str = "uncertainty_std",
+):
+    """
+    Proxy to :func:`src.analysis.common.uncertainty.standardize_uncertainty`.
+
+    Imported lazily to avoid mandatory pandas dependency at module import time.
+    """
+    return _load_uncertainty_module().standardize_uncertainty(
+        data,
+        source_col=source_col,
+        dest_col=dest_col,
+    )
+
+
+def standardize_uncertainty_with_stats(
+    data,
+    source_col: str = "uncertainty",
+    dest_col: str = "uncertainty_std",
+):
+    """
+    Proxy to :func:`src.analysis.common.uncertainty.standardize_uncertainty_with_stats`.
+    """
+    return _load_uncertainty_module().standardize_uncertainty_with_stats(
+        data,
+        source_col=source_col,
+        dest_col=dest_col,
+    )
+
 
 # ---------------------------------------------------------------------------
 # Path / naming helpers
@@ -130,11 +181,13 @@ def parse_temp_from_dir(dirname: str, low_alias: float) -> Optional[float]:
 # Generic coercion / text helpers
 # ---------------------------------------------------------------------------
 
+
 def slugify(text: str) -> str:
     """
     Convert an arbitrary string into a filesystem-friendly slug.
     """
     return re.sub(r"[^A-Za-z0-9._-]+", "_", str(text)).strip("_")
+
 
 def coerce_bool(value: Any) -> Optional[int]:
     """
@@ -205,10 +258,7 @@ def lighten_hex(hex_color: str, factor: float = 0.65) -> str:
     Lighten a hex color by interpolating towards white.
     """
     hex_color = hex_color.lstrip("#")
-    red, green, blue = (
-        int(hex_color[index : index + 2], 16) / 255.0
-        for index in (0, 2, 4)
-    )
+    red, green, blue = (int(hex_color[index : index + 2], 16) / 255.0 for index in (0, 2, 4))
     red = 1 - (1 - red) * factor
     green = 1 - (1 - green) * factor
     blue = 1 - (1 - blue) * factor
@@ -308,12 +358,7 @@ def extract_pass1_and_step(
     Returns (pass1_dict, step_int); if either is unavailable or invalid,
     returns ({}, None).
     """
-    pass1_data = (
-        record.get("pass1")
-        or record.get("p1")
-        or record.get("first_pass")
-        or {}
-    )
+    pass1_data = record.get("pass1") or record.get("p1") or record.get("first_pass") or {}
     if not isinstance(pass1_data, dict):
         pass1_data = {}
     if not pass1_data:
@@ -410,8 +455,7 @@ def formal_flags_with_gain(
             flags[index] = 1
         else:
             flags[index] = int(
-                np.isfinite(p_plus[index])
-                and ((p_plus[index] - freq[index]) > thresholds.delta3),
+                np.isfinite(p_plus[index]) and ((p_plus[index] - freq[index]) > thresholds.delta3),
             )
     return flags
 
@@ -518,9 +562,7 @@ def build_roots_by_temp_from_templates(
             carpark_path = carpark_tpl.format(T=temp_value)
             domain_paths["Carpark"] = carpark_path if os.path.isdir(carpark_path) else None
         roots_by_temp[float(temp_value)] = {
-            domain_name: domain_path
-            for domain_name, domain_path in domain_paths.items()
-            if domain_path
+            domain_name: domain_path for domain_name, domain_path in domain_paths.items() if domain_path
         }
     return roots_by_temp
 
@@ -533,10 +575,7 @@ def add_results_root_and_split_args(parser: argparse.ArgumentParser) -> None:
     """
     parser.add_argument(
         "results_root",
-        help=(
-            "Root directory containing step*/.../*.jsonl "
-            "(e.g., artifacts/results/GRPO-1.5B-math-temp-0.05-3)."
-        ),
+        help=("Root directory containing step*/.../*.jsonl (e.g., artifacts/results/GRPO-1.5B-math-temp-0.05-3)."),
     )
     parser.add_argument(
         "--split",
@@ -729,10 +768,7 @@ def add_gpt_label_policy_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--no_gate_gpt_by_words",
         action="store_true",
-        help=(
-            "If set, GPT shifts are NOT restricted to samples that also have "
-            "Words-cue."
-        ),
+        help=("If set, GPT shifts are NOT restricted to samples that also have Words-cue."),
     )
 
 
@@ -744,10 +780,7 @@ def add_run_rq2_flag(parser: argparse.ArgumentParser, help_suffix: str) -> None:
     parser.add_argument(
         "--run_rq2",
         action="store_true",
-        help=(
-            "Also run the RQ2 training-stage analysis (src.analysis.rq2_analysis) "
-            + help_suffix
-        ),
+        help=("Also run the RQ2 training-stage analysis (src.analysis.rq2_analysis) " + help_suffix),
     )
 
 
@@ -864,11 +897,7 @@ def parse_passes_argument(passes_arg: str) -> List[str]:
     """
     Parse a comma-separated ``--passes`` argument into a non-empty list.
     """
-    passes = [
-        token.strip()
-        for token in (passes_arg or "").split(",")
-        if token.strip()
-    ]
+    passes = [token.strip() for token in (passes_arg or "").split(",") if token.strip()]
     if not passes:
         raise SystemExit("Must specify at least one pass key via --passes.")
     return passes
@@ -897,9 +926,7 @@ def problem_key_from_record(rec: Dict[str, Any], missing_default: str) -> str:
     problem_key = rec.get("problem") or rec.get("clue") or rec.get("row_key")
     if problem_key is None:
         dataset_index = rec.get("dataset_index")
-        problem_key = (
-            f"idx:{dataset_index}" if dataset_index is not None else missing_default
-        )
+        problem_key = f"idx:{dataset_index}" if dataset_index is not None else missing_default
     return str(problem_key)
 
 

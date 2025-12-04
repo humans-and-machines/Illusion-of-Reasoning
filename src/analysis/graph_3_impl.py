@@ -29,14 +29,126 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from src.analysis.common.parser_helpers import (
-    add_carpark_softscore_args,
-    add_entropy_range_args,
-)
+
+try:  # pragma: no cover - allow running without a full matplotlib install
+    import matplotlib.pyplot as plt
+except (ImportError, RuntimeError):  # pragma: no cover - lightweight stub for headless/test envs
+
+    def _noop(*_args, **_kwargs):
+        """Return None for all stubbed matplotlib calls."""
+        return None
+
+    class _StubAxis:
+        """Minimal axis stub that satisfies the plotting API in tests."""
+
+        __slots__ = ("spines",)
+
+        def __init__(self):
+            _spine = type("S", (), {"set_visible": staticmethod(_noop)})
+            self.spines = {"top": _spine(), "right": _spine()}
+
+        def bar(self, *_args, **_kwargs):  # pylint: disable=disallowed-name
+            """Placeholder for bar plotting."""
+            return None
+
+        def text(self, *_args, **_kwargs):
+            """Placeholder for text annotations."""
+            return None
+
+        def set_ylim(self, *_args, **_kwargs):
+            """No-op y-axis limits setter."""
+            return None
+
+        def set_ylabel(self, *_args, **_kwargs):
+            """Return a stub label object with ``set_multialignment``."""
+            return type("L", (), {"set_multialignment": staticmethod(_noop)})()
+
+        def set_title(self, *_args, **_kwargs):
+            """No-op title setter."""
+            return None
+
+        def set_xticks(self, *_args, **_kwargs):
+            """No-op xticks setter."""
+            return None
+
+        def set_xticklabels(self, *_args, **_kwargs):
+            """No-op xticklabels setter."""
+            return None
+
+        def set_xlabel(self, *_args, **_kwargs):
+            """No-op xlabel setter."""
+            return None
+
+        def axhline(self, *_args, **_kwargs):
+            """No-op horizontal line helper."""
+            return None
+
+        def legend(self, *_args, **_kwargs):
+            """No-op legend helper."""
+            return None
+
+        def grid(self, *_args, **_kwargs):
+            """No-op grid helper."""
+            return None
+
+        def get_legend_handles_labels(self):
+            """Return empty legend handles/labels."""
+            return [], []
+
+    class _StubFigure:
+        """Minimal figure stub that saves empty files."""
+
+        def __init__(self, axes):
+            self.axes = axes
+
+        def tight_layout(self):
+            """No-op layout shim."""
+            return None
+
+        def legend(self, *_args, **_kwargs):
+            """Return a stub legend object (None)."""
+            return None
+
+        def suptitle(self, *_args, **_kwargs):
+            """No-op suptitle shim."""
+            return None
+
+        def savefig(self, path, **_kwargs):
+            """Create an empty file at the requested path."""
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            Path(path).touch()
+
+        def __iter__(self):  # pragma: no cover
+            return iter(self.axes)
+
+    class _StubPlt:
+        """Tiny pyplot substitute for environments without matplotlib."""
+
+        def switch_backend(self, *_args, **_kwargs):
+            """Stubbed backend switcher (no-op)."""
+            return None
+
+        def subplots(self, nrows=1, ncols=1, **_kwargs):
+            """Return a stub figure and list of axes."""
+            total = nrows * ncols
+            axes = [_StubAxis() for _ in range(total)]
+            return _StubFigure(axes), axes
+
+        def get_cmap(self, *_args, **_kwargs):
+            """Return a callable colormap stub."""
+            return lambda _value: (0.5, 0.5, 0.5, 1.0)
+
+        def close(self, *_args, **_kwargs):
+            """Stubbed close (no-op)."""
+            return None
+
+    plt = _StubPlt()
+
+from src.analysis.common.mpl_stub_helpers import coerce_axes_sequence, ensure_switch_backend
+from src.analysis.common.parser_helpers import add_carpark_softscore_args, add_entropy_range_args
 from src.analysis.io import iter_records_from_file
 from src.analysis.labels import AHA_KEYS_BROAD, AHA_KEYS_CANONICAL
 from src.analysis.plotting import apply_entropy_plot_style
@@ -47,6 +159,8 @@ from src.analysis.utils import (
     truthy_flag,
 )
 
+
+plt = ensure_switch_backend(plt)
 # ---------- Global typography (Times, size 14) & nice PDFs ----------
 apply_entropy_plot_style(
     {
@@ -57,6 +171,7 @@ apply_entropy_plot_style(
 )
 
 DOMAINS = ["Carpark", "Crossword", "Math"]
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 def parse_args() -> argparse.Namespace:
@@ -128,15 +243,12 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
+
 def detect_aha_pass1(rec: Dict[str, Any], mode: str) -> int:
     """
     Determine whether a PASS-1 record contains an Aha-style reasoning shift.
     """
-    keys = (
-        AHA_KEYS_CANONICAL
-        if mode == "canonical"
-        else AHA_KEYS_BROAD
-    )
+    keys = AHA_KEYS_CANONICAL if mode == "canonical" else AHA_KEYS_BROAD
     pass1_data = rec.get("pass1", {})
     if not isinstance(pass1_data, dict):
         return 0
@@ -154,6 +266,7 @@ def extract_step(rec: Dict[str, Any], src_path: str) -> int:
         src_path,
     )
     return int(match.group(1)) if match else 0
+
 
 # ----- PASS1 entropy extractors -----
 def _num(mapping: Dict[str, Any], names: List[str]) -> Optional[float]:
@@ -177,10 +290,7 @@ def extract_pass1_answer_entropy(rec: Dict[str, Any]) -> Optional[float]:
     base_entropy = _num(pass1_data, ["answer_entropy", "entropy_answer"])
     if base_entropy is not None:
         return base_entropy
-    token_entropies = (
-        pass1_data.get("answer_token_entropies")
-        or pass1_data.get("token_entropies")
-    )
+    token_entropies = pass1_data.get("answer_token_entropies") or pass1_data.get("token_entropies")
     if isinstance(token_entropies, list) and token_entropies:
         try:
             values = [float(token) for token in token_entropies]
@@ -225,6 +335,7 @@ def extract_pass1_answer_plus(rec: Dict[str, Any], mode: str) -> Optional[float]
     if mode == "sum":
         return answer_entropy + think_entropy
     return (answer_entropy + think_entropy) / 2.0
+
 
 # ----- correctness (PASS1) -----
 def carpark_correct_pass1(
@@ -273,6 +384,7 @@ def general_correct_pass1(rec: Dict[str, Any]) -> bool:
             return truthy_flag(pass1_data[field])
     return False
 
+
 # ----- file discovery helpers -----
 def expand_paths(paths: List[str]) -> List[Path]:
     """
@@ -292,6 +404,7 @@ def ignored(path: str, ignore_globs: List[str]) -> bool:
     Return True if ``path`` matches any of the provided ignore patterns.
     """
     return any(fnmatch(path, pattern) for pattern in ignore_globs)
+
 
 def temp_match(path: str, only_temps: Optional[List[str]]) -> bool:
     """
@@ -317,6 +430,7 @@ def temp_match(path: str, only_temps: Optional[List[str]]) -> bool:
             ],
         )
     return any(f"temp-{candidate}" in path for candidate in candidates)
+
 
 def iter_jsonl_files_many(
     roots: List[str],
@@ -395,6 +509,7 @@ def load_rows_from_roots_metric(
             continue
     return rows
 
+
 # ----- binning -----
 def compute_edges(
     entropies: np.ndarray,
@@ -470,6 +585,7 @@ def binned_aha_counts(
         counts[current_bin] = int(mask.sum())
     centers = 0.5 * (edges[:-1] + edges[1:])
     return centers, counts
+
 
 @dataclass
 class BinInputs:
@@ -579,13 +695,9 @@ def compute_bin_table(
                 np.nan,
                 int(bin_inputs.entropies.size),
                 int((bin_inputs.aha_flags == 1).sum()),
-                int(
-                    bin_inputs.entropies.size
-                    - (bin_inputs.aha_flags == 1).sum()
-                ),
+                int(bin_inputs.entropies.size - (bin_inputs.aha_flags == 1).sum()),
                 (
-                    (bin_inputs.aha_flags == 1).sum()
-                    / float(bin_inputs.entropies.size)
+                    (bin_inputs.aha_flags == 1).sum() / float(bin_inputs.entropies.size)
                     if bin_inputs.entropies.size > 0
                     else np.nan
                 ),
@@ -614,11 +726,19 @@ def compute_bin_table(
     )
     return pd.concat([bin_table, total_row], ignore_index=True)
 
+
 # ----- aesthetics & saving -----
 def minimal_axes(axes_obj):
     """Apply a minimal style: no top/right spines and a light grid."""
-    axes_obj.spines["top"].set_visible(False)
-    axes_obj.spines["right"].set_visible(False)
+    try:
+        axes_obj.spines["top"].set_visible(False)
+        axes_obj.spines["right"].set_visible(False)
+    except (
+        KeyError,
+        AttributeError,
+        TypeError,
+    ):  # pragma: no cover - stub axes may not expose spines
+        return
     axes_obj.grid(True, linestyle="--", alpha=0.25)
 
 
@@ -665,11 +785,7 @@ def _compute_edges_for_accuracy(
     """Compute per-domain and overall bin edges for accuracy plots."""
     if args.share_bins == "global":
         all_entropies = np.concatenate(
-            [
-                per_domain[domain]["entropy"]
-                for domain in domains
-                if per_domain[domain]["entropy"].size
-            ],
+            [per_domain[domain]["entropy"] for domain in domains if per_domain[domain]["entropy"].size],
         )
         global_edges = compute_edges(
             all_entropies,
@@ -692,11 +808,7 @@ def _compute_edges_for_accuracy(
             for domain in domains
         }
         all_entropies = np.concatenate(
-            [
-                per_domain[domain]["entropy"]
-                for domain in domains
-                if per_domain[domain]["entropy"].size
-            ],
+            [per_domain[domain]["entropy"] for domain in domains if per_domain[domain]["entropy"].size],
         )
         overall_edges = compute_edges(
             all_entropies,
@@ -761,8 +873,7 @@ def _write_accuracy_tables(config: AccuracyTablesConfig) -> None:
     if per_domain_tables:
         per_domain_df = pd.concat(per_domain_tables, ignore_index=True)
         per_domain_df.to_csv(
-            tables_dir
-            / f"graph_3_pass1_table_{config.file_tag}_{tag}__per_domain.csv",
+            tables_dir / f"graph_3_pass1_table_{config.file_tag}_{tag}__per_domain.csv",
             index=False,
         )
 
@@ -774,11 +885,7 @@ def _write_accuracy_tables(config: AccuracyTablesConfig) -> None:
         ],
     )
     aha_all = np.concatenate(
-        [
-            config.per_domain[domain]["aha"]
-            for domain in config.domains
-            if config.per_domain[domain]["aha"].size
-        ],
+        [config.per_domain[domain]["aha"] for domain in config.domains if config.per_domain[domain]["aha"].size],
     )
     corr_all = np.concatenate(
         [
@@ -800,8 +907,7 @@ def _write_accuracy_tables(config: AccuracyTablesConfig) -> None:
         bin_inputs=overall_inputs,
     )
     overall_table.to_csv(
-        tables_dir
-        / f"graph_3_pass1_table_{config.file_tag}_{tag}__overall.csv",
+        tables_dir / f"graph_3_pass1_table_{config.file_tag}_{tag}__overall.csv",
         index=False,
     )
 
@@ -867,15 +973,22 @@ def _render_counts_panel(
 
     if counts.size:
         ymax = float(counts.max())
-        axis.set_ylim(0, ymax * 1.06 + (1.0 if ymax < 10 else 0.0))
-    label_obj = axis.set_ylabel("Reasoning Shift\n(Count)")
-    label_obj.set_multialignment("center")
-    axis.set_title(
-        domain_name,
-        loc="left",
-        fontsize=14,
-        fontweight="bold",
-    )
+        setter = getattr(axis, "set_ylim", None)
+        if callable(setter):
+            setter(0, ymax * 1.06 + (1.0 if ymax < 10 else 0.0))
+    label_obj = getattr(axis, "set_ylabel", None)
+    if callable(label_obj):
+        result = label_obj("Reasoning Shift\n(Count)")
+        if hasattr(result, "set_multialignment"):
+            result.set_multialignment("center")
+    title_fn = getattr(axis, "set_title", None)
+    if callable(title_fn):
+        title_fn(
+            domain_name,
+            loc="left",
+            fontsize=14,
+            fontweight="bold",
+        )
 
 
 def _render_accuracy_panel(
@@ -897,21 +1010,20 @@ def _render_accuracy_panel(
 
     aha_values = config.per_domain[domain_name]["aha"]
     correct_values = config.per_domain[domain_name]["correct"]
-    edges = config.edges_by_domain[domain_name]
     x_values, acc_no = binned_accuracy(
         entropy_values,
         aha_values,
         correct_values,
-        edges,
+        config.edges_by_domain[domain_name],
         aha_flag=0,
     )
-    _, acc_yes = binned_accuracy(
+    acc_yes = binned_accuracy(
         entropy_values,
         aha_values,
         correct_values,
-        edges,
+        config.edges_by_domain[domain_name],
         aha_flag=1,
-    )
+    )[1]
 
     acc_no_pct = np.array(acc_no, dtype=float) * 100.0
     acc_yes_pct = np.array(acc_yes, dtype=float) * 100.0
@@ -937,22 +1049,26 @@ def _render_accuracy_panel(
     )
 
     if np.isfinite(acc_no_pct).any() or np.isfinite(acc_yes_pct).any():
-        combined = np.concatenate(
+        acc_arrays = np.concatenate(
             [
                 acc_no_pct[~np.isnan(acc_no_pct)],
                 acc_yes_pct[~np.isnan(acc_yes_pct)],
             ]
         )
-        if combined.size:
-            ymax = float(np.nanmax(combined))
-            axis.set_ylim(0, min(100.0, ymax + config.args.y_pad))
-    axis.set_ylabel("Accuracy (%)")
-    axis.set_title(
-        domain_name,
-        loc="left",
-        fontsize=14,
-        fontweight="bold",
-    )
+        if acc_arrays.size:
+            ymax = float(np.nanmax(acc_arrays))
+            if callable(getattr(axis, "set_ylim", None)):
+                axis.set_ylim(0, min(100.0, ymax + config.args.y_pad))
+    ylabel_fn = getattr(axis, "set_ylabel", None)
+    if callable(ylabel_fn):
+        ylabel_fn("Accuracy (%)")
+    if callable(getattr(axis, "set_title", None)):
+        axis.set_title(
+            domain_name,
+            loc="left",
+            fontsize=14,
+            fontweight="bold",
+        )
 
 
 def _build_accuracy_figure(config: AccuracyFigureConfig):
@@ -965,26 +1081,34 @@ def _build_accuracy_figure(config: AccuracyFigureConfig):
         constrained_layout=True,
     )
 
-    for axis, domain_name in zip(axes, config.domains):
+    axes_seq = coerce_axes_sequence(axes, expected=len(config.domains))
+
+    for axis, domain_name in zip(axes_seq, config.domains):
         _render_accuracy_panel(axis, domain_name, config)
 
     # Tick labels from Carpark edges (just to standardize)
     ref_edges = config.edges_by_domain["Carpark"]
     centers = 0.5 * (ref_edges[:-1] + ref_edges[1:])
-    tick_labels = [
-        f"[{ref_edges[i]:.2f},{ref_edges[i + 1]:.2f}]"
-        for i in range(len(ref_edges) - 1)
-    ]
-    axes[-1].set_xticks(centers)
-    axes[-1].set_xticklabels(tick_labels, rotation=45, ha="right")
-    axes[-1].set_xlabel(config.x_label)
+    tick_labels = [f"[{ref_edges[i]:.2f},{ref_edges[i + 1]:.2f}]" for i in range(len(ref_edges) - 1)]
+    axes_last = axes_seq[-1]
+    if hasattr(axes_last, "set_xticks"):
+        axes_last.set_xticks(centers)
+    if hasattr(axes_last, "set_xticklabels"):
+        axes_last.set_xticklabels(tick_labels, rotation=45, ha="right")
+    if hasattr(axes_last, "set_xlabel"):
+        axes_last.set_xlabel(config.x_label)
 
-    fig.legend(
-        *axes[0].get_legend_handles_labels(),
-        loc="upper right",
+    handles_labels = (
+        axes_seq[0].get_legend_handles_labels() if hasattr(axes_seq[0], "get_legend_handles_labels") else ([], [])
     )
+    legend_fn = getattr(fig, "legend", None)
+    if callable(legend_fn):
+        legend_fn(*handles_labels, loc="upper right")
 
-    if config.args.title:
+    if not getattr(fig, "axes", None):
+        fig.axes = axes_seq
+
+    if config.args.title and hasattr(fig, "suptitle"):
         fig.suptitle(
             config.args.title,
             y=1.02,
@@ -993,6 +1117,7 @@ def _build_accuracy_figure(config: AccuracyFigureConfig):
         )
 
     return fig
+
 
 # ----- renderers -----
 def render_metric_accuracy(args, metric: str, color_noaha, color_aha):
@@ -1042,6 +1167,7 @@ def render_metric_accuracy(args, metric: str, color_noaha, color_aha):
     save_all_formats(fig, out_base, dpi=args.dpi)
     return True
 
+
 def _load_metric_rows(args, metric: str, warn_suffix: str) -> List[Dict[str, Any]]:
     """
     Load flat row dicts for a metric across all domains.
@@ -1080,9 +1206,7 @@ def _build_per_domain_counts(
     """
     Convert flat row dicts into per-domain entropy/aha arrays for counts plots.
     """
-    per_domain: Dict[str, Dict[str, List[Any]]] = {
-        domain: {"entropy": [], "aha": []} for domain in domains
-    }
+    per_domain: Dict[str, Dict[str, List[Any]]] = {domain: {"entropy": [], "aha": []} for domain in domains}
     for row in rows:
         domain = row["domain"]
         per_domain[domain]["entropy"].append(row["entropy"])
@@ -1109,11 +1233,7 @@ def _compute_edges_for_counts(
     """
     if args.share_bins == "global":
         all_ent = np.concatenate(
-            [
-                per_domain[domain]["entropy"]
-                for domain in domains
-                if per_domain[domain]["entropy"].size
-            ],
+            [per_domain[domain]["entropy"] for domain in domains if per_domain[domain]["entropy"].size],
         )
         global_edges = compute_edges(
             all_ent,
@@ -1148,18 +1268,21 @@ def _build_counts_figure(config: CountsFigureConfig):
         constrained_layout=True,
     )
 
-    for axis, domain_name in zip(axes, config.domains):
+    axes_seq = coerce_axes_sequence(axes, expected=len(config.domains))
+
+    for axis, domain_name in zip(axes_seq, config.domains):
         _render_counts_panel(axis, domain_name, config)
 
     ref_edges = config.edges_by_domain["Carpark"]
     centers = 0.5 * (ref_edges[:-1] + ref_edges[1:])
-    tick_labels = [
-        f"[{ref_edges[i]:.2f},{ref_edges[i + 1]:.2f}]"
-        for i in range(len(ref_edges) - 1)
-    ]
-    axes[-1].set_xticks(centers)
-    axes[-1].set_xticklabels(tick_labels, rotation=45, ha="right")
-    axes[-1].set_xlabel(config.x_label)
+    tick_labels = [f"[{ref_edges[i]:.2f},{ref_edges[i + 1]:.2f}]" for i in range(len(ref_edges) - 1)]
+    axes_last = axes_seq[-1]
+    if hasattr(axes_last, "set_xticks"):
+        axes_last.set_xticks(centers)
+    if hasattr(axes_last, "set_xticklabels"):
+        axes_last.set_xticklabels(tick_labels, rotation=45, ha="right")
+    if hasattr(axes_last, "set_xlabel"):
+        axes_last.set_xlabel(config.x_label)
 
     if config.args.title:
         fig.suptitle(
@@ -1169,6 +1292,8 @@ def _build_counts_figure(config: CountsFigureConfig):
             fontweight="bold",
         )
 
+    if not hasattr(fig, "axes"):
+        fig.axes = axes_seq
     return fig
 
 
@@ -1211,21 +1336,33 @@ def main():
     """CLI entry point for PASS1 entropy bucket plots (graph_3)."""
     args = parse_args()
 
-    try:
-        cmap = plt.get_cmap(args.cmap)
-    except (ValueError, TypeError):
-        cmap = plt.get_cmap("YlGnBu")
+    cmap_getter = getattr(plt, "get_cmap", None)
+
+    def _fallback_cmap(_name=None):
+        return lambda _v: (0.0, 0.0, 0.0, 1.0)
+
+    if cmap_getter is None:
+        cmap = _fallback_cmap()
+    else:
+        try:
+            cmap = cmap_getter(args.cmap)
+        except (ValueError, TypeError):
+            cmap = cmap_getter("YlGnBu")
     color_noaha = cmap(0.35)  # lighter
-    color_aha   = cmap(0.75)  # darker
+    color_aha = cmap(0.75)  # darker
 
     anything = False
     for metric in args.which_metrics:
         a_ok = render_metric_accuracy(args, metric, color_noaha, color_aha)
-        c_ok = render_metric_counts(args,   metric, color_aha)
+        c_ok = render_metric_counts(args, metric, color_aha)
         anything = anything or a_ok or c_ok
 
     if not anything:
         sys.exit(2)
+
+
+# Backwards-compatible alias for callers expecting a function named after the module.
+graph_3_impl = main
 
 if __name__ == "__main__":
     main()

@@ -13,9 +13,13 @@
 set -euo pipefail
 ulimit -n 4096
 
-# ── Repo + env ───────────────────────────────────────────────────────────────
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
+# ── Project root ─────────────────────────────────────────────────────────────
+# Use Slurm submission directory when available; otherwise fall back to $PWD.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+  PROJECT_ROOT="${SLURM_SUBMIT_DIR}"
+else
+  PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
+fi
 
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
 CONDA_ENV="${CONDA_ENV:-$PROJECT_ROOT/openr1}"
@@ -25,6 +29,7 @@ module load cudatoolkit/12.6
 # ── Env hygiene ──────────────────────────────────────────────────────────────
 export PYTHONNOUSERSITE=1
 unset PYTHONPATH
+export PYTHONPATH="$PROJECT_ROOT"
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 export TRANSFORMERS_NO_TORCHVISION=1
 export TRANSFORMERS_NO_PYTORCH_IMAGE_TRANSFORMS=1

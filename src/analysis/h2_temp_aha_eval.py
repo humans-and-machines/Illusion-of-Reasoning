@@ -39,6 +39,8 @@ Outputs (per Aha mode; under <out_dir>/<aha_mode>/ when --aha all):
 import argparse
 import json
 import os
+import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -148,25 +150,33 @@ def load_samples(
     return pd.DataFrame(rows)
 
 
+def _apply_step_bounds(df: pd.DataFrame, min_step: Optional[int], max_step: Optional[int]) -> pd.DataFrame:
+    """
+    Restrict rows to the requested step range.
+    """
+    if min_step is not None:
+        df = df[df["step"] >= min_step]
+    if max_step is not None:
+        df = df[df["step"] <= max_step]
+    if df.empty:
+        raise SystemExit("No rows remain after applying step bounds.")
+    return df
+
+
 # ---------- overlap + merge helpers ----------
 
 
 def restrict_to_overlap(
     df_high: pd.DataFrame,
     df_low: pd.DataFrame,
+    use_sample_idx: bool,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
     """
     Intersect on keys. Always require (problem, step); include sample_idx if present on both.
     Returns filtered (dfA, dfB, keys_used).
     """
     keys = ["problem", "step"]
-    use_idx = (
-        ("sample_idx" in df_high.columns)
-        and ("sample_idx" in df_low.columns)
-        and df_high["sample_idx"].notna().any()
-        and df_low["sample_idx"].notna().any()
-    )
-    if use_idx:
+    if use_sample_idx:
         keys.append("sample_idx")
 
     keys_high = df_high[keys].drop_duplicates()
@@ -178,6 +188,29 @@ def restrict_to_overlap(
     merged_high = common.merge(df_high, on=keys, how="inner").sort_values(keys).reset_index(drop=True)
     merged_low = common.merge(df_low, on=keys, how="inner").sort_values(keys).reset_index(drop=True)
     return merged_high, merged_low, keys
+
+
+def restrict_to_overlap_many(dfs: List[pd.DataFrame], use_sample_idx: bool) -> Tuple[List[pd.DataFrame], List[str]]:
+    """
+    Intersect multiple DataFrames on (problem, step[, sample_idx]).
+    """
+    if len(dfs) < 2:
+        raise SystemExit("Need at least two runs to compute overlap.")
+    keys = ["problem", "step"]
+    if use_sample_idx:
+        keys.append("sample_idx")
+
+    common = dfs[0][keys].drop_duplicates()
+    for df in dfs[1:]:
+        common = common.merge(df[keys].drop_duplicates(), on=keys, how="inner")
+        if common.empty:
+            raise SystemExit("No overlapping (problem, step[, sample_idx]) among runs.")
+
+    filtered = [
+        common.merge(df, on=keys, how="inner").sort_values(keys).reset_index(drop=True)
+        for df in dfs
+    ]
+    return filtered, keys
 
 
 # ---------- stage bucketing ----------
@@ -671,21 +704,40 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "root_high",
+        nargs="?",
+        default=None,
         help="Results root for baseline temp (e.g., GRPO-1.5B).",
     )
     parser.add_argument(
         "root_low",
+        nargs="?",
+        default=None,
         help="Results root for low-temp run (e.g., GRPO-1.5B-low-temp).",
+    )
+    parser.add_argument(
+        "--roots",
+        nargs="+",
+        default=None,
+        help="Optional list of >=2 result roots at different temperatures. "
+        "When provided, all listed runs are intersected and analyzed jointly "
+        "with a standardized temperature regressor.",
     )
     parser.add_argument(
         "--split",
         default=None,
         help="Record-level split filter (e.g., 'test').",
     )
+    parser.add_argument("--min_step", type=int, default=None)
+    parser.add_argument("--max_step", type=int, default=None)
     parser.add_argument(
         "--out_dir",
         default=None,
         help="Output directory (default: <root_high>/h2_temp_aha).",
+    )
+    parser.add_argument(
+        "--ignore_sample_idx_overlap",
+        action="store_true",
+        help="When intersecting runs, ignore sample_idx and match only on (problem, step).",
     )
 
     # Aha selection
@@ -771,12 +823,18 @@ def _load_and_overlap_runs(
         aha_mode="gpt",
         gate_gpt_by_words=args.gate_gpt_by_words,
     )
+    df_high = _apply_step_bounds(df_high, args.min_step, args.max_step)
+    df_low = _apply_step_bounds(df_low, args.min_step, args.max_step)
     if df_high.empty or df_low.empty:
         raise SystemExit(
             "One directory has no usable sample-level rows. Check --split and file structure.",
         )
 
-    df_high_overlap, df_low_overlap, overlap_keys = restrict_to_overlap(df_high, df_low)
+    df_high_overlap, df_low_overlap, overlap_keys = restrict_to_overlap(
+        df_high,
+        df_low,
+        use_sample_idx=not args.ignore_sample_idx_overlap,
+    )
 
     df_high_overlap["temp_low"] = 0
     df_high_overlap["run_label"] = "high"
@@ -842,6 +900,16 @@ def _resolve_aha_modes(args: argparse.Namespace) -> List[str]:
     return [args.aha]
 
 
+def _parse_temp_from_path(path_str: str) -> float:
+    """
+    Try to extract a numeric temperature value from a results directory name.
+    """
+    match = re.search(r"temp[-_]?([0-9.]+)", path_str)
+    if not match:
+        raise SystemExit(f"Unable to parse temperature from path: {path_str}")
+    return float(match.group(1))
+
+
 def _run_modes_for_combined(
     combined_df: pd.DataFrame,
     modes: List[str],
@@ -872,6 +940,7 @@ def _run_modes_for_combined(
             df_high_broad, df_low_broad, _ = restrict_to_overlap(
                 df_high_broad,
                 df_low_broad,
+                use_sample_idx=not args.ignore_sample_idx_overlap,
             )
             df_high_broad["temp_low"] = 0
             df_high_broad["run_label"] = "high"
@@ -901,6 +970,11 @@ def main() -> None:
     """
     parser = build_arg_parser()
     args = parser.parse_args()
+    if args.roots:
+        run_multi_temperature_mode(args)
+        return
+    if not args.root_high or not args.root_low:
+        parser.error("root_high and root_low are required unless --roots is provided.")
     out_root = args.out_dir or os.path.join(args.root_high, "h2_temp_aha")
     os.makedirs(out_root, exist_ok=True)
 
@@ -950,10 +1024,221 @@ def main() -> None:
     else:
         cutpoints = stage_info.get("cutpoints", [])
         quantiles = stage_info.get("quantiles", [])
-        print(
-            f"Stage cuts (quantiles {quantiles}): early <= {cutpoints[0]} < mid <= {cutpoints[1]} < late",
-        )
+    print(
+        f"Stage cuts (quantiles {quantiles}): early <= {cutpoints[0]} < mid <= {cutpoints[1]} < late",
+    )
     print("Output root:", out_root)
+
+
+def _load_multi_temp_frames(
+    root_paths: List[str],
+    split_filter: Optional[str],
+    aha_mode_for_loading: str,
+    gate_gpt_by_words: bool,
+    min_step: Optional[int],
+    max_step: Optional[int],
+) -> Tuple[List[pd.DataFrame], List[float]]:
+    """
+    Load multiple result roots and attach their temperature values.
+    """
+    frames: List[pd.DataFrame] = []
+    temps: List[float] = []
+    for root in root_paths:
+        df = load_samples(
+            root,
+            split_filter,
+            aha_mode=aha_mode_for_loading,
+            gate_gpt_by_words=gate_gpt_by_words,
+        )
+        if df.empty:
+            raise SystemExit(f"No usable rows found under {root}")
+        df = _apply_step_bounds(df, min_step, max_step)
+        temp_value = _parse_temp_from_path(root)
+        df["run_label"] = Path(root).name
+        df["temp_value"] = temp_value
+        frames.append(df)
+        temps.append(temp_value)
+        print(f"[info] Loaded {len(df):,} rows from {root} (temp={temp_value})")
+    return frames, temps
+
+
+def _fit_multi_temp_glm(
+    mode_df: pd.DataFrame,
+    aha_col: Optional[str],
+    cluster_by: str,
+    out_dir: str,
+    mode_name: str,
+) -> None:
+    """
+    Fit correct ~ C(problem) + temp_std (+ aha) for the stacked multi-temp data.
+    """
+    stats_module, stats_formula = lazy_import_statsmodels()
+    glm_df = mode_df.copy()
+    if glm_df["temp_value"].nunique() < 2:
+        raise SystemExit("Need at least two distinct temperatures for multi-temp GLM.")
+    glm_df["temp_std"] = (glm_df["temp_value"] - glm_df["temp_value"].mean()) / (
+        glm_df["temp_value"].std(ddof=0) + 1e-8
+    )
+
+    formula_terms = ["C(problem)", "temp_std"]
+    if aha_col:
+        formula_terms.append(aha_col)
+    formula = "correct ~ " + " + ".join(formula_terms)
+
+    if cluster_by == "problem":
+        cov_type, cov_kwds = (
+            "cluster",
+            {
+                "groups": pd.Categorical(glm_df["problem"]).codes,
+                "use_correction": True,
+                "df_correction": True,
+            },
+        )
+    else:
+        cov_type, cov_kwds = "HC1", {}
+
+    try:
+        res = stats_formula.glm(
+            formula,
+            data=glm_df,
+            family=stats_module.families.Binomial(),
+        ).fit(cov_type=cov_type, cov_kwds=cov_kwds)
+    except TypeError:
+        res = stats_formula.glm(
+            formula,
+            data=glm_df,
+            family=stats_module.families.Binomial(),
+        ).fit(cov_type=cov_type)
+
+    mode_dir = os.path.join(out_dir, mode_name)
+    os.makedirs(mode_dir, exist_ok=True)
+    with open(
+        os.path.join(mode_dir, "multi_temp_glm_summary.txt"),
+        "w",
+        encoding="utf-8",
+    ) as handle:
+        handle.write(res.summary().as_text())
+        handle.write(f"\n\nFormula: {formula}\nCovariance: {cov_type}\n")
+
+    coef_df = pd.DataFrame(
+        {
+            "term": res.params.index,
+            "coef": res.params.values,
+            "se": res.bse.values,
+            "z": (res.params.values / np.where(res.bse.values == 0, np.nan, res.bse.values)),
+            "p": res.pvalues.values,
+        },
+    )
+    coef_df.to_csv(os.path.join(mode_dir, "multi_temp_glm_coefficients.csv"), index=False)
+
+    metrics: Dict[str, Any] = {
+        "N": int(len(glm_df)),
+        "coef_temp_std": float(res.params.get("temp_std", float("nan"))),
+        "p_temp_std": float(res.pvalues.get("temp_std", float("nan"))),
+    }
+
+    if aha_col:
+        mask_aha1 = glm_df[aha_col] == 1
+        mask_aha0 = glm_df[aha_col] == 0
+        acc1 = float(glm_df.loc[mask_aha1, "correct"].mean()) if mask_aha1.any() else float("nan")
+        acc0 = float(glm_df.loc[mask_aha0, "correct"].mean()) if mask_aha0.any() else float("nan")
+        metrics.update(
+            {
+                "share_shift": float(glm_df[aha_col].mean()),
+                "acc_shift": acc1,
+                "acc_no_shift": acc0,
+                "delta_pp": (acc1 - acc0) * 100.0 if np.isfinite(acc1) and np.isfinite(acc0) else float("nan"),
+                "coef_shift": float(res.params.get(aha_col, float("nan"))),
+                "p_shift": float(res.pvalues.get(aha_col, float("nan"))),
+            },
+        )
+        data_with_aha1 = glm_df.copy()
+        data_with_aha1[aha_col] = 1
+        data_with_aha0 = glm_df.copy()
+        data_with_aha0[aha_col] = 0
+        metrics["AME"] = float(np.mean(res.predict(data_with_aha1) - res.predict(data_with_aha0)))
+    else:
+        metrics.update(
+            {
+                "share_shift": float("nan"),
+                "acc_shift": float("nan"),
+                "acc_no_shift": float("nan"),
+                "delta_pp": float("nan"),
+                "coef_shift": float("nan"),
+                "p_shift": float("nan"),
+                "AME": float("nan"),
+            },
+        )
+
+    pd.DataFrame([metrics]).to_csv(
+        os.path.join(mode_dir, "multi_temp_glm_metrics.csv"),
+        index=False,
+    )
+
+
+def run_multi_temperature_mode(args: argparse.Namespace) -> None:
+    """
+    Load >=2 temperature runs and fit correct ~ C(problem) + temp_std + shift.
+    """
+    root_paths = args.roots
+    if len(root_paths) < 2:
+        raise SystemExit("Provide at least two --roots directories for multi-temperature mode.")
+
+    load_mode = "gpt_broad" if args.aha == "gpt_broad" else "gpt"
+    frames, temps = _load_multi_temp_frames(
+        root_paths,
+        args.split,
+        load_mode,
+        args.gate_gpt_by_words,
+        args.min_step,
+        args.max_step,
+    )
+    filtered_frames, overlap_keys = restrict_to_overlap_many(
+        frames,
+        use_sample_idx=not args.ignore_sample_idx_overlap,
+    )
+    combined_df = pd.concat(filtered_frames, ignore_index=True)
+    combined_df["temp_value"] = combined_df["temp_value"].astype(float)
+    print(f"[info] Keys used for overlap: {overlap_keys}")
+    print(f"[info] Combined rows (all temps): {len(combined_df):,}")
+
+    out_root = args.out_dir or os.path.join(root_paths[0], "h2_temp_aha_multi")
+    os.makedirs(out_root, exist_ok=True)
+
+    formal_cfg = {
+        "delta1": args.formal_delta1,
+        "delta2": args.formal_delta2,
+        "min_prior_steps": args.formal_min_prior_steps,
+    }
+
+    for mode_name in _resolve_aha_modes(args):
+        if mode_name == "gpt_broad" and load_mode != "gpt_broad":
+            raise SystemExit("Multi-temperature mode currently supports gpt_broad only when --aha gpt_broad.")
+        mode_df = combined_df.copy()
+        if mode_name == "formal":
+            mode_df = attach_formal_sample_level(
+                mode_df,
+                delta1=formal_cfg["delta1"],
+                delta2=formal_cfg["delta2"],
+                min_prior_steps=formal_cfg["min_prior_steps"],
+            )
+            aha_col = "aha_formal"
+        elif mode_name == "words":
+            aha_col = "aha_words"
+        elif mode_name in ("gpt", "gpt_broad"):
+            aha_col = "aha_gpt"
+        elif mode_name == "none":
+            aha_col = None
+        else:
+            aha_col = "aha"
+        _fit_multi_temp_glm(
+            mode_df=mode_df,
+            aha_col=aha_col,
+            cluster_by=args.cluster_by,
+            out_dir=out_root,
+            mode_name=mode_name,
+        )
+    print(f"[info] Multi-temperature outputs -> {out_root}")
 
 
 if __name__ == "__main__":

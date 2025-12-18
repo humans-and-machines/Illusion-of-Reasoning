@@ -6,8 +6,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=05:00:00
-#SBATCH --account=mltheory
+#SBATCH --time=00:59:00
 
 set -euo pipefail
 ulimit -n 4096
@@ -73,11 +72,11 @@ test -d "$CKPT_DIR" || { echo "Missing $CKPT_DIR"; exit 1; }
 # Map temperature → output root (under artifacts/results)
 temp_to_root () {
   case "$1" in
-    0.7)  echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.7-3" ;;
-    0.3)  echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-low-temp-3" ;;
-    0.05) echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.05-3" ;;
-    0|0.0) echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.0-3" ;;
-    *)    echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-${1}-3" ;;
+    0.7)   echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.7" ;;
+    0.3)   echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.3" ;;
+    0.05)  echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.05" ;;
+    0|0.0) echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-0.0" ;;
+    *)     echo "$PROJECT_ROOT/artifacts/results/GRPO-1.5B-math-temp-${1}" ;;
   esac
 }
 # Allow overrides of the artifacts/results root via INFER_OUTPUT_ROOT.

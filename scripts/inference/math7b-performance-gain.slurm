@@ -52,7 +52,8 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_math.py}"
 
 # 7B tuned root + step to compare
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
+# NOTE: there is no intermediate \"open-r1\" subdirectory in artifacts/models.
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
 CKPT_STEP=500
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 

@@ -14,9 +14,13 @@
 set -euo pipefail
 ulimit -n 4096
 
-# ── Repo root ────────────────────────────────────────────────────────────────
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
+# ── Project root ─────────────────────────────────────────────────────────────
+# Use Slurm submission directory when available; otherwise fall back to $PWD.
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+  PROJECT_ROOT="${SLURM_SUBMIT_DIR}"
+else
+  PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
+fi
 
 # ── Conda env ───────────────────────────────────────────────
 source /usr/local/anaconda3/2024.02/etc/profile.d/conda.sh
@@ -29,6 +33,7 @@ echo "✅ Conda: $(which python)"; python --version
 # ── Env hygiene ─────────────────────────────────────────────
 export PYTHONNOUSERSITE=1
 unset PYTHONPATH
+export PYTHONPATH="$PROJECT_ROOT"
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 export TRANSFORMERS_NO_TORCHVISION=1
 export TRANSFORMERS_NO_PYTORCH_IMAGE_TRANSFORMS=1
@@ -36,8 +41,8 @@ export TOKENIZERS_PARALLELISM=false
 export LOGLEVEL=DEBUG
 export PYTHONUNBUFFERED=1
 
-# ── Project-local caches ────────────────────────────────────
-CACHE_ROOT="${CACHE_ROOT:-$PROJECT_ROOT/.caches}"
+# ── Project-local caches (force inside repo) ─────────────────
+CACHE_ROOT="$PROJECT_ROOT/.caches"
 mkdir -p "$CACHE_ROOT"/{hf,xdg,torchinductor,triton} "$PROJECT_ROOT/.tmp" logs
 export HF_HOME="$CACHE_ROOT/hf"
 export HF_HUB_CACHE="$HF_HOME/hub"
@@ -57,10 +62,11 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR"
 
 # ── Paths ───────────────────────────────────────────────────
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_crossword.py}"
-DATA_JSONL="${DATA_JSONL:-$PROJECT_ROOT/data/data.jsonl}"  # your local eval set
+DATASET_ID="${DATASET_ID:-od2961/Guardian-cryptonite-official-split}"  # HF crossword dataset
+DATASET_PATH="${DATASET_PATH:-}"  # Optional local JSONL when using CROSSWORD-LOCAL
 
 # Tuned checkpoint root + step (override with env if needed)
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/Qwen2.5-1.5B/Qwen2.5-1.5B-Open-R1-GRPO-Crosswords-v07}"
 CKPT_STEP="${CKPT_STEP:-1000}"
 CKPT_DIR="$MODEL_ROOT/checkpoint-$CKPT_STEP"
 
@@ -94,8 +100,22 @@ mkdir -p "$OUTDIR"
 
 echo "→ Running crossword compare: $TAG"
 echo "   Model: $MODEL_NAME_OR_PATH"
-echo "   Data : $DATA_JSONL"
+if [[ "${DATASET_ID^^}" == "CROSSWORD-LOCAL" ]]; then
+  echo "   Data : CROSSWORD-LOCAL @ ${DATASET_PATH}"
+else
+  echo "   Data : $DATASET_ID (HF)"
+fi
 echo "   Out  : $OUTDIR"
+
+# ── Dataset args (HF vs local JSONL) ────────────────────────
+DATA_ARGS=(--dataset_id "$DATASET_ID" --split test)
+if [[ "${DATASET_ID^^}" == "CROSSWORD-LOCAL" ]]; then
+  if [[ -z "${DATASET_PATH}" ]]; then
+    echo "ERROR: DATASET_PATH is required when DATASET_ID=CROSSWORD-LOCAL" >&2
+    exit 1
+  fi
+  DATA_ARGS+=(--dataset_path "$DATASET_PATH")
+fi
 
 # ── Inference: 1 sample, NO second pass ─────────────────────
 python -u "$SCRIPT_PATH" \
@@ -109,9 +129,7 @@ python -u "$SCRIPT_PATH" \
   --top_p 0.95 \
   --seed 42 \
   --dtype bfloat16 \
-  --dataset_id CROSSWORD-LOCAL \
-  --dataset_path "$DATA_JSONL" \
-  --split test \
+  "${DATA_ARGS[@]}" \
   --think_cap 750 \
   --answer_cap 50 \
   $STEP_FLAG

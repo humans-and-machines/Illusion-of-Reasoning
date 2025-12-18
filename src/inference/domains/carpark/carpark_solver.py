@@ -352,6 +352,20 @@ class InferenceContext:
 
 
 @dataclass
+class CarparkBatchLayout:
+    """
+    Mapping from generated rows back to batch items and target sample indices.
+
+    Each generated row corresponds to a specific (batch_index, sample_idx)
+    pair drawn from the ``missing_indices`` of that batch item.
+    """
+
+    batch_items: List[Dict[str, Any]]
+    row_to_batch_index: List[int]
+    row_to_sample_idx: List[int]
+
+
+@dataclass
 class ResultsContext:
     """Bundle shared state needed when writing per-example results."""
 
@@ -410,6 +424,7 @@ class SampleRowContext:
     example: Dict[str, Any]
     results_ctx: ResultsContext
     batch_index: int
+    row_index: int
     sample_idx: int
     gold_set: set[str]
     passes: SampleRowPasses
@@ -485,16 +500,40 @@ def _find_reconsider_markers(think_text: str, meta: Dict[str, Any]) -> List[str]
 def _run_pass1_for_batch(
     batch_items: List[Dict[str, Any]],
     context: InferenceContext,
-) -> Tuple[PassOutputs, int]:
-    """Run pass-1 (think + answer) for a batch of examples."""
+) -> Tuple[PassOutputs, CarparkBatchLayout]:
+    """
+    Run pass-1 (think + answer) for a batch of examples.
+
+    Only missing sample indices per example are scheduled for generation,
+    so the number of generated rows equals the total number of outstanding
+    (example, sample_idx) pairs in ``missing_indices``.
+    """
     num_samples = int(context.config.num_samples)
     base_prompts = [
         chat_base_for_pass1_from_messages(context.tokenizer, example["messages"]) for example in batch_items
     ]
-    pre1_think = _repeat_for_samples(
-        [prompt + "<think>\n" for prompt in base_prompts],
-        num_samples,
-    )
+
+    pre1_think: List[str] = []
+    row_to_batch_index: List[int] = []
+    row_to_sample_idx: List[int] = []
+
+    for batch_index, example in enumerate(batch_items):
+        prompt = base_prompts[batch_index]
+        missing_indices = example.get("missing_indices") or list(range(num_samples))
+        for sample_idx in missing_indices:
+            pre1_think.append(prompt + "<think>\n")
+            row_to_batch_index.append(batch_index)
+            row_to_sample_idx.append(int(sample_idx))
+
+    if not pre1_think:
+        empty_outputs = empty_pass_outputs(0)
+        layout = CarparkBatchLayout(
+            batch_items=batch_items,
+            row_to_batch_index=[],
+            row_to_sample_idx=[],
+        )
+        return empty_outputs, layout
+
     think1_texts, think1_ents, _, _, think1_stop = _gen_batch(
         pre1_think,
         context.config.think_cap,
@@ -516,34 +555,19 @@ def _run_pass1_for_batch(
         f"<think>{think_text}</think>\n<answer>{answer_text}</answer>"
         for think_text, answer_text in zip(think1_texts, answer1_texts)
     ]
-    return (
-        PassOutputs(
-            full_texts=pass1_full_texts,
-            ent_think=think1_ents,
-            ent_answer=answer1_ents,
-            stop_reason_think=think1_stop,
-            stop_reason_answer=answer1_stop,
-        ),
-        num_samples,
+    outputs = PassOutputs(
+        full_texts=pass1_full_texts,
+        ent_think=think1_ents,
+        ent_answer=answer1_ents,
+        stop_reason_think=think1_stop,
+        stop_reason_answer=answer1_stop,
     )
-
-
-def _build_first_pass_choice(
-    batch_items: List[Dict[str, Any]],
-    pass1_full: List[str],
-    num_samples: int,
-    config: CarparkInferenceConfig,
-) -> List[str]:
-    """Select which pass-1 sample feeds pass-2 per example."""
-    choice_texts: List[str] = []
-    for batch_index, _ in enumerate(batch_items):
-        chosen_sample = max(
-            0,
-            min(config.second_pass_use_sample_idx, num_samples - 1),
-        )
-        row_index = batch_index * num_samples + chosen_sample
-        choice_texts.append(pass1_full[row_index])
-    return choice_texts
+    layout = CarparkBatchLayout(
+        batch_items=batch_items,
+        row_to_batch_index=row_to_batch_index,
+        row_to_sample_idx=row_to_sample_idx,
+    )
+    return outputs, layout
 
 
 def _build_second_pass_prompts(ctx: SecondPassContext) -> List[str]:
@@ -609,7 +633,7 @@ def _run_pass2_for_batch(ctx: SecondPassContext) -> PassOutputs:
 def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
     """Assemble the output row for a single (example, sample_idx)."""
     config = ctx.results_ctx.inference.config
-    row_index = ctx.batch_index * ctx.results_ctx.num_samples + ctx.sample_idx
+    row_index = ctx.row_index
     gold_set = ctx.gold_set
 
     pass1_outputs = ctx.passes.pass1
@@ -647,7 +671,7 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             ent_answer=pass2_outputs.ent_answer[row_index],
             meta={
                 "injected_cue": True,
-                "prev_output": ctx.results_ctx.firstpass_choice[ctx.batch_index],
+                "prev_output": pass1_outputs.full_texts[row_index],
                 "cue_prefix_str": ctx.results_ctx.cue_str,
                 "stop_reason_think": pass2_outputs.stop_reason_think[row_index],
                 "stop_reason_answer": pass2_outputs.stop_reason_answer[row_index],
@@ -678,7 +702,7 @@ def _build_row_for_sample(ctx: SampleRowContext) -> Dict[str, Any]:
             ent_answer=outputs_extra.ent_answer[row_index],
             meta={
                 "injected_cue": True,
-                "prev_output": ctx.results_ctx.firstpass_choice[ctx.batch_index],
+                "prev_output": pass1_outputs.full_texts[row_index],
                 "cue_prefix_str": cue_str_extra,
                 "stop_reason_think": outputs_extra.stop_reason_think[row_index],
                 "stop_reason_answer": outputs_extra.stop_reason_answer[row_index],
@@ -739,18 +763,31 @@ def _write_results_for_batch(
     batch_items: List[Dict[str, Any]],
     pass1: PassOutputs,
     pass2: Optional[PassOutputs],
+    layout: CarparkBatchLayout,
     results_ctx: ResultsContext,
     extra_passes: Optional[List[Tuple[str, PassOutputs]]] = None,
 ) -> None:
     """Write JSONL rows for a batch, only for missing sample indices."""
+    # Map (batch_index, sample_idx) → row_index into PassOutputs.
+    row_index_by_ex_and_sample: Dict[Tuple[int, int], int] = {}
+    for row_index, (batch_index, sample_idx) in enumerate(
+        zip(layout.row_to_batch_index, layout.row_to_sample_idx),
+    ):
+        row_index_by_ex_and_sample[(batch_index, sample_idx)] = row_index
+
     with open(results_ctx.outpath, "a", encoding="utf-8") as handle:
         for batch_index, example in enumerate(batch_items):
             gold_set = _canon_rush_gold(example["solution"])
             for sample_idx in example["missing_indices"]:
+                key = (batch_index, int(sample_idx))
+                row_index = row_index_by_ex_and_sample.get(key)
+                if row_index is None:
+                    continue
                 row_ctx = SampleRowContext(
                     example=example,
                     results_ctx=results_ctx,
                     batch_index=batch_index,
+                    row_index=row_index,
                     sample_idx=sample_idx,
                     gold_set=gold_set,
                     passes=SampleRowPasses(
@@ -768,9 +805,8 @@ def _write_results_for_batch(
 def _compute_second_pass_outputs_for_carpark(
     *,
     context: InferenceContext,
-    batch_items: List[Dict[str, Any]],
-    firstpass_choice: List[str],
-    num_samples: int,
+    layout: CarparkBatchLayout,
+    pass1_outputs: PassOutputs,
 ) -> Tuple[List[str], Optional[PassOutputs], Optional[List[Tuple[str, PassOutputs]]]]:
     """
     Run optional second-pass reconsideration for a carpark batch.
@@ -784,23 +820,61 @@ def _compute_second_pass_outputs_for_carpark(
     extra_passes: List[Tuple[str, PassOutputs]] = []
     main_pass2: Optional[PassOutputs] = None
 
-    if context.config.two_pass and cue_strs:
-        for idx, cue_str in enumerate(cue_strs):
-            second_pass_ctx = SecondPassContext(
-                batch_items=batch_items,
-                inference=context,
-                firstpass_choice=firstpass_choice,
-                num_samples=num_samples,
-                cue_str=cue_str,
+    num_rows = len(pass1_outputs.full_texts)
+    if not (context.config.two_pass and cue_strs and num_rows > 0):
+        main_pass2 = empty_pass_outputs(num_rows)
+        return cue_strs, main_pass2, extra_passes
+
+    for idx, cue_str in enumerate(cue_strs):
+        cue_phrase = cue_str.strip()
+        prompts: List[str] = []
+        for row_index in range(num_rows):
+            batch_index = layout.row_to_batch_index[row_index]
+            example = layout.batch_items[batch_index]
+            prompts.append(
+                chat_base_for_pass2_from_messages(
+                    context.tokenizer,
+                    example["messages"],
+                    pass1_outputs.full_texts[row_index],
+                    cue_phrase,
+                ),
             )
-            outputs_i = _run_pass2_for_batch(second_pass_ctx)
-            if idx == len(cue_strs) - 1:
-                main_pass2 = outputs_i
-            else:
-                extra_passes.append((cue_str, outputs_i))
-    else:
-        total_rows = len(batch_items) * num_samples
-        main_pass2 = empty_pass_outputs(total_rows)
+
+        pre_think_prefixes = [prompt + "<think>\n" + cue_str for prompt in prompts]
+        think_texts, ent_think, _, _, stop_think = _gen_batch(
+            pre_think_prefixes,
+            context.config.think_cap,
+            ["</think>"],
+            context,
+        )
+
+        pre_answer_prefixes = [
+            prefix + text + "</think>\n<answer>\n" for prefix, text in zip(pre_think_prefixes, think_texts)
+        ]
+        answer_texts, ent_answer, _, _, stop_answer = _gen_batch(
+            pre_answer_prefixes,
+            context.config.answer_cap,
+            ["</answer>"],
+            context,
+        )
+
+        full_texts = [
+            f"<think>{cue_str}{think_text}</think>\n<answer>{answer_text}</answer>"
+            for think_text, answer_text in zip(think_texts, answer_texts)
+        ]
+
+        outputs_i = PassOutputs(
+            full_texts=full_texts,
+            ent_think=ent_think,
+            ent_answer=ent_answer,
+            stop_reason_think=stop_think,
+            stop_reason_answer=stop_answer,
+        )
+
+        if idx == len(cue_strs) - 1:
+            main_pass2 = outputs_i
+        else:
+            extra_passes.append((cue_str, outputs_i))
 
     return cue_strs, main_pass2, extra_passes
 
@@ -842,33 +916,27 @@ def _run_inference_on_split_core(
         if not batch_items:
             continue
 
-        pass1_outputs, num_samples = _run_pass1_for_batch(batch_items, context)
-        firstpass_choice = _build_first_pass_choice(
-            batch_items,
-            pass1_outputs.full_texts,
-            num_samples,
-            context.config,
-        )
+        pass1_outputs, layout = _run_pass1_for_batch(batch_items, context)
 
         cue_strs, main_pass2, extra_passes = _compute_second_pass_outputs_for_carpark(
             context=context,
-            batch_items=batch_items,
-            firstpass_choice=firstpass_choice,
-            num_samples=num_samples,
+            layout=layout,
+            pass1_outputs=pass1_outputs,
         )
 
         results_ctx = ResultsContext(
             outpath=outpath,
             inference=context,
-            num_samples=num_samples,
+            num_samples=context.config.num_samples,
             cue_str=cue_strs[-1] if cue_strs else "",
-            firstpass_choice=firstpass_choice,
+            firstpass_choice=["" for _ in batch_items],
             existing_by_example=existing_by_example,
         )
         _write_results_for_batch(
             batch_items=batch_items,
             pass1=pass1_outputs,
             pass2=main_pass2 if context.config.two_pass else None,
+            layout=layout,
             results_ctx=results_ctx,
             extra_passes=extra_passes if extra_passes else None,
         )

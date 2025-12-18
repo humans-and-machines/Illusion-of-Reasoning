@@ -103,7 +103,14 @@ def _maybe_int(value: Any, default: int = -1) -> int:
 def _common_fields(rec: Dict[str, Any], step_from_name: Optional[int]) -> Dict[str, Any]:
     dataset = rec.get("dataset")
     model = rec.get("model")
-    problem = rec.get("problem") or rec.get("question") or rec.get("row_key") or "unknown"
+    problem = (
+        rec.get("problem")
+        or rec.get("question")
+        or rec.get("row_key")
+        or rec.get("example_id")
+        or rec.get("id")
+        or "unknown"
+    )
     step = rec.get("step", step_from_name if step_from_name is not None else None)
     split = rec.get("split")
     return {
@@ -544,6 +551,35 @@ def verdict_line(result_row: Dict[str, Any]) -> str:
     return _verdict_for_mean_metric(result_row, label)
 
 
+def _filter_by_step(
+    frame: pd.DataFrame,
+    min_step: Optional[int],
+    max_step: Optional[int],
+    label: str,
+) -> pd.DataFrame:
+    """Return ``frame`` filtered to the inclusive ``[min_step, max_step]`` range."""
+    if frame.empty or (min_step is None and max_step is None) or "step" not in frame.columns:
+        return frame
+
+    mask = pd.Series(True, index=frame.index)
+    if min_step is not None:
+        mask &= frame["step"] >= int(min_step)
+    if max_step is not None:
+        mask &= frame["step"] <= int(max_step)
+
+    filtered = frame.loc[mask].reset_index(drop=True)
+    dropped = len(frame) - len(filtered)
+    if dropped:
+        bounds = []
+        if min_step is not None:
+            bounds.append(f">={min_step}")
+        if max_step is not None:
+            bounds.append(f"<={max_step}")
+        bound_text = " and ".join(bounds)
+        print(f"[info] Filtered {dropped} {label} rows outside step bounds ({bound_text})")
+    return filtered
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     """
     Build the argument parser for the forced Aha effect CLI.
@@ -587,6 +623,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.80,
         help=("Darken factor for series colors (0.0–1.0, lower = darker, default 0.80)."),
+    )
+    parser.add_argument(
+        "--min_step",
+        type=int,
+        default=None,
+        help=("Optional inclusive lower bound for training step numbers."),
+    )
+    parser.add_argument(
+        "--max_step",
+        type=int,
+        default=None,
+        help=("Optional inclusive upper bound for training step numbers."),
     )
     return parser
 
@@ -672,6 +720,8 @@ def main() -> None:
         load_samples_from_root,
         load_samples_from_single_root_with_both,
     )
+    df1 = _filter_by_step(df1, args.min_step, args.max_step, label="pass1")
+    df2 = _filter_by_step(df2, args.min_step, args.max_step, label="pass2")
     if df1.empty:
         raise SystemExit("No sample-level pass-1 rows found (after filtering).")
     if df2.empty:

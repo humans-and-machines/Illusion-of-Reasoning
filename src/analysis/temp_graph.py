@@ -507,12 +507,12 @@ def _save_outputs(
         if not present_keys:
             print("[warn] Nothing to plot.")
         else:
-            if args.plot_title:
-                plot_title = args.plot_title
-            else:
+            if args.plot_title is None:
                 # Compact title listing present series
                 shown = ", ".join(label_map[key] for key in present_keys)
                 plot_title = f"Raw Effect vs Temperature — {shown}"
+            else:
+                plot_title = args.plot_title
             io_config = PlotIOConfig(
                 png_path=png_path,
                 pdf_path=pdf_path,

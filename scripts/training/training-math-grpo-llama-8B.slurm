@@ -1,7 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=OpenR1_GRPO
-#SBATCH --account=mltheory
-#SBATCH --partition=mltheory
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:a100:7

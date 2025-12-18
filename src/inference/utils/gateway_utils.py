@@ -50,6 +50,17 @@ if TYPE_CHECKING:  # pragma: no cover
     from datasets import Dataset
 
 
+def require_datasets():
+    """
+    Import and return ``(Dataset, load_dataset)`` via ``gateway_dataset_utils``.
+
+    This keeps a stable public hook for callers such as
+    :mod:`src.inference.utils.common` without introducing the recursive
+    monkeypatching that previously caused ``RecursionError``.
+    """
+    return _gateway_dataset_utils.require_datasets()
+
+
 # Expose the retry module's time reference so tests can monkeypatch it.
 time = _gateway_retry.time
 
@@ -83,48 +94,27 @@ def build_retry_context(
 # ---------------------------------------------------------------------------
 # CLI helpers
 # ---------------------------------------------------------------------------
-def require_datasets():
-    """
-    Delegate to :mod:`gateway_dataset_utils` while honoring monkeypatches in this module.
-    """
-    original_import = _gateway_dataset_utils.import_module
-    try:
-        _gateway_dataset_utils.import_module = import_module
-        return _gateway_dataset_utils.require_datasets()
-    finally:
-        _gateway_dataset_utils.import_module = original_import
-
-
-def _with_require_datasets_override(func):
-    original_require = _gateway_dataset_utils.require_datasets
-    _gateway_dataset_utils.require_datasets = require_datasets
-    try:
-        return func()
-    finally:
-        _gateway_dataset_utils.require_datasets = original_require
-
-
 def load_local_json_dataset(path: str) -> "Dataset":
     """
-    Proxy to :func:`gateway_dataset_utils.load_local_json_dataset` with
-    a patched ``require_datasets``.
+    Thin proxy to :func:`gateway_dataset_utils.load_local_json_dataset`.
+
+    The original implementation temporarily monkeypatched
+    :func:`gateway_dataset_utils.require_datasets` to honor local test
+    overrides. That indirection introduced a recursion when both modules
+    delegated to each other. Since production callers only need the core
+    behavior, we now call straight through.
     """
-    return _with_require_datasets_override(
-        lambda: _gateway_dataset_utils.load_local_json_dataset(path),
-    )
+    return _gateway_dataset_utils.load_local_json_dataset(path)
 
 
 def load_remote_dataset_default(dataset_id: str, split: str, cache_dir: str):
     """
-    Proxy to :func:`gateway_dataset_utils.load_remote_dataset_default` with
-    a patched ``require_datasets``.
+    Thin proxy to :func:`gateway_dataset_utils.load_remote_dataset_default`.
     """
-    return _with_require_datasets_override(
-        lambda: _gateway_dataset_utils.load_remote_dataset_default(
-            dataset_id,
-            split,
-            cache_dir,
-        ),
+    return _gateway_dataset_utils.load_remote_dataset_default(
+        dataset_id,
+        split,
+        cache_dir,
     )
 
 

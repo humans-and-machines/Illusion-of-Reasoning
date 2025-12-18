@@ -297,6 +297,14 @@ def glm_cov_spec(
     """
     if cluster_by == "problem":
         groups = pd.Categorical(rows_df["problem"]).codes
+        # statsmodels' cluster covariance requires at least two clusters;
+        # when there is only one (or zero) distinct problem id, the
+        # small-sample correction term divides by (G-1) and crashes.
+        # In that degenerate case, fall back to HC1.
+        valid_groups = groups[groups >= 0]
+        n_groups = int(np.unique(valid_groups).size) if valid_groups.size else 0
+        if n_groups <= 1:
+            return "HC1", None
         return "cluster", {
             "groups": groups,
             "use_correction": True,

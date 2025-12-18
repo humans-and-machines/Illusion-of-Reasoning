@@ -144,6 +144,21 @@ def test_load_samples_from_single_root_with_both_fallback_pass2(monkeypatch):
     assert len(df1) == 1 and len(df2) == 1
 
 
+def test_filter_by_step_filters_rows():
+    frame = pd.DataFrame(
+        [
+            {"step": 0, "value": 1},
+            {"step": 500, "value": 2},
+            {"step": 1000, "value": 3},
+        ],
+    )
+    filtered = impl._filter_by_step(frame, min_step=0, max_step=950, label="test")
+    assert list(filtered["value"]) == [1, 2]
+    # No filtering when column absent
+    frame2 = pd.DataFrame([{"other": 1}])
+    assert impl._filter_by_step(frame2, 0, 10, label="noop").equals(frame2)
+
+
 def test_choose_merge_keys_and_pair_samples(monkeypatch):
     left = pd.DataFrame(
         [{"problem": "p", "dataset": None, "split": "test", "sample_idx": 0, "correct": 1}],

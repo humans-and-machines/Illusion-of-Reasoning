@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:1
 #SBATCH --time=00:59:00
 #SBATCH --array=0 # 4 temps * 15 ckpts
 
@@ -37,6 +37,7 @@ module load cudatoolkit/12.6
 export PYTHONNOUSERSITE=1
 unset PYTHONPATH
 export PIP_DISABLE_PIP_VERSION_CHECK=1
+export PYTHONPATH="$PROJECT_ROOT"
 
 # HF online (for base model)
 export TRANSFORMERS_OFFLINE=0
@@ -53,34 +54,48 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────────────────────
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_math.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
+# Default to the canonical 7B GRPO math checkpoint location on shared storage.
+# NOTE: there is no intermediate \"open-r1\" subdirectory in artifacts/models.
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/Qwen2.5-7B-Open-R1-GRPO-math-7b}"
 BASE_RESULTS_ROOT="${BASE_RESULTS_ROOT:-$PROJECT_ROOT/artifacts/results}"
 
 # Tags for directory naming (override if you want e.g. MODEL_TAG=1.5B DOMAIN_TAG=xword)
 MODEL_TAG="${MODEL_TAG:-7B}"
 DOMAIN_TAG="${DOMAIN_TAG:-math}"
 
-# ── Grid ────────────────────────────────────────────────────────────────────
-temps=(0.05)
-ckpts=(500)
+# ── Grid / overrides ────────────────────────────────────────────────────────
+# Default grid (can be overridden via env `temps` / `ckpts` or via
+# `INFER_TEMP` / `INFER_STEP` for single-task runs).
+temps=(0 0.05 0.3 0.7)
+ckpts=(0 50 100 150 200 250 300 350 400 450 500)
 
-n_temps=${#temps[@]}
-n_ckpts=${#ckpts[@]}
-n_total=$(( n_temps * n_ckpts ))
+# Allow single-task overrides without relying on the array index mapping.
+if [[ -n "${INFER_TEMP:-}" && -n "${INFER_STEP:-}" ]]; then
+  TEMP="$INFER_TEMP"
+  STEP="$INFER_STEP"
+  n_temps=1
+  n_ckpts=1
+  n_total=1
+  echo "→ Using INFER_TEMP=${TEMP}, INFER_STEP=${STEP} (no array grid)"
+else
+  n_temps=${#temps[@]}
+  n_ckpts=${#ckpts[@]}
+  n_total=$(( n_temps * n_ckpts ))
 
-# Safety: ensure array index in range
-if (( SLURM_ARRAY_TASK_ID < 0 || SLURM_ARRAY_TASK_ID >= n_total )); then
-  echo "Array index ${SLURM_ARRAY_TASK_ID} out of range (0..$((n_total-1)))"
-  exit 1
+  # Safety: ensure array index in range
+  if (( SLURM_ARRAY_TASK_ID < 0 || SLURM_ARRAY_TASK_ID >= n_total )); then
+    echo "Array index ${SLURM_ARRAY_TASK_ID} out of range (0..$((n_total-1)))"
+    exit 1
+  fi
+
+  # Map array index -> (temp, ckpt)
+  idx="${SLURM_ARRAY_TASK_ID}"
+  temp_idx=$(( idx % n_temps ))
+  ckpt_idx=$(( idx / n_temps ))
+
+  TEMP="${temps[$temp_idx]}"
+  STEP="${ckpts[$ckpt_idx]}"
 fi
-
-# Map array index -> (temp, ckpt)
-idx="${SLURM_ARRAY_TASK_ID}"
-temp_idx=$(( idx % n_temps ))
-ckpt_idx=$(( idx / n_temps ))
-
-TEMP="${temps[$temp_idx]}"
-STEP="${ckpts[$ckpt_idx]}"
 
 # Model selection
 if [[ "$STEP" -eq 0 ]]; then
@@ -125,7 +140,8 @@ python -u "$SCRIPT_PATH" \
   --output_dir "$OUTDIR" \
   --batch_size 1 \
   --entropy_mode full \
-  --num_examples 1000000 \
+  --num_examples "${NUM_EXAMPLES:-1000000}" \
+  --dataset_start "${DATASET_START:-0}" \
   --num_samples 8 \
   --temperature "$TEMP" \
   --top_p 0.95 \

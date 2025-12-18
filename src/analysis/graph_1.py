@@ -585,7 +585,10 @@ def main() -> None:
         out_dir,
         "raw_effect_per_step_overlay_linear.png",
     )
-    overlay_title = args.overlay_title or f"Raw Effect of LLM-Detected Shifts by Training Step ({args.model_name})"
+    if args.overlay_title is None:
+        overlay_title = f"Raw Effect of LLM-Detected Shifts by Training Step ({args.model_name})"
+    else:
+        overlay_title = args.overlay_title
     plot_overlay_all(
         per_step,
         label_map,

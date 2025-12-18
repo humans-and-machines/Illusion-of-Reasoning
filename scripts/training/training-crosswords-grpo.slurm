@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=OpenR1_GRPO
-#SBATCH --partition=mltheory        # ← use the mltheory partition
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:4
 #SBATCH --cpus-per-task=64

@@ -39,6 +39,7 @@ as approximate rather than classical MLE-based tests.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import tempfile
 from pathlib import Path
@@ -191,7 +192,15 @@ except (
 def _load_flat_df(path: Path) -> pd.DataFrame:
     rows = list(iter_records_from_file(path))
     if not rows:
-        raise RuntimeError(f"{path} contained no rows")
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            if isinstance(payload, list):
+                rows = [rec for rec in payload if isinstance(rec, dict)]
+        except json.JSONDecodeError:
+            rows = []
+        if not rows:
+            raise RuntimeError(f"{path} contained no rows")
     frame = pd.DataFrame(rows)
 
     # Normalize correctness columns to 0/1

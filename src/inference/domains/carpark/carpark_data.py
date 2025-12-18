@@ -131,19 +131,24 @@ def load_rush_dataset(
     cache_dir: str,
     prompt_col: str = "messages",
     solution_col: str = "solution",
-):
+) -> "Dataset":
     """
     Load a Rush Hour dataset and ensure required columns are present.
+
+    This helper also enforces a stable ``id`` field so that resume logic can
+    reliably identify examples across multiple jobs and dataset slices. When
+    the underlying dataset does not expose an ``id`` column, we synthesize one
+    based on the global row index (``id='idx_{i}'``).
 
     :param dataset_id: Hugging Face dataset identifier or local path.
     :param split: Dataset split name (for example, ``\"train\"`` or ``\"test\"``).
     :param cache_dir: Directory to use as a datasets cache.
     :param prompt_col: Column name containing chat messages or prompts.
     :param solution_col: Column name containing gold solutions.
-    :returns: A datasets-like object exposing ``column_names`` and ``select``.
+    :returns: A :class:`datasets.Dataset` exposing ``column_names`` and ``select``.
     :raises ValueError: If the requested prompt or solution columns are missing.
     """
-    _, load_dataset = require_datasets()
+    dataset_cls, load_dataset = require_datasets()
     dataset = load_dataset(
         dataset_id,
         split=split,
@@ -154,6 +159,15 @@ def load_rush_dataset(
         raise ValueError(
             f"Dataset missing required columns: {prompt_col}, {solution_col}. Found: {sorted(columns)}",
         )
+
+    # Ensure a stable example identifier so that resuming across multiple
+    # jobs and dataset slices can correctly detect already-completed examples.
+    if "id" not in columns:
+        dataset = dataset.map(
+            lambda _example, idx: {"id": f"idx_{idx}"},
+            with_indices=True,
+        )
+
     return dataset
 
 

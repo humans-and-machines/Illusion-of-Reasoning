@@ -264,11 +264,19 @@ def fit_glm(
         family=sm.families.Binomial(),
     )
 
-    glm_result, cov_type, cov_kwds = glm_fit_with_covariance(
-        model,
-        glm_data,
-        cluster_by,
-    )
+    try:
+        glm_result, cov_type, cov_kwds = glm_fit_with_covariance(
+            model,
+            glm_data,
+            cluster_by,
+        )
+    except np.linalg.LinAlgError:
+        print(
+            "[warn] Singular covariance when clustering; refitting without cluster-robust SEs.",
+        )
+        glm_result = model.fit()
+        cov_type = "nonrobust"
+        cov_kwds = None
 
     metrics = _compute_glm_metrics(glm_data, glm_result, aha_col)
 
@@ -592,12 +600,36 @@ def build_arg_parser() -> argparse.ArgumentParser:
     # GPT label policy
     # NOTE: default True to enforce aha_gpt ⊆ aha_words unless explicitly disabled.
     add_gpt_label_policy_args(parser)
+    parser.add_argument("--min_step", type=int, default=None)
+    parser.add_argument("--max_step", type=int, default=None)
 
     # Formal thresholds
     add_formal_threshold_args(parser)
 
     # GLM covariance clustering
     parser.add_argument("--cluster_by", choices=["problem", "none"], default="problem")
+
+    parser.add_argument(
+        "--aha_variant",
+        choices=["words", "gpt", "formal", "all"],
+        default="all",
+        help=(
+            "Which Aha indicator(s) to include in the GLMs. "
+            '"all" runs Words, GPT, and Formal; otherwise only the selected variant is fit.'
+        ),
+    )
+
+    parser.add_argument(
+        "--no_gate_formal_by_gpt",
+        dest="gate_formal_by_gpt",
+        action="store_false",
+        help=(
+            "By default, formal Aha indicators are intersected with GPT-labeled shifts "
+            "(aha_formal <= aha_gpt). Pass this flag to use the raw formal signal without "
+            "requiring an accompanying GPT shift label."
+        ),
+    )
+    parser.set_defaults(gate_formal_by_gpt=True)
 
     # optional LaTeX table
     parser.add_argument(
@@ -639,6 +671,12 @@ def _load_and_prepare_samples(args: argparse.Namespace) -> pd.DataFrame:
         gpt_mode=args.gpt_mode,
         gate_gpt_by_words=not args.no_gate_gpt_by_words,
     )
+    if args.min_step is not None:
+        samples_df = samples_df[samples_df["step"] >= args.min_step]
+    if args.max_step is not None:
+        samples_df = samples_df[samples_df["step"] <= args.max_step]
+    if samples_df.empty:
+        raise SystemExit("No rows remain after step filtering.")
 
     problem_step_df = build_problem_step(samples_df)
     problem_step_df = mark_formal(
@@ -654,14 +692,25 @@ def _load_and_prepare_samples(args: argparse.Namespace) -> pd.DataFrame:
     ).fillna({"aha_formal_ps": 0})
     samples_df["aha_formal_ps"] = samples_df["aha_formal_ps"].astype(int)
 
-    # Enforce strict subset: aha_formal <= aha_gpt (sample-level)
-    samples_df["aha_formal"] = (samples_df["aha_formal_ps"] & samples_df["aha_gpt"]).astype(int)
+    # Optionally enforce strict subset: aha_formal <= aha_gpt (sample-level)
+    if getattr(args, "gate_formal_by_gpt", True):
+        samples_df["aha_formal"] = (samples_df["aha_formal_ps"] & samples_df["aha_gpt"]).astype(int)
+    else:
+        samples_df["aha_formal"] = samples_df["aha_formal_ps"]
 
     # (Optional) sanity check / debug note on subset relations
     share_words = float(samples_df["aha_words"].mean())
     share_gpt = float(samples_df["aha_gpt"].mean())
     share_formal = float(samples_df["aha_formal"].mean())
-    if not (share_formal <= share_gpt + 1e-12 and share_gpt <= share_words + 1e-12):
+    enforce_gpt_subset = not getattr(args, "no_gate_gpt_by_words", False)
+    enforce_formal_subset = getattr(args, "gate_formal_by_gpt", True)
+    tol = 1e-12
+    warn_needed = False
+    if enforce_gpt_subset and share_gpt > share_words + tol:
+        warn_needed = True
+    if enforce_formal_subset and share_formal > share_gpt + tol:
+        warn_needed = True
+    if warn_needed:
         print(
             "[warn] Subset relations violated (unexpected). shares:",
             f"words={share_words:.4f}, gpt={share_gpt:.4f}, formal={share_formal:.4f}",
@@ -684,6 +733,10 @@ def _fit_glms_and_write_summary(
         ("aha_gpt", "gpt"),
         ("aha_formal", "formal"),
     ]
+    if args.aha_variant != "all":
+        variant_specs = [
+            spec for spec in variant_specs if spec[1] == args.aha_variant
+        ]
     for aha_column, variant_tag in variant_specs:
         out_txt = os.path.join(
             out_dir,
@@ -825,6 +878,7 @@ def main() -> None:
     os.makedirs(out_dir, exist_ok=True)
 
     samples_df = _load_and_prepare_samples(args)
+    print(f"[info] Loaded {len(samples_df):,} rows from {args.results_root}")
     summary_df, summary_csv_path = _fit_glms_and_write_summary(args, samples_df, out_dir)
 
     acc_csv, delta_csv, step_csv = compute_group_accuracy_tables(samples_df, out_dir)

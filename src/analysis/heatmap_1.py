@@ -412,7 +412,7 @@ def _annotate_heatmap(
             axes_obj.text(
                 column_index,
                 row_index,
-                f"{cell_value:.2f}%\n({int(row['n_events'])}/{int(row['n_pairs'])})",
+                f"{cell_value:.2f}%",
                 ha="center",
                 va="center",
                 fontsize=12,
@@ -438,9 +438,14 @@ def plot_heatmap(
         cmap = mcolors.get_cmap(cmap_name)
     else:  # extremely minimal fallback if matplotlib is partially stubbed
         cmap = mcolors.LinearSegmentedColormap.from_list(cmap_name, ["#fff", "#000"])
-    norm = mcolors.Normalize(vmin=0.0, vmax=vmax)
 
-    # Shorter canvas (3/4 height)
+    # Use the actual range of observed percentages so the colormap
+    # spans from the minimum to maximum cell value, making differences
+    # between cells more visually distinct.
+    vmin = float(np.nanmin(values)) if np.isfinite(np.nanmin(values)) else 0.0
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+    # Canvas size: compact height with readable cells
     fig, axes_obj = plt.subplots(figsize=(5.8, 4.9 * 0.75))
     if not hasattr(axes_obj, "imshow"):
         plt.close(fig)
@@ -505,7 +510,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--title_overall",
         type=str,
-        default="Aha! Moment Prevalence (All provided domains)",
+        default="Aha! Moment Prevalence (All Provided Domains)",
         help="Overall heatmap title (all domains).",
     )
     parser.add_argument(

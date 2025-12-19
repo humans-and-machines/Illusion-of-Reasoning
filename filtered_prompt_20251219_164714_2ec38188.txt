@@ -1,0 +1,42 @@
+Problem/Clue (if available):
+Let $a$ and $b$ be positive real numbers such that $ab^2 = 5.$  Find the minimum value of $a^4 + b^8.$
+
+PASS-1 <think> (truncated if long):
+1. quote the relevant bits of the problem: We are given $ab^2 = 5$ and need to find the minimum value of $a^4 + b^8$.
+2. name the mathematical tool(s) to apply: We'll use the AM-GM inequality and algebraic manipulation.
+3. show each intermediate step:
+Given $ab^2 = 5$, we take the square root of both sides: $ab^2 = 5 \implies \sqrt{ab^2} = \sqrt{5} \implies ab = \sqrt{5}$.
+We apply AM-GM inequality to $a^4 + b^8$: $a^4 + b^8 \geq 2 \sqrt{a^4b^8}$.
+We can simplify $\sqrt{a^4b^8}$: $\sqrt{a^4b^8} = \sqrt{(ab)^4 \cdot b^4} = (ab)^2 \cdot b^2 = (\sqrt{5})^2 \cdot b^2 = 5b^2$.
+Now we substitute back into the inequality: $a^4 + b^8 \geq 2 \cdot 5b^2 = 10b^2$.
+We apply AM-GM inequality again to $10b^2$: $10b^2 \geq 2 \sqrt{10b^2 \cdot 5}$.
+We simplify: $10b^2 \geq 2 \sqrt{50b^2} = 2 \sqrt{2} \cdot b \sqrt{25b^2} = 10b \sqrt{2b^2}$.
+We simplify further: $10b \sqrt{2b^2} = 10b \cdot b \sqrt{2} = 10b^2 \sqrt{2} = 10ab \sqrt{2}$.
+We apply AM-GM inequality one more time: $10ab \sqrt{2} \geq 2 \sqrt{(10ab \sqrt{2})^2} = 2 \cdot 10ab \sqrt{2} = 20ab \sqrt{2}$.
+Since we know $ab = \sqrt{5}$, we substitute it back in: $20ab \sqrt{2} = 20 \sqrt{5} \sqrt{2} = 20 \sqrt{10}$.
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "We apply AM-GM inequality again to $10b^2$: $10b^2 \geq 2 \\sqrt{10b^2 \\cdot 5}$. We simplify: $10b^2 \\geq 2 \\sqrt{50b^2} = 2 \\sqrt{2} \\cdot b",
+  "after_excerpt": "",
+  "explanation_short": "No explicit cue or material revision is present; the reasoning follows a continuous application of AM-GM and simplifications."
+}
+```

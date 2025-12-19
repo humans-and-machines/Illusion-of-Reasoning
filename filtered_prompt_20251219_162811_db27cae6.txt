@@ -1,0 +1,65 @@
+Problem/Clue (if available):
+Compute $17^{-1}\pmod{83}$. Express your answer as a residue from $0$ to $82$, inclusive.
+
+(You may find it helpful to consider the fact that $17\cdot 5=85$.)
+
+PASS-1 <think> (truncated if long):
+Given problem: Compute $17^{-1}\pmod{83}$, where $0 \leq x \leq 82$.
+The relevant bit: $17 \cdot 5 = 85$.
+Mathematical tool: Modular arithmetic, and finding multiplicative inverse.
+Since $17 \cdot 5 = 85 = 83 + 2$, we have:
+$17 \cdot 5 \equiv 2 \pmod{83}$.
+Multiplying both sides by $5^{-1} \pmod{83}$, we get:
+$17 \cdot 5 \cdot 5^{-1} \equiv 2 \cdot 5^{-1} \pmod{83}$.
+Since $17 \cdot 5^{-1} \equiv 1 \pmod{83}$, we have:
+$1 \equiv 2 \cdot 5^{-1} \pmod{83}$.
+Multiplying both sides by $2^{-1} \pmod{83}$, we get:
+$2^{-1} \equiv 2 \cdot 5^{-1} \pmod{83}$.
+Now, we need to find $5^{-1} \pmod{83}$.
+Since $\gcd(5, 83) = 1$, the multiplicative inverse exists.
+We can use the Extended Euclidean algorithm to find it:
+$83 = 5 \cdot 16 + 3$
+$5 = 3 \cdot 1 + 2$
+$3 = 2 \cdot 1 + 1$
+$2 = 1 \cdot 2$
+$1 = 2 \cdot (-1) + 1$
+$1 = 3 \cdot 1 + (-2)$
+$1 = 3 \cdot (5 \cdot 1 - 1) + (-2)$
+$1 = 3 \cdot 5 + (-2 \cdot 1)$
+$1 = (83 - 5 \cdot 16) \cdot 3 + (-2 \cdot 1)$
+$1 = -2 \cdot 3 \cdot 16 + 3$
+$1 = 3 \cdot (83 - 5 \cdot 16)$
+$1 = 3 \cdot 83 - 3 \cdot 5 \cdot 16$
+$1 \equiv -3 \cdot 5 \cdot 16 \pmod{83}$
+Since $\gcd(3, 83) = 1$, the multiplicative inverse of $3 \pmod{83}$ exists.
+We have $3^{-1} \equiv -16 \pmod{83}$.
+Now, substitute $3^{-1}$ back into the equation for $2^{-1}$:
+$2^{-1} \equiv 2 \cdot (-16) \pmod{83}$
+$2^{-1} \equiv -32 \pmod{83}$
+$2^{-1} \equiv 51 \pmod{83}$
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "Since $17 \cdot 5^{-1} \\equiv 1 \\pmod{83}$, we have: $1 \\equiv 2 \\cdot 5^{-1} \\pmod{83}$. Multiplying both sides by $2^{-1} \\pmod{83}$,",
+  "after_excerpt": "we get: $2^{-1} \\equiv 2 \\cdot 5^{-1} \\pmod{83}$. Now, we need to find $5^{-1} \\pmod{83}$. Since $\\gcd(5, 83) = 1$, the multiplicative",
+  "explanation_short": "No explicit cue or material revision is present; reasoning progresses methodically without corrections or shifts."
+}
+```

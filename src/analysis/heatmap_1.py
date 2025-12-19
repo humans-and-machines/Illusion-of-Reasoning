@@ -187,6 +187,7 @@ class PerDomainPlotConfig:
     long_rows: List[pd.DataFrame]
     out_dir: str
     cmap_name: str
+    no_titles: bool = False
 
 
 def _iter_sample_rows(
@@ -415,7 +416,7 @@ def _annotate_heatmap(
                 f"{cell_value:.2f}%",
                 ha="center",
                 va="center",
-                fontsize=12,
+                fontsize=16,
                 color=foreground,
             )
 
@@ -457,12 +458,13 @@ def plot_heatmap(
     axes_obj.set_xticks(positions)
     axes_obj.set_yticks(positions)
     tick_labels = [frac8_label(delta) for delta in levels]
-    axes_obj.set_xticklabels(tick_labels)
-    axes_obj.set_yticklabels(tick_labels)
+    axes_obj.set_xticklabels(tick_labels, fontsize=14)
+    axes_obj.set_yticklabels(tick_labels, fontsize=14)
 
-    axes_obj.set_xlabel(r"$\delta_1$ (Max prior failures)")
-    axes_obj.set_ylabel(r"$\delta_2$ (Max prior stability)")
-    axes_obj.set_title(title, pad=4)
+    axes_obj.set_xlabel(r"$\delta_1$ (Max prior failures)", fontsize=16)
+    axes_obj.set_ylabel(r"$\delta_2$ (Max prior stability)", fontsize=16)
+    if title:
+        axes_obj.set_title(title, pad=4, fontsize=16)
 
     _annotate_heatmap(axes_obj, df_grid, (levels, values), cmap, norm)
 
@@ -518,6 +520,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         type=str,
         default="Aha! Moment Prevalence (Qwen-1.5B; Crossword+Math+Carpark)",
         help="1.5B-only collective heatmap title.",
+    )
+
+    parser.add_argument(
+        "--no_titles",
+        action="store_true",
+        help="Omit all figure titles (overall, per-domain, and group).",
     )
 
     # 1.5B-only collective heatmap
@@ -642,9 +650,13 @@ def _add_per_domain_grids_and_plots(
         dom_grid_csv["domain_key"] = dom_key
         dom_grid_csv["domain_label"] = config.label_map.get(dom_key, dom_key)
         config.long_rows.append(dom_grid_csv)
+        if config.no_titles:
+            title = ""
+        else:
+            title = f"Aha! Moment Prevalence ({config.label_map.get(dom_key, dom_key)})"
         plot_heatmap(
             dom_grid,
-            f"Aha! Moment Prevalence ({config.label_map.get(dom_key, dom_key)})",
+            title,
             os.path.join(config.out_dir, f"aha_heatmap_{dom_key}.png"),
             cmap_name=config.cmap_name,
         )
@@ -676,7 +688,8 @@ def _add_group_15b_grid_and_plot(
     long_rows.append(grid_15b_csv)
 
     out_png_15b = os.path.join(out_dir, "aha_heatmap_overall_1p5b.png")
-    plot_heatmap(grid_15b, args.title_15b, out_png_15b, cmap_name=args.cmap)
+    title_15b = "" if getattr(args, "no_titles", False) else args.title_15b
+    plot_heatmap(grid_15b, title_15b, out_png_15b, cmap_name=args.cmap)
 
 
 def _write_output_table(
@@ -767,7 +780,8 @@ def main() -> None:
     slug = f"{args.dataset_name}__{args.model_name}".replace(" ", "_")
 
     out_png_overall = os.path.join(out_dir, "aha_heatmap_overall.png")
-    plot_heatmap(overall_grid, args.title_overall, out_png_overall, cmap_name=args.cmap)
+    title_overall = "" if getattr(args, "no_titles", False) else args.title_overall
+    plot_heatmap(overall_grid, title_overall, out_png_overall, cmap_name=args.cmap)
 
     if args.per_domain:
         per_domain_config = PerDomainPlotConfig(
@@ -776,6 +790,7 @@ def main() -> None:
             long_rows=long_rows,
             out_dir=out_dir,
             cmap_name=args.cmap,
+            no_titles=getattr(args, "no_titles", False),
         )
         _add_per_domain_grids_and_plots(
             step_df=step_df,

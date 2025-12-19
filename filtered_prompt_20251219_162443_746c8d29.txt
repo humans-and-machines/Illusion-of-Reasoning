@@ -1,0 +1,42 @@
+Problem/Clue (if available):
+Let $p(x)$ be a quadratic polynomial with integer coefficients which has $4-\sqrt{11}$ as a root. Compute $\frac{p(3)}{p(4)}.$
+
+PASS-1 <think> (truncated if long):
+Given that $p(x)$ is a quadratic polynomial with integer coefficients and has $4-\sqrt{11}$ as a root, we know that its conjugate $4+\sqrt{11}$ is also a root. This is because the coefficients of a polynomial with real coefficients are the same when the roots are a conjugate pair. 
+Let the quadratic polynomial be $p(x) = a(x - r_1)(x - r_2)$ where $r_1 = 4 - \sqrt{11}$ and $r_2 = 4 + \sqrt{11}$.
+Using the fact that the product of the roots of a quadratic polynomial is equal to the constant term divided by the leading coefficient, we have $r_1r_2 = \frac{c}{a} = 4^2 - (\sqrt{11})^2 = 16 - 11 = 5.$
+The sum of the roots is equal to the negation of the coefficient of the linear term divided by the leading coefficient, so $r_1 + r_2 = -\frac{b}{a}.$
+We can use the fact that $r_1r_2 = 5$ and $r_1 + r_2 = -\frac{b}{a}$ to find the value of $b$ in terms of $a$. We have $(r_1 + r_2)^2 = r_1^2 + 2r_1r_2 + r_2^2 = r_1^2 + 2(5) + r_2^2 = (r_1 + r_2)^2 = \left(-\frac{b}{a}\right)^2.$
+Expanding the left-hand side, we get $r_1^2 + 2r_1r_2 + r_2^2 = (4-\sqrt{11})^2 + 2(5) + (4+\sqrt{11})^2 = 16 - 8\sqrt{11} + 11 + 10 + 16 + 8\sqrt{11} = 53.$
+We also have $(r_1 + r_2)^2 = \left(-\frac{b}{a}\right)^2 = \frac{b^2}{a^2}.$
+Equating the two expressions for $(r_1 + r_2)^2$, we have $\frac{b^2}{a^2} = 53.$
+We can now find the value of $p(3)$ and $p(4)$.
+We have $p(3) = a(3 - r_1)(3 - r_2) = a(3 - (4 - \sqrt{11}))(3 - (4 + \sqrt{11})) = a(3 - 4 + \sqrt{11})(3 - 4 - \sqrt{11}) = a(-1 + \sqrt{11})(-1 - \sqrt{11}) = a(1 - 11) = -10a.$
+Similarly, we have $p(4) = a(4 - r_1)(4 - r_2) = a(4 - (4 - \sqrt{11}))(4 - (4 + \sqrt{11})) = a(4 - 4 + \sqrt{11})(4 - 4 - \sqrt{11}) = a(\sqrt{11})(-\sqrt{11}) = -11a.$
+Therefore, $\frac{p(3)}{p(4)} = \frac{-10
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "Given that $p(x)$ is a quadratic polynomial with integer coefficients and has $4-\sqrt{11}$ as a root, we know that its conjugate",
+  "after_excerpt": "",
+  "explanation_short": "No explicit cue or material revision of reasoning is present in the provided text."
+}
+```

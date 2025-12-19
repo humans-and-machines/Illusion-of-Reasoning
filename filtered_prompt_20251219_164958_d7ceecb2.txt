@@ -1,0 +1,45 @@
+Problem/Clue (if available):
+Find $\sin 20^\circ \sin 40^\circ \sin 60^\circ \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ.$
+
+PASS-1 <think> (truncated if long):
+1. The problem asks for the product of the sines of several angles.
+2. We can use the formula $\sin \alpha \sin \beta = \frac{1}{2} (\cos(\alpha - \beta) - \cos(\alpha + \beta))$ to simplify the product.
+3. We can apply this formula repeatedly to pairs of angles, then multiply the results together.
+4. We can use the fact that $\cos 30^\circ = \frac{\sqrt{3}}{2}$ and $\cos 90^\circ = 0$ to simplify the expression.
+5. We can also use the fact that $\cos(\alpha) = \cos(-\alpha)$ to simplify the expression.
+
+$\sin 20^\circ \sin 40^\circ \sin 60^\circ \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{1}{2} (\cos(20^\circ - 40^\circ) - \cos(20^\circ + 40^\circ)) \sin 60^\circ \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{1}{2} (\cos(-20^\circ) - \cos(60^\circ)) \sin 60^\circ \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{1}{2} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \sin 60^\circ \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{1}{2} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \frac{\sqrt{3}}{2} \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{\sqrt{3}}{4} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \sin 80^\circ \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{\sqrt{3}}{4} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \frac{\sqrt{3}}{2} \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{3}{8} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \sin 100^\circ \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{3}{8} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \frac{\sqrt{3}}{2} \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac{3\sqrt{3}}{16} (\cos(20^\circ) - \frac{\sqrt{3}}{2}) \sin 120^\circ \sin 140^\circ \sin 160^\circ$
+$= \frac
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "120^\circ \sin 140^\circ \sin 160^\circ",
+  "after_excerpt": "",
+  "explanation_short": "No explicit cue or material revision of reasoning is present in the provided reasoning steps."
+}

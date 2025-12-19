@@ -1,0 +1,35 @@
+Problem/Clue (if available):
+If $\sqrt{3x-5}=2$, find all possible values of $x$.
+
+PASS-1 <think> (truncated if long):
+1. The problem is to find all possible values of $x$ given the equation $\sqrt{3x-5}=2$.
+2. To solve this, we will use algebraic manipulation and the properties of square roots.
+3. Square both sides of the equation to eliminate the square root: $(\sqrt{3x-5})^2=2^2$
+4. Simplify the equation: $3x-5=4$
+5. Add 5 to both sides of the equation: $3x=9$
+6. Divide both sides of the equation by 3: $x=3$
+7. Check that the solution satisfies the original equation: $\sqrt{3(3)-5}=\sqrt{4}=2$
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "7. Check that the solution satisfies the original equation: $\sqrt{3(3)-5}=\sqrt{4}=2$",
+  "after_excerpt": "",
+  "explanation_short": "No explicit cue or material revision is present; reasoning follows a consistent algebraic process without corrections."
+}

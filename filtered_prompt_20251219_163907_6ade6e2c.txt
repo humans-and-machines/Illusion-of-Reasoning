@@ -1,0 +1,46 @@
+Problem/Clue (if available):
+Let $a,$ $b,$ $c,$ and $d$ be positive real numbers such that $a + b + c + d = 10.$  Find the maximum value of $ab^2 c^3 d^4.$
+
+PASS-1 <think> (truncated if long):
+Given: $a + b + c + d = 10$ and $a, b, c, d > 0$.
+Goal: Maximize $ab^2 c^3 d^4$.
+Method: AM-GM inequality.
+By AM-GM, we have
+$\frac{a + b + c + d}{4} \ge \sqrt[4]{abcd}.$
+Since $a + b + c + d = 10,$ we have
+$\frac{10}{4} \ge \sqrt[4]{abcd}.$
+Raising both sides to the power of 4, we get
+$\frac{625}{256} \ge abcd.$
+We want to maximize $ab^2 c^3 d^4,$ so we apply AM-GM again:
+$\frac{a + b + c + d}{4} \ge \sqrt[4]{ab^2 c^3 d^4}.$
+Again, since $a + b + c + d = 10,$ we have
+$\frac{10}{4} \ge \sqrt[4]{ab^2 c^3 d^4}.$
+Raising both sides to the power of 4, we get
+$\frac{625}{256} \ge ab^2 c^3 d^4.$
+Equality occurs when $a = \frac{5}{4},$ $b = \frac{5}{4},$ $c = \frac{5}{4},$ $d = \frac{5}{4}.$
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "Raising both sides to the power of 4, we get\n$\frac{625}{256} \ge abcd.$\nWe want to maximize $ab^2 c^3 d^4,$ so we apply AM-GM again:",
+  "after_excerpt": "",
+  "explanation_short": "No explicit cue or material revision is present; reasoning follows a consistent application of AM-GM without corrections."
+}
+```

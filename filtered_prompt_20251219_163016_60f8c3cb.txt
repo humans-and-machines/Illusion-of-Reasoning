@@ -1,0 +1,44 @@
+Problem/Clue (if available):
+Simplify $\tan 100^\circ + 4 \sin 100^\circ.$
+
+PASS-1 <think> (truncated if long):
+1. We are given the expression $\tan 100^\circ + 4 \sin 100^\circ.$
+2. We will use the trigonometric identity $\tan \theta = \frac{\sin \theta}{\cos \theta}$ and the sum-to-product identities for sine and cosine.
+3. We can rewrite the expression as $\frac{\sin 100^\circ}{\cos 100^\circ} + 4 \sin 100^\circ.$
+4. We can factor out $\sin 100^\circ$ from the expression: $\sin 100^\circ \left( \frac{1}{\cos 100^\circ} + 4 \right).$
+5. We can use the identity $\frac{1}{\cos \theta} = \sec \theta$ to rewrite the expression as $\sin 100^\circ \left( \sec 100^\circ + 4 \right).$
+6. We can use the identity $\sec^2 \theta - \tan^2 \theta = 1$ to rewrite $\sec 100^\circ$ as $\sqrt{\sec^2 100^\circ} = \sqrt{1 + \tan^2 100^\circ}.$
+7. We can substitute this expression into the previous expression: $\sin 100^\circ \left( \sqrt{1 + \tan^2 100^\circ} + 4 \right).$
+8. We can use the identity $\tan^2 \theta = \frac{\sin^2 \theta}{\cos^2 \theta}$ to rewrite the expression as $\sin 100^\circ \left( \sqrt{\frac{\sin^2 100^\circ + \cos^2 100^\circ + \sin^2 100^\circ}{\cos^2 100^\circ}} + 4 \right).$
+9. We can simplify the expression inside the square root: $\sin 100^\circ \left( \sqrt{\frac{2 \sin^2 100^\circ + \cos^2 100^\circ}{\cos^2 100^\circ}} + 4 \right).$
+10. We can use the identity $\sin^2 \theta + \cos^2 \theta = 1$ to rewrite the expression as $\sin 100^\circ \left( \sqrt{\frac{2 \sin^2 100^\circ + 1 - \sin^2 100^\circ}{\cos^2 100^\circ}} + 4 \right).$
+11. We can simplify the expression inside the square root: $\sin 100^\circ \left( \sqrt{\frac{1 + \sin^2 100^\circ}{\cos^2 100^\circ}} + 4 \right).$
+12. We can use the identity $\frac{1 + \sin^2 \theta}{\cos^2 \theta} = \sec^2 \theta + \tan^2 \theta$ to rewrite the expression as $\sin 100^\circ \left( \sqrt{\sec^2 100^\circ + \tan^2 100^\circ} + 4 \right).$
+13. We can use the identity $\sec^2 \theta - \tan^2 \theta = 1$ to rewrite the expression as $\sin 100^\circ \left( \sqrt{1 + \tan^2 100^\circ} + 4 \right).$
+14. We can simplify the expression inside the square root: $\sin 100^\circ \left( \sqrt{1 + \
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "14. We can simplify the expression inside the square root: $\sin 100^\circ \\left( \\sqrt{1 + \\",
+  "after_excerpt": "",
+  "explanation_short": "No explicit cue or material revision of reasoning is present in the provided text."
+}
+```

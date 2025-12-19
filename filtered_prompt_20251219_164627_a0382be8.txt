@@ -1,0 +1,51 @@
+Problem/Clue (if available):
+Three pencils and a jumbo eraser cost $\$1.24$. Five pencils and a jumbo eraser cost $\$1.82$. No prices include tax. In cents, what is the cost of a pencil?
+
+PASS-1 <think> (truncated if long):
+Let $p$ be the cost of a pencil and $e$ be the cost of the jumbo eraser. 
+The problem states that three pencils and a jumbo eraser cost $\$1.24$ and five pencils and a jumbo eraser cost $\$1.82$. We can write this as a system of linear equations:
+
+$$3p + e = 124$$
+$$5p + e = 182$$
+
+We can subtract the first equation from the second equation to eliminate $e$:
+
+$$(5p + e) - (3p + e) = 182 - 124$$
+
+Using the distributive property, we get:
+
+$$2p = 58$$
+
+Dividing both sides by 2, we get:
+
+$$p = 29$$
+
+So the cost of a pencil is $\$0.29$.
+
+The cost of a pencil is 29 cents.
+
+Heuristic cue candidates (may be empty): (none)
+first_marker_pos: -1
+
+Return ONLY a compact JSON object with keys:
+- shift_in_reasoning: true|false
+- confidence: "low"|"medium"|"high"
+- markers_found: string[]       (verbatim lexical cues you relied on)
+- first_marker_index: integer   (character offset into <think>, -1 if absent)
+- before_excerpt: string        (<=120 chars ending right before the first marker)
+- after_excerpt: string         (<=140 chars starting at the first marker)
+- explanation_short: string     (<=140 chars justification)
+
+
+[UNPARSEABLE]
+```json
+{
+  "shift_in_reasoning": false,
+  "confidence": "high",
+  "markers_found": [],
+  "first_marker_index": -1,
+  "before_excerpt": "Let $p$ be the cost of a pencil and $e$ be the cost of the jumbo eraser. The problem states that three pencils and a jumbo",
+  "after_excerpt": "eraser cost $\$1.24$ and five pencils and a jumbo eraser cost $\$1.82$. We can write this as a system of linear equations:",
+  "explanation_short": "No explicit cue or material revision is present; the reasoning proceeds linearly without corrections or shifts."
+}
+```

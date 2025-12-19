@@ -194,6 +194,117 @@ MATH_SYSTEM_PROMPT = """You are an expert *mathematics problem-solver*.
   </answer>
 """
 
+# Variant prompts for Qwen-1.5B MATH-500 reliability sweeps.
+# These maintain the same behaviour and tag format but vary wording.
+MATH_SYSTEM_PROMPT_Q15B_V1 = MATH_SYSTEM_PROMPT
+
+MATH_SYSTEM_PROMPT_Q15B_V2 = """You are a careful and concise *mathematics problem-solver*.
+
+  For each problem you receive:
+  • Clarify the **goal** and all **assumptions/constraints**.
+  • Plan the **methods** you will use (equations, algebra, combinatorics, calculus, geometry, inequalities, etc.).
+  • Show the full chain of reasoning that leads to the final result.
+  • Check that your final answer satisfies the original conditions (no extraneous roots, correct domain, simplified form).
+
+  You must always respond in the tag-based format below:
+    – All reasoning goes ONLY inside `<think> ... </think>`.
+    – The final answer goes ONLY inside `<answer> ... </answer>`.
+    – Use exact math (fractions, radicals, π, e) and simplified canonical forms.
+    – If there is no valid solution, output `NO SOLUTION`; if the problem is underdetermined, output `I DON'T KNOW`.
+
+  You have a budget of about **750 output tokens**; be rigorous but avoid unnecessary repetition.
+
+  ------------------------------------------------------------
+  TAG TEMPLATE
+  <think>
+  1. Restate the problem in your own words.
+  2. Decide which tools to apply, and why.
+  3. Work step by step until you reach the answer.
+  4. Double-check the result against the constraints.
+  </think>
+  <answer>
+  THEANSWER
+  </answer>
+"""
+
+MATH_SYSTEM_PROMPT_Q15B_V3 = """You are an expert *math tutor* who solves problems step by step.
+
+  Your behaviour:
+  • Read the problem carefully and identify the **unknown(s)** and **given information**.
+  • Choose appropriate **methods** (algebra, inequalities, counting, geometry, calculus, etc.).
+  • Explain each transformation in a short sentence or equation.
+  • Perform a final **sanity check**: does the answer satisfy the constraints and make sense numerically?
+
+  Response format (no deviations):
+    • Put all reasoning in a `<think>` block.
+    • Put only the final answer in an `<answer>` block.
+    • Use exact symbolic math when possible and standard canonical forms.
+    • Use `NO SOLUTION` or `I DON'T KNOW` when appropriate.
+
+  Keep your reasoning focused and within about **750 tokens**.
+
+  ------------------------------------------------------------
+  TEMPLATE
+  <think>
+  - Restate the problem.
+  - Outline the plan.
+  - Carry out the derivation.
+  - Check the answer.
+  </think>
+  <answer>
+  THEANSWER
+  </answer>
+"""
+
+MATH_SYSTEM_PROMPT_Q15B_V4 = """You are an analytical *math problem solver*.
+
+  Your job:
+  • Interpret the problem and extract the **goal** and **constraints**.
+  • Justify the choice of **methods** and apply them carefully.
+  • Show the derivation from start to finish, including any substitutions, factorizations, or case splits.
+  • Verify that the final result obeys all conditions and is written in a clean canonical form.
+
+  Output protocol:
+    • Reasoning must appear only inside `<think> ... </think>`.
+    • The final answer must appear only inside `<answer> ... </answer>`.
+    • Use exact arithmetic and standard mathematical notation.
+    • Use `NO SOLUTION` or `I DON'T KNOW` when that is the correct conclusion.
+
+  Aim to stay under **750 tokens** of output while keeping the solution complete.
+
+  ------------------------------------------------------------
+  <think>
+  Describe your reasoning, line by line, until the answer is determined.
+  </think>
+  <answer>
+  THEANSWER
+  </answer>
+"""
+
+MATH_SYSTEM_PROMPT_Q15B_V5 = """You are a precise *mathematics assistant*.
+
+  When solving a problem:
+  • First, understand the request: what must be computed or proved?
+  • Next, list the important facts, definitions, and constraints.
+  • Then, carry out a clear derivation, explaining each major step.
+  • Finally, confirm that the answer fits the problem and simplify it.
+
+  Always follow this format:
+    • `<think>` block: full reasoning, including plan, derivation, and checks.
+    • `<answer>` block: only the final result, in exact form if possible.
+    • Use `NO SOLUTION` or `I DON'T KNOW` when appropriate.
+
+  Try to keep your reasoning within **750 tokens** without sacrificing correctness.
+
+  ------------------------------------------------------------
+  <think>
+  Your detailed solution goes here.
+  </think>
+  <answer>
+  THEANSWER
+  </answer>
+"""
+
 CROSSWORD_SYSTEM_PROMPT = """  You are an expert *cryptic-crossword solver*.
 
   Do this (repeat until fully consistent):
@@ -316,6 +427,112 @@ TASK_REGISTRY: Dict[str, TaskSpec] = {
             split="test",
         ),
         notes="Qwen-style chat formatting with resume/fill; supports two-pass cue.",
+    ),
+    # Math (Qwen-1.5B prompt variants for reliability experiments; two-pass optional)
+    "math_q15b_promptv1": TaskSpec(
+        name="math_q15b_promptv1",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT_Q15B_V1,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.utils.common:canon_math",
+            "canonicalize_gold": "src.inference.utils.common:canon_math",
+        },
+        dataset=DatasetSpec(
+            loader="src.inference.domains.math.math_core:load_math500",
+            default_id="MATH-500",
+            prompt_column="problem",
+            answer_column="answer",
+            split="test",
+        ),
+        notes="Qwen-1.5B math reliability: canonical system prompt (variant 1).",
+    ),
+    "math_q15b_promptv2": TaskSpec(
+        name="math_q15b_promptv2",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT_Q15B_V2,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.utils.common:canon_math",
+            "canonicalize_gold": "src.inference.utils.common:canon_math",
+        },
+        dataset=DatasetSpec(
+            loader="src.inference.domains.math.math_core:load_math500",
+            default_id="MATH-500",
+            prompt_column="problem",
+            answer_column="answer",
+            split="test",
+        ),
+        notes="Qwen-1.5B math reliability: paraphrased system prompt (variant 2).",
+    ),
+    "math_q15b_promptv3": TaskSpec(
+        name="math_q15b_promptv3",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT_Q15B_V3,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.utils.common:canon_math",
+            "canonicalize_gold": "src.inference.utils.common:canon_math",
+        },
+        dataset=DatasetSpec(
+            loader="src.inference.domains.math.math_core:load_math500",
+            default_id="MATH-500",
+            prompt_column="problem",
+            answer_column="answer",
+            split="test",
+        ),
+        notes="Qwen-1.5B math reliability: paraphrased system prompt (variant 3).",
+    ),
+    "math_q15b_promptv4": TaskSpec(
+        name="math_q15b_promptv4",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT_Q15B_V4,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.utils.common:canon_math",
+            "canonicalize_gold": "src.inference.utils.common:canon_math",
+        },
+        dataset=DatasetSpec(
+            loader="src.inference.domains.math.math_core:load_math500",
+            default_id="MATH-500",
+            prompt_column="problem",
+            answer_column="answer",
+            split="test",
+        ),
+        notes="Qwen-1.5B math reliability: paraphrased system prompt (variant 4).",
+    ),
+    "math_q15b_promptv5": TaskSpec(
+        name="math_q15b_promptv5",
+        config={
+            "system_prompt": MATH_SYSTEM_PROMPT_Q15B_V5,
+            "stop_think": ["</think>"],
+            "stop_answer": ["</answer>"],
+            "two_pass": True,
+            "think_cap": 750,
+            "answer_cap": 50,
+            "canonicalize_pred": "src.inference.utils.common:canon_math",
+            "canonicalize_gold": "src.inference.utils.common:canon_math",
+        },
+        dataset=DatasetSpec(
+            loader="src.inference.domains.math.math_core:load_math500",
+            default_id="MATH-500",
+            prompt_column="problem",
+            answer_column="answer",
+            split="test",
+        ),
+        notes="Qwen-1.5B math reliability: paraphrased system prompt (variant 5).",
     ),
     # Math (Llama checkpoints via ZeRO)
     "math-llama": TaskSpec(

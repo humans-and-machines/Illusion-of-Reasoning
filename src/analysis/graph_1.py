@@ -302,7 +302,8 @@ def plot_overlay_all(
     )
 
     axis.axhline(0.0, lw=1, color="k", alpha=0.35)
-    for dom in ["Crossword", "Math", "Math2", "Carpark"]:
+    # Draw Math after Math2 so the Math (green) dots sit on top when points overlap at the same step.
+    for dom in ["Crossword", "Math2", "Math", "Carpark"]:
         domain_df = per_step.get(dom)
         if domain_df is None or domain_df.empty:
             continue

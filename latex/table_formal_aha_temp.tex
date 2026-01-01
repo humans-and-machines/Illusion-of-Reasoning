@@ -1,0 +1,50 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Metric} & \textbf{Crossword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+\midrule
+\multicolumn{5}{c}{\textbf{$T=0$}} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.457    & 0.463    & 0.000  & 0.257 \\
+$\hat{p}_{Y\mid S=1}$ & 0.0842   & 0.0000   & -- & 0.0172 \\
+$\Delta\mathrm{pp}$   & $-0.16$  & $-30.17$  & -- & $-12.60$ \\
+$\mathrm{AME}$        & $+0.0557$ & $-0.2236$ & -- & $-0.0173$ \\
+$p$                   & 2.74\times10^{-741} & 2.87\times10^{-182412} & -- & 0.6201 \\
+\midrule
+\multicolumn{5}{c}{\textbf{$T=0.05$}} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.130    & 0.058    & 0.000  & 0.040 \\
+$\hat{p}_{Y\mid S=1}$ & 0.0000   & 0.0000   & -- & 0.0000 \\
+$\Delta\mathrm{pp}$   & $-8.71$  & $-32.06$  & -- & $-15.20$ \\
+$\mathrm{AME}$        & $-0.0640$ & $-0.2965$ & -- & $-0.1388$ \\
+$p$                   & 5.7\times10^{-16177} & 1.99\times10^{-145989} & -- & 1.02\times10^{-151469} \\
+\midrule
+\multicolumn{5}{c}{\textbf{$T=0.3$}} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.163    & 0.065    & 0.000  & 0.048 \\
+$\hat{p}_{Y\mid S=1}$ & 0.0000   & 0.0000   & -- & 0.0000 \\
+$\Delta\mathrm{pp}$   & $-9.77$  & $-38.32$  & -- & $-18.08$ \\
+$\mathrm{AME}$        & $-0.0821$ & $-0.3770$ & -- & $-0.1763$ \\
+$p$                   & 3.92\times10^{-94147} & 2.36\times10^{-141608} & -- & 3.57\times10^{-191499} \\
+\midrule
+\multicolumn{5}{c}{\textbf{$T=0.7$}} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.317    & 0.061    & 8.191  & 3.688 \\
+$\hat{p}_{Y\mid S=1}$ & 0.0152   & 0.0000   & 0.0002 & 0.0003 \\
+$\Delta\mathrm{pp}$   & $-10.24$  & $-28.50$  & $+0.01$ & $-14.46$ \\
+$\mathrm{AME}$        & $+0.1141$ & $-0.2849$ & $+0.0001$ & $+0.0272$ \\
+$p$                   & 0.1334 & 1.88\times10^{-172569} & 1\times10^{-190563598050789274157056} & 0.4855 \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Formal ``Aha!'' detector (Def.~3.1): temperature sweep.} For each domain and decoding temperature, \(\%S\) is the share of traces flagged by the formal detector; \(\hat{p}_{Y\mid S=1}\) is empirical accuracy among flagged traces; and \(\Delta\mathrm{pp}\) is the raw accuracy difference (percentage points) between flagged and non-flagged traces. \(\mathrm{AME}\) is the average marginal effect of a formal-Aha flag from a logistic regression with problem fixed effects, a standardized training-step control, and cluster-robust SEs. Cells marked ``--'' indicate the detector never fired in that regime, making conditional quantities undefined.}
+\label{tab:formal-aha-temp}
+\vspace{-3mm}
+\end{table}

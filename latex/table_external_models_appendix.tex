@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l c r r r}
+\toprule
+\textbf{Model} & \textbf{$T$} & \textbf{\# Problems} & \textbf{\% Shifts (count)} & \textbf{$P(\checkmark \mid S{=}1)$} \\
+\midrule
+DeepSeek\textendash R1 & 0 & 500 & 0.60\% (3) & 0.67 \\
+DeepSeek\textendash R1 & 0.05 & 500 & 0.40\% (2) & 0.50 \\
+GPT\textendash 4o & 0 & 500 & 3.00\% (15) & 0.60 \\
+GPT\textendash 4o & 0.05 & 500 & 2.20\% (11) & 0.18 \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Canonical reasoning shifts for external models on \textsc{MATH\textendash 500} by decoding temperature.}
+Shift rates remain extremely low across $T{\in}\{0,0.05\}$, and accuracy conditioned on a shift shows no systematic benefit.}
+\label{tab:external-models}
+\end{table*}

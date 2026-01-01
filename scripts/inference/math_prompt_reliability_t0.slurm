@@ -4,8 +4,8 @@
 #   artifacts/results/prompt_reliability/epoch{0..3}/variant{1..5}/step{STEP}/stepXXXX_test.jsonl
 # Each Slurm array task processes CHUNK_SIZE questions (default: 5).
 
-# Usage (from repo root, with defaults: 500 test questions, chunks of 5):
-#   sbatch --array=0-1999%20 scripts/inference/math_prompt_reliability_t0.slurm
+# Usage (from repo root, with defaults: 500 test questions, chunks of 10 → 1000 tasks):
+#   sbatch --array=0-999%20 scripts/inference/math_prompt_reliability_t0.slurm
 
 #SBATCH --job-name=math_prompt_reliab_t0
 #SBATCH --output=logs/math_prompt_reliab_t0_%A_%a.out
@@ -59,7 +59,7 @@ mkdir -p "$WANDB_DIR" "$WANDB_ARTIFACT_DIR" "$WANDB_CACHE_DIR" logs
 
 # ── Paths ───────────────────────────────────────────────────────────────────
 SCRIPT_PATH="${SCRIPT_PATH:-$PROJECT_ROOT/src/inference/cli/unified_math.py}"
-MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
+MODEL_ROOT="${MODEL_ROOT:-$PROJECT_ROOT/artifacts/models/Qwen2.5-1.5B/Qwen2.5-1.5B-Open-R1-GRPO-math-v1}"
 BASE_MODEL="${BASE_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
 
 # Epochs and variants
@@ -69,8 +69,8 @@ NUM_EPOCHS=${#EPOCH_STEPS[@]}
 VARIANTS=(1 2 3 4 5)
 NUM_VARIANTS=${#VARIANTS[@]}
 
-# Chunking over the 500-example test split
-CHUNK_SIZE="${CHUNK_SIZE:-5}"
+# Chunking over the 500-example test split (default 10 to stay ≤1000 array tasks)
+CHUNK_SIZE="${CHUNK_SIZE:-10}"
 TOTAL_EXAMPLES="${TOTAL_EXAMPLES:-500}"
 NUM_CHUNKS="${NUM_CHUNKS:-$(( (TOTAL_EXAMPLES + CHUNK_SIZE - 1) / CHUNK_SIZE ))}"
 

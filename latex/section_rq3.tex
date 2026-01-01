@@ -1,0 +1,48 @@
+\subsection{RQ3: Reasoning Shifts \& Uncertainty}
+\label{sec:rq3-uncertainty}
+
+The results above (particularly \textit{Xwords}, see Fig.~\ref{fig:temp-raw-effect}) suggest that decoding temperature may modulate the effect of reasoning shifts: at low $T$ they sometimes align with productive corrections, while at higher $T$ they resemble noise. Because temperature primarily alters sampling entropy rather than the model's underlying reasoning process~\citep{hinton2015distilling,holtzman2019degeneration}, this points to a link between shifts and internal uncertainty. We thus ask whether, under high-uncertainty regimens, reasoning shifts are more frequent or become more helpful.
+
+\vspace{1mm}
+\noindent
+\textbf{Are reasoning shifts more likely under high uncertainty?}
+To test whether shifts preferentially occur when the model is uncertain, we relate each trace's reasoning shift indicator to its sequence-level entropy. We pool traces across all decoding temperatures and training checkpoints, and fit a logistic regression of shift prevalence on standardized entropy with problem fixed effects and cluster-robust SEs (clustered by problem).%
+\footnote{In R-style notation:
+\(
+\texttt{shift} \sim \texttt{C(problem)} + \texttt{std\_entropy}.
+\)
+Here \texttt{shift} is a binary indicator for reasoning shift, \texttt{C(problem)} denotes problem fixed effects, and \texttt{std\_entropy} is the within-domain $z$-scored pass-1 sequence entropy. We estimate a Binomial(logit) GLM with cluster-robust SEs at the problem level.}
+
+Pooling \emph{all} traces across domains (\textit{Xwords}, \textit{Math}, \textit{RHour}), we find that higher entropy is associated with a higher probability of a shift on average: a $+1$ SD increase in entropy corresponds to an odds ratio of $\approx$0.77$\times$ (log-odds $\beta=-0.258$, $\mathrm{SE}=0.1427$, $p=0.07034$; 95\% CI OR [0.58, 1.02]; $N=723{,}200$). However, this aggregate effect masks domain heterogeneity: the entropy--shift association is positive in \textit{Xwords} (OR$\approx$2.05$\times$) and \textit{RHour} (OR$\approx$1.19$\times$), but negative in \textit{Math} (OR$\approx$0.58$\times$).
+One possible intuition is that in \emph{Math}, higher-entropy generations more often reflect diffuse exploration or verbose ``flailing'' rather than a discrete mid-trace pivot, so shifts concentrate in comparatively lower-entropy traces.
+Across domains, shifts remain rare in absolute terms ($\approx$0.03\%--0.26\%), so these effects primarily indicate \emph{where the rare shifts concentrate} in the entropy distribution, rather than implying that shifts become common.
+
+\vspace{1.5mm}
+\noindent
+\textbf{Do reasoning shifts improve performance under high uncertainty?}
+A natural hypothesis is that when the model is uncertain, a mid-trace pivot might reflect productive self-correction. We test this by stratifying traces into \emph{high-entropy} instances (top 20\% within domain) and \emph{low-entropy} instances (bottom 80\%), using a fixed entropy threshold per domain. Within each stratum, we estimate the effect of a shift on correctness using a logistic regression with problem fixed effects and controls for continuous entropy and training step, and report the shift coefficient alongside the raw accuracy difference between shifted and non-shifted traces.%
+\footnote{Within each domain, we split at the 80th percentile of sequence entropy and fit a Binomial(logit) GLM predicting \texttt{correct} from \texttt{shift} with problem fixed effects and covariates. We report both regression and raw contrasts for interpretability.}
+
+Table~\ref{tab:rq3-shift-entropy-strata} shows that shifts do \emph{not} become reliably beneficial in the high-entropy regime. In \emph{Math}, shifts remain harmful even among high-entropy traces (raw $\Delta=-7.40$pp) and are substantially more harmful in the low-entropy majority (raw $\Delta=-22.88$pp). In \emph{Xwords}, the point estimate in the high-entropy stratum is near zero (raw $\Delta=+0.63$pp), but shifts are so rare that estimates are noisy and not statistically distinguishable from zero. In \emph{RHour}, accuracy is near-zero throughout, so estimated effects are statistically detectable due to sample size but negligible in magnitude.
+
+\input{latex/table_rq3_shift_entropy_strata.tex}
+
+\vspace{1mm}
+\noindent
+\textbf{Can artificially triggered reasoning shifts improve performance?}
+The negative results above suggest that \emph{spontaneous} shifts are not a dependable self-correction mechanism, even when the model is uncertain.
+We therefore test an \emph{extrinsically triggered} ``forced Aha'' intervention: for each prompt we generate a baseline completion (Pass~1), then re-query the model under identical decoding settings while appending a reconsideration cue (Pass~2), and compare paired correctness outcomes.
+Here Pass~1 is the model's initial answer, while Pass~2 appends a short instruction that explicitly asks the model to re-check and revise if needed (the same cue across all domains; see App.~\ref{app:uncertainty-interventions} for the exact wording).
+
+Table~\ref{tab:rq3-forced-aha} reports sample-level paired results aggregated across checkpoints and decoding temperatures, reported separately by domain. Forced reconsideration yields a large gain on \emph{Math} ($$0.322\!\rightarrow\!0.406$$; $+8.41$pp) and a small gain on Xwords ($+0.45$pp), while remaining negligible in absolute terms on RHour ($+0.013$pp) due to its near-zero base rate.
+Importantly, the paired ``win'' counts show that improvements dominate backslides in \emph{Math} (50{,}574 wrong$\rightarrow$right vs. 23{,}500 right$\rightarrow$wrong), indicating that the effect is not merely random flipping.
+In contrast, \emph{Xwords} shows near-balanced wins and losses (5{,}380 vs. 5{,}004), consistent with a much smaller net gain. Across domains, triggered reconsideration improves accuracy (Table~\ref{tab:rq3-forced-aha}). In \emph{Math}, these gains are amplified on high-entropy instances, consistent with uncertainty serving as a useful gate for reflection (App.~\ref{app:uncertainty-interventions}, Table~\ref{tab:cue-regressions}).
+
+\vspace{1mm}
+\noindent
+\textbf{Takeaway.} Reasoning shifts are a low-base-rate event that concentrates in higher-entropy (more uncertain) generations on average, though the direction and strength of this association varies by domain.
+Conditioning on uncertainty does not reveal a ``hidden regime'' where spontaneous shifts reliably help. If anything, the primary pattern is that shifts are least harmful in the high-entropy tail, but they do not turn into a consistent mechanism for improving correctness.
+Artificially triggering reasoning shifts yields performance gains, particularly in \emph{Math} under high-entropy.
+
+\input{latex/table_rq3_forced_aha.tex}
+

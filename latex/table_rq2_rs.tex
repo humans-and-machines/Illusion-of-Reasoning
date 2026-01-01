@@ -1,0 +1,35 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\multicolumn{5}{c}{\textbf{(a) Training stage}} \\
+\midrule
+\textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 2.433    & 2.166    & 11.449  & 6.304  \\
+$\hat{p}_{Y\mid S=1}$ & 0.0731   & 0.1691   & 0.0001  & 0.0290  \\
+$\Delta\mathrm{pp}$   & $-4.52$  & $-11.83$ & $+0.00$  & $-11.80$  \\
+$\mathrm{AME}$        & $-0.0311$& $-0.0615$& $0.0001$ & $-0.0307$\\
+$p$                   & $0.02742$ & $1.55\times10^{-4}$ & $1\times10^{-40435941906728067072}$ & $2.52\times10^{-5}$ \\
+\midrule
+\multicolumn{5}{c}{ \textbf{(b) Temperature}} \\
+\textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+\midrule
+$N$                       & 83{,}200  & 320{,}000 & 320{,}000 & 723{,}200 \\
+\(\%S\)                   & 1.220      & 2.646      & 14.318     & 7.646     \\
+$\hat{p}_{Y\mid S=1}$     & 0.2010    & 0.1435    & 0.0000    & 0.0257    \\
+$\Delta\mathrm{pp}$       & $+10.54$  & $-18.35$  & $-0.02$   & $-13.87$   \\
+$\mathrm{AME}$            & $0.0326$    & $-0.0831$ & $-0.0003$ & $-0.0339$ \\
+$p$                       & $0.2595$ & $2.68\times10^{-8}$ & $2.72\times10^{-7}$ & $1.2\times10^{-4}$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Effect of detected reasoning shifts on accuracy (Qwen2.5-1.5B).}
+For each domain, \(\%S\) is the share of samples where the LLM-as-judge detects a shift (\(S_{i,j}=1\)); \(\hat{p}_{Y\mid S=1}\) is the empirical accuracy among shifted traces; and \(\Delta\mathrm{pp}\) is the raw accuracy difference (in percentage points) between shifted and non-shifted traces.
+\emph{(a)} controls for training step (standardized) at fixed training decoding temperature $T=0.7$; \emph{(b)} controls for decoding temperature $T\in\{0.0,0.05,0.3,0.7\}$ while aggregating over steps.
+\(\mathrm{AME}\) is the average marginal effect of a shift from a logistic regression with problem fixed effects and cluster-robust SEs; negative values mean that, holding problem and step/temperature fixed, traces with shifts are less likely to be correct.
+See \S\ref{sec:results-rq2} for the full regression specification.}
+\label{tab:rs}
+\vspace{-5mm}
+\end{table}

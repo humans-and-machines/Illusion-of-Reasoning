@@ -659,7 +659,11 @@ def _summarize_domains(
             delta_pp = (acc_shift - acc_no_shift) * 100.0
         else:
             delta_pp = np.nan
-        ame, p_shift = ame_glm_temp(domain_df)
+        try:
+            ame, p_shift = ame_glm_temp(domain_df)
+        except Exception as exc:  # pragma: no cover - defensive guard for env issues
+            print(f"[warn] GLM failed for domain={dom}: {exc}")
+            ame, p_shift = (np.nan, np.nan)
         rows.append(
             {
                 "domain_key": dom,

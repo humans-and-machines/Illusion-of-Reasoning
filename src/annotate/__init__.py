@@ -29,6 +29,9 @@ clean_file = _clean_mod.clean_file
 clean_root = _clean_mod.clean_root
 SHIFT_JUDGE_SYSTEM_PROMPT = _prompts_mod.SHIFT_JUDGE_SYSTEM_PROMPT
 SHIFT_JUDGE_USER_TEMPLATE = _prompts_mod.SHIFT_JUDGE_USER_TEMPLATE
+SHIFT_JUDGE_PROMPT_VARIANT_KEYS = _prompts_mod.SHIFT_JUDGE_PROMPT_VARIANT_KEYS
+get_shift_judge_prompts = _prompts_mod.get_shift_judge_prompts
+canonicalize_shift_judge_variant = _prompts_mod.canonicalize_shift_judge_variant
 
 AnnotateOpts = _shift_mod.AnnotateOpts
 DEFAULT_API_VERSION = _shift_mod.DEFAULT_API_VERSION
@@ -59,6 +62,9 @@ __all__ = [
     "build_preferred_client",
     "SHIFT_JUDGE_SYSTEM_PROMPT",
     "SHIFT_JUDGE_USER_TEMPLATE",
+    "SHIFT_JUDGE_PROMPT_VARIANT_KEYS",
+    "get_shift_judge_prompts",
+    "canonicalize_shift_judge_variant",
 ]
 
 _BACKCOMPAT_SUBMODULES = list(getattr(_backcompat, "__all__", []))

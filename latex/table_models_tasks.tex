@@ -1,0 +1,24 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} ll r r c r@{}}
+\toprule
+\textbf{Model} & \textbf{Domain} & \textbf{Step 0} & \textbf{After} & \textbf{Step} & $\boldsymbol{\Delta}$ \\
+\midrule
+Qwen2.5-1.5B  & Xwords     & 7.69 & 10.00 & 950 & +2.31 \\
+Qwen2.5-1.5B  & Math      & 31.00 & 35.00 & 950 & +4.00 \\
+Qwen2.5-1.5B  & RHour & 0.00 & 0.01 & 950 & +0.01 \\
+Qwen2.5-1.5B  & All       & 14.60 & 16.64 & 950 & +2.04 \\
+Qwen2.5-7B    & Math      & 61.60 & 66.40 & 500 & +4.80 \\
+Llama\,3.1-8B & Math      & 40.20 & 48.36 & 500 & +8.16 \\
+Qwen2.5-7B + Llama\,3.1-8B & Math      & 50.99 & 56.81 & 500 & +5.83 \\
+\bottomrule
+\end{tabular*}
+\caption{\textbf{Model coverage and learning progress.}
+Accuracy at initialization (Step~0) and at the final training checkpoint, along with the absolute gain ($\Delta$).
+All results are 1-shot evaluations at temperature $0$ on the fixed test sets described in \S\ref{sec:data}.
+}
+\label{tab:models-tasks}
+\end{table}

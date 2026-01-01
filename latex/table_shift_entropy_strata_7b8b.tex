@@ -1,0 +1,31 @@
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.05}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l r r r @{}}
+    \toprule
+    \textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+    \midrule
+    \multicolumn{4}{c}{\textbf{All traces}} \\
+    \midrule
+    $N$                       & 160{,}000 & 158{,}784 & 318{,}784 \\
+    $\Delta$ (pp)             & $-44.43$  & $-14.83$  & $-33.69$  \\
+    $p$                       & $1.32\times10^{-4}$ & $0.6973$ & $0.001725$ \\
+    \midrule
+    \multicolumn{4}{c}{\textbf{High entropy (top 20\%)}} \\
+    \midrule
+    $N$                       & 32{,}000  & 31{,}757 & 63{,}763 \\
+    $\Delta$ (pp)             & $-22.03$  & $-8.93$  & $-10.30$  \\
+    $p$                       & $0.06963$ & $0.7834$ & $0.001017$ \\
+    \midrule
+    \multicolumn{4}{c}{\textbf{Low entropy (bottom 80\%)}} \\
+    \midrule
+    $N$                       & 128{,}000 & 127{,}027 & 255{,}021 \\
+    $\Delta$ (pp)             & $-48.87$  & $-14.23$  & $-38.86$ \\
+    $p$                       & $1.44\times10^{-4}$ & $0.7221$ & $0.01824$ \\
+    \bottomrule
+  \end{tabular*}
+  \caption{Entropy-stratified shift effects (Math, steps $\le\!450$, temps pooled). $\Delta$ is the raw accuracy gap $\hat p(\checkmark\mid S{=}1) - \hat p(\checkmark\mid S{=}0)$ (pp). $\mathrm{coef(shift)}$ and $p$ come from logit(correct $\sim$ shift + problem FEs); dashes indicate the model didn't converge or lacked variation.}
+  \label{tab:shift-entropy-strata-7b8b}
+\end{table}

@@ -1,0 +1,38 @@
+\begin{table}[h]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l r r r @{}}
+\toprule
+\multicolumn{4}{c}{\textbf{(a) Training stage}} \\
+\midrule
+\textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+\midrule
+$N$                       & 40{,}000 & 38{,}176 & 78{,}176 \\
+$\%S$                     & 1.37     & 6.54    & 3.89    \\
+$\hat{p}_{Y\mid S=1}$     & 0.3467   & 0.2709  & 0.2846  \\
+$\Delta\%$                & $-30.39$ & $-17.68$ & $-26.97$ \\
+$\mathrm{AME}$            & $-0.0841$ & $-0.0688$ & $-0.1706$ \\
+$p$                       & $4.38\times10^{-4}$       & $6.7\times10^{-11}$ & $5.93\times10^{-42}$ \\
+\midrule
+\multicolumn{4}{c}{\textbf{(b) Temperature}} \\
+\midrule
+\textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+\midrule
+$N$                       & 160{,}000 & 158{,}736 & 318{,}736 \\
+$\%S$                     & 1.50      & 5.04     & 3.26     \\
+$\hat{p}_{Y\mid S=1}$     & 0.2821    & 0.2816   & 0.2818   \\
+$\Delta\%$                & $-37.85$  & $-17.56$ & $-27.94$ \\
+$\mathrm{AME}$            & $-0.0833$ & $-0.0529$ & $-0.1457$ \\
+$p$                       & $4.89\times10^{-6}$ & $2.25\times10^{-5}$ & $2.83\times10^{-22}$\\
+\bottomrule
+\end{tabular*}
+\caption{\textbf{Effect of detected reasoning shifts on accuracy, controlling for training stage or temperature (separately).}
+Cells report shift prevalence (\(\%S\)), accuracy among shifted traces (\(\hat{p}_{Y\mid S=1}\)),
+raw accuracy difference (\(\Delta\%=\hat{p}_{Y\mid S=1}-\hat{p}_{Y\mid S=0}\), percentage points), and the average marginal effect (AME)
+from GLM Binomial(logit) regressions with problem fixed effects and cluster-robust SEs.
+Negative AMEs indicate that shifts reduce accuracy. Patterns match the main-text \textsc{Math} results for Qwen2.5-1.5B.}
+\label{tab:rs-7b8b}
+\vspace{-5mm}
+\end{table}

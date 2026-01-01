@@ -1,0 +1,87 @@
+\subsection{RQ2: Training Stage \& Temperature}
+\label{sec:results-rq2}
+
+RQ1 establishes two constraints on ``insight-like'' behavior: broad reasoning shifts are uncommon and tend to coincide with worse outcomes, while \emph{formal} ``Aha!'' events are so rare that they contribute little to overall model performance.
+This raises a natural question: are we simply averaging over regimes where shifts sometimes help and sometimes hurt?
+We test two plausible sources of heterogeneity:
+(i) shifts might become more (or less) effective at different \emph{stages} of training; and
+(ii) their impact might depend on the \emph{decoding temperature} (and thus sampling entropy).
+
+\begin{figure}[t]
+\centering
+
+\begin{subfigure}[t]{\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{latex/raw_effect_per_step_crossword_math_linear.pdf}
+  \caption{Raw effect of reasoning shifts over training for Qwen2.5-1.5B finetuning across domains (same evaluation at every step).}
+  \label{fig:raw-effect-overlay:a}
+\end{subfigure}
+
+\vspace{4pt}
+
+\begin{subfigure}[t]{\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{latex/raw_effects_plot__Crossword+Math+RushHour__Qwen2.5-1.5B.pdf}
+  \caption{Raw effect of reasoning shifts over Qwen2.5-1.5B finetuning across domains (same evaluation at every temperature).}
+  \label{fig:temp-raw-effect}
+\end{subfigure}
+
+\caption{\textbf{Reasoning shifts across training and temperature (Qwen2.5-1.5B).}
+We plot the raw accuracy gap $\widehat{\Delta}=\widehat{p}_{Y\mid S=1}-\widehat{p}_{Y\mid S=0}$ (pp).
+(a)~At fixed $T=0.7$, $\widehat{\Delta}$ stays near zero or negative across training.
+(b)~Across $T$, shifts align with correction on \emph{Xword} at lower $T$, remain harmful on \emph{Math}, and are near-zero on \emph{RHour}.}
+\label{fig:raw-effect-overlay}
+\end{figure}
+
+\vspace{2mm}
+\noindent
+\textbf{How does the effect of reasoning shifts vary across training?}
+To test whether the shift--accuracy relationship changes as training progresses,
+we regress correctness on problem fixed effects, standardized training step, and the shift indicator.
+We report average marginal effects (AME) with cluster--robust SEs at the problem level.%
+\footnote{In R-style notation:
+\(
+\texttt{correct} \sim \texttt{C(problem)} + \texttt{step\_std} + \texttt{shift}.
+\)
+\texttt{correct} is a binary outcome;
+\texttt{C(problem)} are problem fixed effects;
+\texttt{step\_std} is the standardized checkpoint index.}
+
+At $T{=}0.7$, we find no evidence that shifts become beneficial later in training.
+In \emph{Xwords} and \emph{Math} shifts are uncommon ($\%S=1.058$; $\%S=4.225$) and are mildly harmful ($\mathrm{AME}=nan$, $p=NaN$; $\mathrm{AME}=nan$, $p=NaN$).
+
+In \emph{RHour}, shifts are comparatively frequent ($\%S=42.300$) but have no measurable effect on accuracy ($\mathrm{AME}\approxnan$, $p=NaN$).
+Analogous results for $T\in\{0.0,0.05,0.3\}$ are reported in Appendix~\ref{sec:app-rs-temp}.
+Figure~\ref{fig:raw-effect-overlay}a echoes this pattern: across checkpoints, shifted traces are not systematically more accurate than non-shifted ones.
+We repeat robustness checks using alternative detector variants across $T\in\{0,0.05,0.3,0.7\}$ in App.~\ref{spp:ablations}.
+We observe the same qualitative pattern with the stricter \emph{formal} ``Aha!'' detector (Appendix~\ref{sec:app-formal-aha-temp}), but because it fires on only $\approx 10^{-3}$ of traces at $T{=}0.7$, estimates are underpowered for fine-grained stage-by-stage heterogeneity; critically, we do not see a consistent late-training transition to positive effects.
+
+\vspace{1mm}
+\noindent
+\textbf{How does the effect of reasoning shifts vary with decoding temperature?}
+We next ask whether temperature modulates the relationship between shifts and correctness.
+We regress correctness on problem fixed effects, standardized temperature, and the shift indicator, aggregating across training steps.%
+\footnote{R-style notation:
+\(
+\texttt{correct} \sim \texttt{C(problem)} + \texttt{temp\_std} + \texttt{shift}.
+\)
+\texttt{temp\_std} is the standardized decoding temperature.}
+
+Table~\ref{tab:rs} summarizes the average association between shifts and correctness while controlling for standardized decoding temperature (via \texttt{temp\_std}).
+Figure~\ref{fig:temp-raw-effect} shows the corresponding per-$T$ raw pattern.
+On \emph{Xwords}, shifts are associated with a small but statistically significant positive marginal effect ($\mathrm{AME}=nan$, $p=NaN$), consistent with the raw contrast $\Delta=-2.45$pp.
+On \emph{Math}, shifts are strongly harmful ($\mathrm{AME}=nan$, $p=NaN$; $\Delta=-17.13$pp).
+On \emph{RHour}, shifts are frequent ($\%S=43.78$) but correctness is extremely low overall; accordingly, the estimated effect is statistically detectable yet numerically negligible ($\mathrm{AME}\approxnan$, $p=NaN$; $\Delta\approx-0.03$pp).
+
+Raw per-temperature contrasts (Fig.~\ref{fig:temp-raw-effect}) sharpen the interpretation:
+on \emph{Xwords}, shifts can coincide with productive correction at low $T$, but the benefit weakens and may reverse by $T{=}0.7$.
+In \emph{Math}, shifts remain harmful across temperatures, though the raw penalty attenuates as $T$ increases.
+In \emph{RHour}, the curve stays close to zero in magnitude, reflecting the near-zero accuracy regime.
+
+\vspace{1mm}
+\noindent
+\textbf{Takeaway.}
+We find that reasoning shifts do not reliably yield higher accuracy across specific training phases or at particular temperatures.
+
+\input{tmp/table_rq2_rs_smoke.tex}
+

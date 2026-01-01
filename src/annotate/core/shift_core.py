@@ -15,25 +15,29 @@ CLI entrypoints (argparse / logging / clean-up wiring) live in
 
 from __future__ import annotations
 
+import concurrent.futures as concurrent_futures
 import fcntl
 import json
 import logging
 import os
 import random
 import re
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from json import JSONDecodeError
-from typing import Any, Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from ...common.jsonl_utils import scan_jsonl_files
 from ..infra.config import load_azure_config
 from ..infra.llm_client import build_preferred_client
 from .prefilter import extract_think as _extract_think
 from .prefilter import find_shift_cues as _find_shift_cues
-from .prompts import SHIFT_JUDGE_SYSTEM_PROMPT as PROMPT_SYSTEM
-from .prompts import SHIFT_JUDGE_USER_TEMPLATE as PROMPT_USER_TEMPLATE
+from .prompts import (
+    canonicalize_shift_judge_variant,
+    get_shift_judge_prompts,
+)
 
 
 try:  # pragma: no cover - optional dependency
@@ -150,45 +154,49 @@ def _json_from_text(text: str) -> Optional[Dict[str, Any]]:
 
 
 _CLIENT_STATE: Dict[str, Any] = {"client": None, "uses_v1": False}
+_CLIENT_INIT_LOCK = threading.Lock()
 
 
 def _client_lazy(client_cfg: Dict[str, Any]) -> None:
     """Create and cache an LLM client (Azure or Portkey)."""
     if _CLIENT_STATE["client"] is not None:
         return
+    with _CLIENT_INIT_LOCK:
+        if _CLIENT_STATE["client"] is not None:
+            return
 
-    backend = client_cfg.get("backend", "azure")
+        backend = client_cfg.get("backend", "azure")
 
-    if backend == "portkey":
-        if Portkey is None:
-            raise RuntimeError(
-                "backend='portkey' requires the portkey-ai package: pip install portkey-ai",
-            )
-        api_key = os.getenv("AI_SANDBOX_KEY") or os.getenv("PORTKEY_API_KEY", "")
+        if backend == "portkey":
+            if Portkey is None:
+                raise RuntimeError(
+                    "backend='portkey' requires the portkey-ai package: pip install portkey-ai",
+                )
+            api_key = os.getenv("AI_SANDBOX_KEY") or os.getenv("PORTKEY_API_KEY", "")
+            if not api_key:
+                raise RuntimeError(
+                    "backend='portkey' expects AI_SANDBOX_KEY (or PORTKEY_API_KEY) in the environment.",
+                )
+
+            client = Portkey(api_key=api_key)
+            _CLIENT_STATE["client"] = client
+            _CLIENT_STATE["uses_v1"] = False
+            return
+
+        # Default: Azure OpenAI via openai>=1.x helpers.
+        endpoint = client_cfg["endpoint"].rstrip("/")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY", "")
         if not api_key:
-            raise RuntimeError(
-                "backend='portkey' expects AI_SANDBOX_KEY (or PORTKEY_API_KEY) in the environment.",
-            )
+            raise RuntimeError("Missing AZURE_OPENAI_API_KEY (set in env or .env).")
 
-        client = Portkey(api_key=api_key)
+        client, uses_v1 = build_preferred_client(
+            endpoint=endpoint,
+            api_key=api_key,
+            api_version=client_cfg["api_version"],
+            use_v1=bool(client_cfg["use_v1"]),
+        )
         _CLIENT_STATE["client"] = client
-        _CLIENT_STATE["uses_v1"] = False
-        return
-
-    # Default: Azure OpenAI via openai>=1.x helpers.
-    endpoint = client_cfg["endpoint"].rstrip("/")
-    api_key = os.getenv("AZURE_OPENAI_API_KEY", "")
-    if not api_key:
-        raise RuntimeError("Missing AZURE_OPENAI_API_KEY (set in env or .env).")
-
-    client, uses_v1 = build_preferred_client(
-        endpoint=endpoint,
-        api_key=api_key,
-        api_version=client_cfg["api_version"],
-        use_v1=bool(client_cfg["use_v1"]),
-    )
-    _CLIENT_STATE["client"] = client
-    _CLIENT_STATE["uses_v1"] = uses_v1
+        _CLIENT_STATE["uses_v1"] = uses_v1
 
 
 def llm_judge_shift(
@@ -198,11 +206,13 @@ def llm_judge_shift(
 ) -> Dict[str, Any]:
     """Call the LLM judge for a single example."""
     _client_lazy(client_cfg)
+    prompt_variant = canonicalize_shift_judge_variant(client_cfg.get("judge_prompt_variant"))
+    system_prompt, user_template = get_shift_judge_prompts(prompt_variant)
     problem = example["problem"]
     think = example["think"]
     cue_names = example["cues"]
     pos = example["pos"]
-    user_content = PROMPT_USER_TEMPLATE.format(
+    user_content = user_template.format(
         problem=_clamp(problem or "(unknown)"),
         think=_clamp(think or ""),
         cues=", ".join(cue_names) if cue_names else "(none)",
@@ -213,7 +223,7 @@ def llm_judge_shift(
         if _CLIENT_STATE["uses_v1"] and hasattr(_CLIENT_STATE["client"], "responses"):
             resp = _CLIENT_STATE["client"].responses.create(
                 model=deployment,
-                instructions=PROMPT_SYSTEM,
+                instructions=system_prompt,
                 input=[{"role": "user", "content": user_content}],
                 temperature=0.0,
                 max_output_tokens=1000,
@@ -225,7 +235,7 @@ def llm_judge_shift(
                 temperature=0.0,
                 max_tokens=1000,
                 messages=[
-                    {"role": "system", "content": PROMPT_SYSTEM},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_content},
                 ],
             )
@@ -384,7 +394,7 @@ def _prefilter_records_for_pass(
     return todo
 
 
-def _mark_no_cue(pass_section: Dict[str, Any], deployment: str) -> None:
+def _mark_no_cue(pass_section: Dict[str, Any], deployment: str, prompt_variant: str) -> None:
     """Set conservative FALSE annotation when no cue is present."""
     pass_section["shift_in_reasoning_v1"] = False
     pass_section["shift_markers_v1"] = []
@@ -393,6 +403,7 @@ def _mark_no_cue(pass_section: Dict[str, Any], deployment: str) -> None:
     pass_section["shift_after_excerpt"] = ""
     pass_section["shift_rationale_gpt"] = "No explicit cue; conservative FALSE."
     pass_section["shift_rationale_gpt_model"] = deployment
+    pass_section["shift_judge_prompt_variant"] = prompt_variant
     pass_section["shift_rationale_gpt_time"] = time.strftime(
         "%Y-%m-%dT%H:%M:%SZ",
         time.gmtime(),
@@ -410,6 +421,8 @@ class AnnotateOpts:
     force_relabel: bool
     client_cfg: Dict[str, Any]
     passes: List[str]
+    max_in_flight: int = 1
+    require_cues: bool = False
 
 
 @dataclass
@@ -447,9 +460,16 @@ def _annotate_record_for_pass(
     cues = pass_section.get("_shift_prefilter_markers") or []
     pos = pass_section.get("_shift_prefilter_pos")
     deployment = opts.client_cfg.get("deployment", "")
+    prompt_variant = canonicalize_shift_judge_variant(opts.client_cfg.get("judge_prompt_variant"))
 
     if not think.strip():
-        _mark_no_cue(pass_section, deployment)
+        _mark_no_cue(pass_section, deployment, prompt_variant)
+        rec[pass_key] = pass_section
+        ctx.mark_dirty()
+        return False
+
+    if opts.require_cues and not cues:
+        _mark_no_cue(pass_section, deployment, prompt_variant)
         rec[pass_key] = pass_section
         ctx.mark_dirty()
         return False
@@ -484,6 +504,7 @@ def _annotate_record_for_pass(
     pass_section["shift_after_excerpt"] = result.get("after_excerpt") or ""
     pass_section["shift_rationale_gpt"] = result.get("explanation_short") or ""
     pass_section["shift_rationale_gpt_model"] = opts.client_cfg.get("deployment", "")
+    pass_section["shift_judge_prompt_variant"] = prompt_variant
     pass_section["shift_rationale_gpt_time"] = time.strftime(
         "%Y-%m-%dT%H:%M:%SZ",
         time.gmtime(),
@@ -491,6 +512,92 @@ def _annotate_record_for_pass(
     rec[pass_key] = pass_section
     ctx.mark_dirty()
     return True
+
+
+def _build_shift_fields(
+    *,
+    result: Dict[str, Any],
+    deployment: str,
+    prompt_variant: str,
+) -> Dict[str, Any]:
+    """Translate llm_judge_shift output into stored per-pass shift_* fields."""
+    return {
+        "shift_in_reasoning_v1": bool(result.get("shift_in_reasoning", False)),
+        "shift_markers_v1": result.get("markers_found") or [],
+        "shift_first_marker_char": int(result.get("first_marker_index", -1)),
+        "shift_before_excerpt": result.get("before_excerpt") or "",
+        "shift_after_excerpt": result.get("after_excerpt") or "",
+        "shift_rationale_gpt": result.get("explanation_short") or "",
+        "shift_rationale_gpt_model": deployment,
+        "shift_judge_prompt_variant": prompt_variant,
+        "shift_rationale_gpt_time": time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ",
+            time.gmtime(),
+        ),
+    }
+
+
+def _annotate_one_index_for_pass(
+    records: List[Dict[str, Any]],
+    idx: int,
+    pass_key: str,
+    opts: AnnotateOpts,
+    rng: random.Random,
+) -> Tuple[int, bool, Optional[Dict[str, Any]]]:
+    """
+    Compute shift annotation for a specific record index/pass.
+
+    Returns (idx, call_made, fields_to_merge_or_none).
+    """
+    rec = records[idx]
+    if "__raw__" in rec:
+        return idx, False, None
+
+    pass_section = rec.get(pass_key) or {}
+    if not isinstance(pass_section, dict):
+        return idx, False, None
+
+    out = pass_section.get("output") or ""
+    think = _extract_think(out) or out or ""
+    problem = rec.get("problem") or rec.get("clue") or ""
+    cues = pass_section.get("_shift_prefilter_markers") or []
+    pos = pass_section.get("_shift_prefilter_pos")
+    deployment = opts.client_cfg.get("deployment", "")
+    prompt_variant = canonicalize_shift_judge_variant(opts.client_cfg.get("judge_prompt_variant"))
+
+    if not think.strip():
+        fields = {}
+        _mark_no_cue(fields, deployment, prompt_variant)
+        return idx, False, fields
+
+    if opts.require_cues and not cues:
+        fields = {}
+        _mark_no_cue(fields, deployment, prompt_variant)
+        return idx, False, fields
+
+    if opts.dry_run:
+        logging.info(
+            "DRY-RUN would annotate %s for id=%s",
+            pass_key,
+            record_id_for_logs(rec),
+        )
+        return idx, False, None
+
+    if opts.jitter > 0:
+        time.sleep(rng.random() * opts.jitter)
+
+    with timed(f"llm_call id={record_id_for_logs(rec)}"):
+        result = llm_judge_shift(
+            opts.client_cfg,
+            deployment,
+            {
+                "problem": problem,
+                "think": think,
+                "cues": cues,
+                "pos": pos,
+            },
+        )
+    return idx, True, _build_shift_fields(result=result, deployment=deployment, prompt_variant=prompt_variant)
 
 
 def annotate_file(
@@ -521,18 +628,74 @@ def annotate_file(
         if opts.max_calls is not None:
             remaining = max(opts.max_calls - calls, 0)
             todo_idxs = todo_idxs[:remaining]
-        for idx in todo_idxs:
-            if opts.max_calls is not None and calls >= opts.max_calls:
-                break
-            ctx = PassRunContext(rng=rng, record_index=idx, dirty_idxs=dirty_idxs)
-            if hook(
-                records[idx],
-                pass_key,
-                opts,
-                ctx,
-            ):
-                calls += 1
-                _write_records_to_disk(path, records, dirty_idxs={idx})
+
+        # When a custom hook is provided (tests), or concurrency is disabled,
+        # fall back to the simple sequential codepath.
+        if getattr(opts, "max_in_flight", 1) <= 1 or hook is not _annotate_record_for_pass:
+            for idx in todo_idxs:
+                if opts.max_calls is not None and calls >= opts.max_calls:
+                    break
+                ctx = PassRunContext(rng=rng, record_index=idx, dirty_idxs=dirty_idxs)
+                if hook(
+                    records[idx],
+                    pass_key,
+                    opts,
+                    ctx,
+                ):
+                    calls += 1
+                    _write_records_to_disk(path, records, dirty_idxs={idx})
+        else:
+            max_in_flight = max(int(opts.max_in_flight), 1)
+            with concurrent_futures.ThreadPoolExecutor(max_workers=max_in_flight) as pool:
+                it = iter(todo_idxs)
+                in_flight: Dict[concurrent_futures.Future, int] = {}
+                while True:
+                    while len(in_flight) < max_in_flight:
+                        if opts.max_calls is not None and calls >= opts.max_calls:
+                            break
+                        try:
+                            idx = next(it)
+                        except StopIteration:
+                            break
+                        # Use independent RNGs per task to avoid contention and
+                        # preserve deterministic jitter across thread scheduling.
+                        task_rng = random.Random(f"{opts.seed}:{pass_key}:{idx}")
+                        fut = pool.submit(_annotate_one_index_for_pass, records, idx, pass_key, opts, task_rng)
+                        in_flight[fut] = idx
+
+                    if not in_flight:
+                        break
+
+                    done, _pending = concurrent_futures.wait(
+                        in_flight.keys(),
+                        return_when=concurrent_futures.FIRST_COMPLETED,
+                    )
+                    for fut in done:
+                        idx = in_flight.pop(fut)
+                        try:
+                            out_idx, call_made, fields = fut.result()
+                        except Exception as exc:  # pragma: no cover - defensive
+                            logging.exception("Annotation worker failed for idx=%d (%s): %s", idx, pass_key, exc)
+                            continue
+
+                        if fields:
+                            rec = records[out_idx]
+                            if "__raw__" in rec:
+                                continue
+                            section = rec.get(pass_key) or {}
+                            if not isinstance(section, dict):
+                                continue
+                            section.update(fields)
+                            rec[pass_key] = section
+                            dirty_idxs.add(out_idx)
+                            _write_records_to_disk(path, records, dirty_idxs={out_idx})
+
+                        if call_made:
+                            calls += 1
+                            if opts.max_calls is not None and calls >= opts.max_calls:
+                                # Stop launching new work; let current in-flight finish and be applied.
+                                break
+
         if opts.max_calls is not None and calls >= opts.max_calls:
             break
 

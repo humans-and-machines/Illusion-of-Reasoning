@@ -1,0 +1,23 @@
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.05}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l r r r r @{}}
+    \toprule
+    \textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+    \midrule
+    $N$ (paired samples)      & 83{,}240  & 321{,}938  & 322{,}050 & 727{,}228 \\
+    $\hat p_{\text{P1}}$      & 0.0970    & 0.3221    & 0.000233 & 0.1538 \\
+    $\hat p_{\text{P2}}$      & 0.1015    & 0.4062    & 0.000363 & 0.1916 \\
+    $\Delta$ (pp)             & $+0.45$   & $+8.41$   & $+0.01$ & $+3.78$ \\
+    wins (P2 $\uparrow$)      & 5{,}380   & 50{,}574  & 100 & 56{,}054 \\
+    wins (P1 $\uparrow$)      & 5{,}004   & 23{,}500  & 58 & 28{,}562 \\
+    \bottomrule
+  \end{tabular*}
+  \caption{\textbf{Forced ``Aha'' (triggered reconsideration), sample-level results.}
+  We compare paired outcomes between a baseline generation (Pass~1) and a second generation with an appended reconsideration cue (Pass~2).
+  $\hat p_{\text{P1}}$ and $\hat p_{\text{P2}}$ denote accuracies in each pass; $\Delta$ (pp) is the percentage-point gain.}
+  \label{tab:rq3-forced-aha}
+  \vspace{-4mm}
+\end{table}

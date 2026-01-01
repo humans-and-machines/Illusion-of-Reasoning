@@ -1,0 +1,21 @@
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.05}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l r r r @{}}
+    \toprule
+    \textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+    \midrule
+    $N$ (paired samples) & 14{,}176 & 222{,}658 & 236{,}834 \\
+    $\hat p_{\text{P1}}$ & 0.5509 & 0.4416 & 0.4482 \\
+    $\hat p_{\text{P2}}$ & 0.6107 & 0.3997 & 0.4123 \\
+    $\Delta$ (pp)        & $+5.97$ & $-4.19$ & $-3.58$ \\
+    wins (P2 $\uparrow$) & 2{,}156     & 27{,}106 & 29{,}262 \\
+    wins (P1 $\uparrow$) & 1{,}309     & 36{,}439 & 37{,}748 \\
+    \bottomrule
+  \end{tabular*}
+  \caption{\textbf{Forced ``Aha'' (triggered reconsideration), sample-level results on Math.}
+  $\hat p_{\text{P1}}$ and $\hat p_{\text{P2}}$ are accuracies in baseline vs forced pass; $\Delta$ is the percentage-point gain; ``wins'' count paired samples where one pass is correct and the other is not.}
+  \label{tab:forced-aha-math-7b8b}
+\end{table}

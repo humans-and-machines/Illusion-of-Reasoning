@@ -26,6 +26,7 @@ from ..core.shift_core import (
     annotate_file,
     scan_jsonl,
 )
+from ..core.prompts import SHIFT_JUDGE_PROMPT_VARIANT_KEYS
 
 
 def build_argparser() -> argparse.ArgumentParser:
@@ -62,6 +63,18 @@ def build_argparser() -> argparse.ArgumentParser:
         default=0.25,
         help="Max random sleep (seconds) between calls; 0 to disable.",
     )
+    arg_parser.add_argument(
+        "--max_in_flight",
+        type=int,
+        default=1,
+        help="Max concurrent LLM calls per process (default: 1).",
+    )
+    arg_parser.add_argument(
+        "--require_cues",
+        type=int,
+        default=0,
+        help="1=skip LLM calls unless prefilter cues are present (default: 0).",
+    )
     arg_parser.add_argument("--loglevel", default="INFO")
     arg_parser.add_argument(
         "--force_relabel",
@@ -83,6 +96,14 @@ def build_argparser() -> argparse.ArgumentParser:
             "Comma-separated pass keys to annotate "
             "(e.g., 'pass1', 'pass1,pass2,pass2a,pass2b,pass2c'). "
             "Defaults to 'pass1' for backwards compatibility."
+        ),
+    )
+    arg_parser.add_argument(
+        "--judge_prompt_variant",
+        default="v1",
+        help=(
+            f"Shift-judge prompt variant to use ({', '.join(SHIFT_JUDGE_PROMPT_VARIANT_KEYS)}); "
+            "accepts bare digits as well."
         ),
     )
     arg_parser.add_argument(
@@ -150,8 +171,11 @@ def main() -> None:
             "api_version": args.api_version,
             "use_v1": args.use_v1,
             "deployment": args.deployment,
+            "judge_prompt_variant": args.judge_prompt_variant,
         },
         passes=[p.strip() for p in (args.passes or "").split(",") if p.strip()],
+        max_in_flight=args.max_in_flight,
+        require_cues=bool(int(args.require_cues)),
     )
 
     for path in files:

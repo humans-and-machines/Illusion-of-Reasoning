@@ -9,6 +9,7 @@ Do reasoning models have ''Aha!'' moments? Prior work suggests that models like 
 - **Install only runtime deps:** `pip install -e .`; dev extras: `pip install -e .[dev]`.
 - **Authenticate for gated assets:** `huggingface-cli login` or `export HF_TOKEN=<token>`.
 - **Run jobs:** training launchers live under `scripts/training/` (e.g., `bash scripts/training/training-math-grpo.slurm`); inference launchers live under `scripts/inference/` (e.g., `bash scripts/inference/math-inference.slurm`).
+- **Backfill missing math pass-2:** `python scripts/inference/write_math_backfill_manifest.py --only_family Llama8B --out tmp/llama8b_pass2.tsv`, then `sbatch --gres gpu:a100:8 --ntasks 8 scripts/inference/math-backfill-pass2-manifest-parallel.slurm MANIFEST=tmp/llama8b_pass2.tsv BATCH_SIZE=1 FLUSH_EVERY=8`.
 
 This repository demonstrates GRPO fine-tuning of a base Qwen 2.5-1.5B-Instruct model on the OpenR1 Math 220k dataset (plus crossword and Rush Hour generators). Traces of chain-of-thought reasoning are logged and saved at fixed intervals.
 

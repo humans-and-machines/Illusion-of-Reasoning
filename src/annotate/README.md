@@ -170,8 +170,11 @@ Key flags:
   (e.g., `artifacts/results/GRPO-1.5B-math-temp-0.05-3`).
 - `--split` – optional substring filter on filenames (e.g., `"test"`).
 - `--passes` – comma‑separated pass keys to annotate; defaults to `"pass1"`.
+- `--judge_prompt_variant` – choose among the five shift‑judge paraphrases (`v1`..`v5`); useful for inter‑prompt reliability sweeps.
+- `--max_in_flight` – max concurrent Azure/OpenAI judge calls per process (e.g., `10`).
 - `--max_calls` – optional cap on the number of LLM calls (for dry runs or
   budget‑limited experiments).
+- `--require_cues` – when set to `1`, skip judge calls unless the regex prefilter finds cues.
 - `--dry_run` – log which records would be annotated without calling the
   model or writing changes.
 - `--backend` – `"azure"` (default) or `"portkey"` (Princeton AI Sandbox via
@@ -180,6 +183,32 @@ Key flags:
 Azure‑specific settings can be provided via CLI flags or environment variables
 (`AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, etc.), optionally backed by
 a private `configs/azure.yml`.
+
+---
+
+## Azure DevOps pipeline (example)
+
+If you already have your inference results available on the pipeline agent
+(either checked out, downloaded as a Pipeline Artifact, or mounted), you can
+run the annotator in a plain Python job without installing the full repo as a
+package:
+
+```yaml
+- script: |
+    python -m pip install -U pip openai python-dotenv pyyaml
+    python -m src.annotate.cli.shift_cli artifacts/results/GRPO-Llama8B-math-temp-0.05-3 \
+      --passes pass1 \
+      --backend azure \
+      --max_in_flight 10 \
+      --require_cues 0
+  displayName: "Annotate shifts (10 in flight)"
+  env:
+    AZURE_OPENAI_API_KEY: $(AZURE_OPENAI_API_KEY)   # secret variable
+    AZURE_OPENAI_ENDPOINT: $(AZURE_OPENAI_ENDPOINT) # e.g. https://<res>.openai.azure.com/
+    AZURE_OPENAI_DEPLOYMENT: $(AZURE_OPENAI_DEPLOYMENT) # e.g. gpt-4o
+    AZURE_OPENAI_API_VERSION: 2024-12-01-preview
+    AZURE_OPENAI_USE_V1: "1"
+```
 
 ---
 

@@ -1,0 +1,21 @@
+\\begin{table}[t]
+\\footnotesize
+\\setlength{\\tabcolsep}{4pt}
+\\begin{tabular*}{\\linewidth}{@{\\extracolsep{\\fill}} l l r r r @{}}
+\\toprule
+{\\textbf{Model}} & {\\textbf{Domain}} & {\\(\\%{S_{i,j}}\\)} & {\\scriptsize \\(P(\\checkmark\\mid S_{i,j}\\!=\\!0)\\)} & {\\scriptsize \\(P(\\checkmark\\mid S_{i,j}\\!=\\!1)\\)} \\\\
+\\midrule
+\\includegraphics[width=1em]{icons/qwen.pdf}-1.5B  & Xwords      & 1.22 & 0.000 & 0.000 \\\\
+  & Math       & 2.65 & 0.000 & 0.000 \\\\
+  & RHour      & 14.32 & 0.000 & 0.000 \\\\
+\\midrule
+\\includegraphics[width=1em]{icons/qwen.pdf}-7B   & Math       & 1.50 & 0.000 & 0.000 \\\\
+\\midrule
+\\includegraphics[width=1em]{latex/icons/llamma.pdf}-8B & Math       & 4.51 & 0.000 & 0.000 \\\\
+\\midrule
+\\multicolumn{2}{l}{\\textbf{Overall (all rows)}}  & 6.28 & 0.000 & 0.000 \\\\
+\\bottomrule
+\\end{tabular*}
+\\caption{\\textbf{Shift prevalence and conditional accuracy (RQ1).} \\(\\%S_{i,j}\\) gives the fraction of traces labeled as containing a reasoning shift. \\(P(\\checkmark \\mid S_{i,j}{=}0)\\) and \\(P(\\checkmark \\mid S_{i,j}{=}1)\\) report accuracy without vs.\\ with a detected shift, pooled across all problems, temperatures $\\{0, 0.05, 0.3, 0.7\\}$, checkpoints, and samples using count-weighted (not simple) averages. Across models and domains, shifted traces are consistently less accurate. \\includegraphics[width=.7em]{icons/qwen.pdf} = Qwen\\,2.5; \\includegraphics[width=.7em]{latex/icons/llamma.pdf} = Llama\\,3.1.}
+\\label{tab:shift-accuracy}
+\\end{table}

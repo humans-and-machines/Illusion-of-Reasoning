@@ -142,6 +142,22 @@ reasoning).
 
 When you write new math-style runners, prefer to call `MathInferenceConfig` + `run_inference_on_split` rather than duplicating the outer loop.
 
+### Backfilling missing `pass2`
+
+If you have an existing results JSONL where some rows have `"pass2": null`, the standard resume logic will not regenerate them (the row already exists for that `sample_idx`).
+
+Use `src/inference/cli/backfill_math_pass2.py` to regenerate pass‑2 from the stored pass‑1 output and rewrite the JSONL:
+
+```bash
+python -m src.inference.cli.backfill_math_pass2 \
+  --model_name_or_path meta-llama/Meta-Llama-3.1-8B-Instruct \
+  --input_jsonl artifacts/results/GRPO-Llama8B-math-temp-0.3/step-0/step0000_test.jsonl \
+  --inplace \
+  --second_pass_phrase "Hold on, this reasoning might be wrong. Let's reconsider step by step."
+```
+
+For a Slurm “do them all” sweep across temps/steps, use `scripts/inference/math-backfill-pass2-all.slurm`.
+
 ---
 
 ## Carpark (Rush Hour) inference (`domains/carpark/*.py`, `carpark_solver.py`, `carpark_board.py`, `carpark_data.py`, `carpark_rush_utils.py`)

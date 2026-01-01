@@ -439,6 +439,56 @@ def _row_entropy_from_scores(
     return token_entropies
 
 
+def _batch_entropy_from_scores(
+    ctx: _EntropyRowContext,
+    start_tok_idxs: List[int],
+) -> List[List[float]]:
+    """
+    Vectorized entropy computation over a whole batch.
+
+    This avoids Python-level nested loops over (rows × steps) by computing
+    per-token entropies for all rows at each generation step, then slicing
+    per row based on EOS positions.
+    """
+    total_rows = int(ctx.sequences.shape[0])
+    eos_limits: List[int] = []
+    for row_index in range(total_rows):
+        start_tok_idx = start_tok_idxs[row_index]
+        gen_ids = ctx.sequences[row_index, start_tok_idx:]
+        eos_limit = first_eos_any(gen_ids, ctx.eos_ids) if ctx.eos_ids else int(gen_ids.shape[0])
+        eos_limits.append(int(eos_limit))
+
+    scores = ctx.scores
+    if not scores:
+        return [[] for _ in range(total_rows)]
+
+    # Compute entropy per step for all rows at once.
+    entropy_steps: List[Any] = []
+    try:
+        log_softmax = torch.nn.functional.log_softmax  # type: ignore[attr-defined]
+    except AttributeError:
+        return [[] for _ in range(total_rows)]
+
+    for score_index, score_step in enumerate(scores):
+        if score_index >= max(eos_limits, default=0):
+            break
+        logits = score_step.float()
+        log_probs = log_softmax(logits, dim=-1)
+        probs = log_probs.exp()
+        entropy_vec = -(probs * log_probs).sum(dim=-1)
+        entropy_steps.append(entropy_vec)
+
+    per_row: List[List[float]] = []
+    for row_index in range(total_rows):
+        limit = eos_limits[row_index]
+        if limit <= 0:
+            per_row.append([])
+            continue
+        ent = [float(step[row_index].item()) for step in entropy_steps[:limit]]
+        per_row.append(ent)
+    return per_row
+
+
 @dataclass
 class DecodeBatchConfig:
     """Configuration for decoding and scoring a batch of generations."""
@@ -475,8 +525,24 @@ def decode_and_score_batch(
     entropy_series: List[List[float]] = []
     stop_reasons: List[str] = []
 
+    start_tok_idxs = [int(ctx.input_lengths[row_index].item()) for row_index in range(total_rows)]
+
+    # When entropy is enabled, compute entropies for the full batch at once
+    # to reduce Python overhead.
+    batch_entropies: Optional[List[List[float]]] = None
+    if ctx.config.entropy_mode != "none":
+        batch_entropies = _batch_entropy_from_scores(
+            _EntropyRowContext(
+                scores=ctx.scores,
+                sequences=ctx.sequences,
+                eos_ids=ctx.config.eos_ids,
+                model=ctx.config.model,
+            ),
+            start_tok_idxs,
+        )
+
     for row_index in range(total_rows):
-        start_tok_idx = int(ctx.input_lengths[row_index].item())
+        start_tok_idx = start_tok_idxs[row_index]
         gen_ids = ctx.sequences[row_index, start_tok_idx:]
         raw_text = ctx.tokenizer.decode(gen_ids, skip_special_tokens=True)
 
@@ -494,16 +560,18 @@ def decode_and_score_batch(
             entropy_series.append([])
             continue
 
-        entropies = _row_entropy_from_scores(
-            _EntropyRowContext(
-                scores=ctx.scores,
-                sequences=ctx.sequences,
-                eos_ids=ctx.config.eos_ids,
-                model=ctx.config.model,
-            ),
-            row_index,
-            start_tok_idx,
-        )
+        entropies = batch_entropies[row_index] if batch_entropies is not None else []
+        if not entropies or any(not math.isfinite(val) for val in entropies):
+            entropies = _row_entropy_from_scores(
+                _EntropyRowContext(
+                    scores=ctx.scores,
+                    sequences=ctx.sequences,
+                    eos_ids=ctx.config.eos_ids,
+                    model=ctx.config.model,
+                ),
+                row_index,
+                start_tok_idx,
+            )
         entropy_series.append(entropies)
 
     return decoded_texts, entropy_series, stop_reasons

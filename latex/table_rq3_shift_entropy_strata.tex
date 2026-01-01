@@ -1,0 +1,36 @@
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.05}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l r r r r @{}}
+    \toprule
+    \textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+    \midrule
+    \multicolumn{5}{c}{\textbf{All traces}} \\
+    \midrule
+    $N$                       & 83{,}200  & 320{,}000 & 320{,}000 & 723{,}200 \\
+    $\Delta$ (pp)             & $-6.24$   & $-19.78$  & $-0.02$   & $-5.79$   \\
+    $\mathrm{coef(shift)}$    & $-1.49$   & $-1.11$   & $-22.76$  & $-1.10$  \\
+    $p$                       & $0.123$     & $2.25\times10^{-7}$ & $4.47\times10^{-103249}$ & $2.52\times10^{-7}$ \\
+    \midrule
+    \multicolumn{5}{c}{\textbf{High entropy (top 20\%)}} \\
+    \midrule
+    $N$                       & 16{,}640  & 64{,}000 & 64{,}000 & 144{,}640 \\
+    $\Delta$ (pp)             & $+0.63$   & $-7.40$  & $-0.03$   & $-3.79$   \\
+    $\mathrm{coef(shift)}$    & $-0.04$   & $-0.28$   & $-22.48$  & $-0.24$  \\
+    $p$                       & $0.904$     & $0.739$ & $1.84\times10^{-54405}$ & $0.726$ \\
+    \midrule
+    \multicolumn{5}{c}{\textbf{Low entropy (bottom 80\%)}} \\
+    \midrule
+    $N$                       & 66{,}560  & 256{,}000 & 256{,}000 & 578{,}560 \\
+    $\Delta$ (pp)             & $-10.00$   & $-22.88$  & $-0.02$   & $-6.83$   \\
+    $\mathrm{coef(shift)}$    & $-28.83$   & $-1.14$   & $-22.90$  & $-1.15$  \\
+    $p$                       & $1.33\times10^{-46249}$     & $4.96\times10^{-7}$ & $2.15\times10^{-114331}$ & $4.86\times10^{-7}$ \\
+    \bottomrule
+  \end{tabular*}
+  \caption{\textbf{Do spontaneous reasoning shifts help under high uncertainty?}
+  We stratify traces within each domain by sequence entropy (high = top 20\% at the within-domain 80th percentile; low = bottom 80\%), and compare shifted vs.\ non-shifted traces. $\Delta$ (pp) is the raw accuracy difference
+  $\hat p(\checkmark\!\mid\!S{=}1) - \hat p(\checkmark\!\mid\!S{=}0)$. $\mathrm{coef(shift)}$ and $p$ report the shift coefficient and $p$-value from a logistic regression with problem fixed effects and covariates. Across domains, shifts do not become reliably beneficial in the high-entropy regime.}
+  \label{tab:rq3-shift-entropy-strata}
+\end{table}

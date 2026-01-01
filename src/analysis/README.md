@@ -26,6 +26,22 @@ figures and tables.
 2. **Annotate shifts (optional but recommended)**  
    - `annotate-shifts <results_root> --split test ...`  
      or `python -m src.annotate.cli.shift_cli <results_root> --split test ...`
+   - Quick audit across the standard multi-model grid (per-checkpoint % shifts):
+     `python tools/master_analysis.py shift-prevalence`
+   - Quick audit of accuracy (shifted vs non-shifted):
+     `python tools/master_analysis.py shift-accuracy`
+   - Run both audits:
+     `python tools/master_analysis.py all`
+   - Emit Table 2 (LaTeX) from `shift-accuracy` output:
+     `python tools/master_analysis.py table2`
+   - Emit pooled logistic-regression sentence (`correct ~ shift`):
+     `python tools/master_analysis.py pooled-logit`
+   - Emit external-model table + sentence (DeepSeek-R1 / GPT-4o):
+     `python tools/master_analysis.py external-models`
+   - Emit the full RQ1 section LaTeX snippet:
+     `python tools/master_analysis.py rq1-section`
+   - Emit the full RQ2 section LaTeX snippet:
+     `python tools/master_analysis.py rq2-section`
 3. **Run core RQ analyses (CSV + GLMs)**  
    - `python -m src.analysis.rq1_analysis ...`
    - `python -m src.analysis.rq2_analysis ...`

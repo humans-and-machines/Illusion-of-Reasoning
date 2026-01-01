@@ -1,0 +1,45 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrrr}
+\toprule
+\multicolumn{5}{c}{\textbf{Training stage at fixed decoding temperature $T=0$}} \\
+\midrule
+\textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.947    & 1.866    & 14.679  & 7.430  \\
+$\hat{p}_{Y\mid S=1}$ & 0.3655   & 0.0683   & 0.0000  & 0.0130  \\
+$\Delta\mathrm{pp}$   & $+28.24$  & $-23.64$ & $-0.04$  & $-14.04$  \\
+$\mathrm{AME}$        & $0.0510$& $-0.0868$& $-0.0004$ & $-0.0211$\\
+$p$                   & $0.05551$ & $0.01345$ & $5.7\times10^{-56829}$ & $0.3322$ \\
+\midrule
+\multicolumn{5}{c}{\textbf{Training stage at fixed decoding temperature $T=0.05$}} \\
+\midrule
+\textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.851    & 1.854    & 15.386  & 7.726  \\
+$\hat{p}_{Y\mid S=1}$ & 0.3390   & 0.1382   & 0.0000  & 0.0190  \\
+$\Delta\mathrm{pp}$   & $+25.41$  & $-18.56$ & $-0.05$  & $-14.42$  \\
+$\mathrm{AME}$        & $0.0513$& $-0.0780$& $-0.0005$ & $-0.0260$\\
+$p$                   & $0.0119$ & $8.87\times10^{-6}$ & $5.71\times10^{-95178}$ & $0.06156$ \\
+\midrule
+\multicolumn{5}{c}{\textbf{Training stage at fixed decoding temperature $T=0.3$}} \\
+\midrule
+\textbf{Metric} & \textbf{Xword} & \textbf{Math} & \textbf{RHour} & \textbf{Combined} \\
+\midrule
+$N$                   & 20{,}800 & 80{,}000 & 80{,}000 & 180{,}800 \\
+$\%S$                 & 0.649    & 4.696    & 15.759  & 9.126  \\
+$\hat{p}_{Y\mid S=1}$ & 0.2593   & 0.1637   & 0.0000  & 0.0394  \\
+$\Delta\mathrm{pp}$   & $+16.28$  & $-23.01$ & $-0.01$  & $-15.55$  \\
+$\mathrm{AME}$        & $0.0154$& $-0.1073$& $-0.0001$ & $-0.0488$\\
+$p$                   & $0.275$ & $8.56\times10^{-13}$ & $4.99\times10^{-77336}$ & $1.2\times10^{-11}$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Effect of detected reasoning shifts on accuracy (Qwen2.5-1.5B): training-stage analysis at fixed temperature.} For each fixed decoding temperature $T\in\{0.0,0.05,0.3\}$, we report the share of traces with a detected shift (\%S), accuracy among shifted traces (\(\hat{p}_{Y\mid S=1}\)), the raw accuracy difference in percentage points (\(\Delta\mathrm{pp}\)) between shifted and non-shifted traces, and the average marginal effect (\(\mathrm{AME}\)) from a logistic regression with problem fixed effects, a standardized training-step control, and cluster-robust SEs (clustered by problem). Negative AME values indicate that shifted traces are less likely to be correct holding problem and training stage fixed.}
+\label{tab:rs_stage_T0005T03}
+\vspace{-3mm}
+\end{table}

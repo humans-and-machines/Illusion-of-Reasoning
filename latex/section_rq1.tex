@@ -1,0 +1,19 @@
+\subsection{RQ1: Reasoning Shifts \& Model Accuracy}
+\label{sec:results-rq1}
+\noindent \textbf{Do reasoning shifts improve accuracy?}
+Before analyzing formal ``Aha!'' moments, we first consider the broader class of \emph{reasoning shifts}---any mid-trace pivot detected by our annotator, irrespective of whether it satisfies the stricter criteria in Def.~\ref{def:aha-moment-lrms}. If such shifts reflected genuine insight, traces containing them should be \emph{more} accurate than those without them.
+
+Across domains, temperatures, and checkpoints for Qwen2.5--1.5B, reasoning shifts remain uncommon (approximately $7.6\%$ of samples) and are associated with substantially \emph{lower} accuracy: $2.57\%$ for shifted traces versus $16.44\%$ for non-shifted traces, $N{=}723{,}200$. A pooled logistic regression of correctness on a shift indicator confirms that this difference is highly significant (p $< 10^{-1198}$).\footnote{In R-style notation,
+\(
+\texttt{correct} \sim \texttt{shift}.
+\)
+\texttt{correct} is a binary outcome, and \texttt{shift} is a binary indicator for an annotator-labeled reasoning shift. The pooled regression aggregates all test-set traces across Crossword, Math, and RHour.}
+
+To test whether this pattern is specific to small GRPO-tuned models, we evaluate DeepSeek\textendash R1 and GPT\textendash 4o under matched decoding conditions on \textsc{MATH\textendash 500}. As shown in Table~\ref{tab:external-models}, both models exhibit \emph{very low} canonical shift rates across temperatures (0.40--0.60\% for DeepSeek\textendash R1 and 2.20--3.00\% for GPT\textendash 4o), and accuracy conditioned on a shift shows no systematic benefit, suggesting that the phenomenon generalizes across model families and training paradigms. These results characterize the ``raw'' behavioral signature of mid-trace shifts, independent of any stricter ``Aha!'' interpretation.
+
+\input{latex/table2_shift_accuracy.tex}
+
+\vspace{1mm}
+\noindent \textbf{How frequent are formal ``Aha!'' moments?}
+We now restrict attention to the much smaller subset of events that satisfy \emph{all three} criteria in Def.~\ref{subsec:aha-moment-def}. In Fig.~\ref{fig:aha-heatmap-overall}, by varying $\delta_1,\delta_2\in\{0,\,1/8,\,2/8\}$ and fixing $\delta_3=\epsilon>0$, we find that formal ``Aha!'' moments are extremely rare, even with relatively lax constraints. Similar patterns hold for Qwen2.5--7B and Llama3.1--8B (App.~\ref{sec:app-additional-results}). Pooling every Crossword/Math/RHour checkpoint and temperature, the formal detector fires on only $1.79\%$ of samples.
+

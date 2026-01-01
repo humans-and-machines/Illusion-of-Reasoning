@@ -1,0 +1,288 @@
+\title{The Illusion of Insight in Reasoning Models}
+
+
+\author{
+  Liv G.~d'Aliberti \\
+  Princeton University \\
+  Department of Computer Science \\
+  Princeton, NJ, USA \\
+  \texttt{liv.daliberti@princeton.edu}
+  \And
+  Manoel Horta Ribeiro \\
+  Princeton University \\
+  Department of Computer Science \\
+  Princeton, NJ, USA \\
+  \texttt{manoel@cs.princeton.edu}
+}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Do reasoning models have ``Aha!'' moments?
+Prior work suggests that models like DeepSeek-R1-Zero undergo sudden mid-trace realizations that lead to accurate outputs, implying an \emph{intrinsic} capacity for self-correction. 
+Yet, it remains unclear whether such intrinsic shifts in reasoning strategy actually improve performance.
+Here, we study mid-reasoning shifts and instrument training runs to detect them. 
+Our analysis spans ${{TOTAL_TRACES_MILLION}}$ million reasoning traces, hundreds of training checkpoints, three reasoning domains, and multiple temperatures and model architectures.
+We find that reasoning shifts are rare, do not become more frequent with training, and seldom improve accuracy, indicating that they do not correspond to prior perceptions of model insight. 
+However, their effect varies with model uncertainty. Building on this finding, we show that artificially triggering \emph{extrinsic} shifts under high entropy reliably improves accuracy. 
+Our results show that mid-reasoning shifts are symptoms of uncertainty rather than an intrinsic mechanism for self-correction.
+\end{abstract}
+
+\section{Introduction}
+
+Anecdotal evidence suggests that language models fine-tuned with reinforcement learning  exhibit ``Aha!'' moments---episodes of insight reminiscent of human problem-solving. For example, \citet{deepseekai2025deepseekr1incentivizingreasoningcapability} report mid-trace cues such as \textit{``Wait... let's re-evaluate step-by-step,''} which often accompany correct answers. Yet, the nature, frequency, and impact of these events, illustrated in Figure~\ref{fig:motivation},  remains unclear \citep{yang2025understandingahamomentsexternal}.
+\blfootnote{\noindent
+  \href{https://github.com/humans-and-machines/Illusion-of-Reasoning}{\faGithub\ Code},\href{https://huggingface.co/datasets/od2961/illusion-of-reasoning-main-traces}{\hficon\  Data}
+}
+
+The existence of ``Aha!'' moments is linked to whether reasoning models can \textit{intrinsically} self-correct, i.e., revise their reasoning mid-response without external feedback. Model improvements often arise from \textit{extrinsic} mechanisms like verifiers, reward queries, prompting techniques, or external tools \citep{lightman2024letsverifystepstep, li2024selfpromptinglargelanguagemodels, zhang-etal-2024-small}. 
+In contrast, intrinsic self-improvement must be detected from reasoning traces and is arguably more safety-relevant, as it implies that a model can reorganize its reasoning from its internal state~\citep{tsui2025selfcorrectionbenchrevealingaddressing, liu2025there}.
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{latex/teaser-aha.drawio.pdf}
+    \caption{\textbf{Anatomy of an ``Aha!'' Moment.}
+    We illustrate an ``Aha!'' moment as described in \citet{deepseekai2025deepseekr1incentivizingreasoningcapability}: within a single chain-of-thought, a cue such as ``Wait... let's re-evaluate'' marks a shift from an initially failing strategy ($k \in \{1,2\})$ to one that yields a correct answer (when $k=3$).
+    The figure also anticipates our methodology: we study ``Aha!'' moments by systematically GRPO-tuning and annotating the reasoning traces of Qwen2.5 and Llama models.
+    }
+    \label{fig:motivation}
+    \vspace{-3mm}
+\end{figure}
+
+Studying the effect of reasoning shifts is challenging. First, these events may occur (and improve performance) during training, yet evaluations are typically done only post-training \citep{zeng2024mrbenmetareasoningbenchmarkevaluating, xia2025reasoneval}.
+Second, reasoning models typically do not release mid-training checkpoints, which would enable the study of model performance throughout model lifecycle. Third, it is difficult to determine whether a given problem's accuracy is attributable to that trace or to prior problems encountered by the model. 
+\textit{This gap motivates the need for a systematic investigation of whether reasoning shifts reflect genuine insight.}
+
+\vspace{2mm}
+\noindent
+\textbf{Present work.}
+Here, we investigate whether mid-trace reasoning shifts (e.g., ``Wait... let's re-evaluate'') signal intrinsic self-correction in reasoning models. Our study is guided by three questions:
+
+\vspace{3mm}
+\noindent
+\textbf{RQ1}: Do reasoning shifts raise model accuracy?
+
+\vspace{2mm}
+\noindent
+\textbf{RQ2}: How does the effect of reasoning shifts vary with training stage and decoding temperature?
+
+\vspace{2mm}
+\noindent
+\textbf{RQ3}: Are reasoning shifts more effective when reasoning models are uncertain?
+\vspace{3mm}
+
+ To answer these, we first formalize ``Aha!'' moments as measurable mid-trace shifts in reasoning that improve performance on problems that were previously unsolved by the model \citep{yang2025understandingahamomentsexternal, zhou2025safekey, hu2025beyond} (Fig.~\ref{fig:aha-moment};\S\ref{subsec:aha-moment-def}). Second, we curate a diverse suite (Fig.~\ref{fig:motivation};\S\ref{sec:data}) spanning cryptic Xwords puzzles \citep{efrat-etal-2021-cryptonite}, mathematical problem-solving (MATH-500) \citep{lightman2024letsverifystepstep}, and RHour puzzles \citep{fogleman2018rushhour}. Third, we GRPO-tune and annotate the reasoning traces of Qwen2.5 and Llama models (\S\ref{sec:methods}).
+ 
+ Our analysis spans {{TOTAL_TRACES_MPLUS}} annotated reasoning traces across 20 training checkpoints per model, 3 domains, 4 temperatures, 2 model sizes, and 2 model architectures providing the first longitudinal dataset for studying how mid-trace reasoning evolves during RL fine-tuning. With this setup, we provide the first systematic study of reasoning shifts, linking them to entropy and correctness, and situating them within the broader literature on token-level uncertainty \citep{ton2025infotheory}.
+
+Our results show that reasoning shifts are rare ($\sim{{OVERALL_SHIFT_PCT}}\%$) of reasoning traces and generally do not improve model accuracy (\textbf{RQ1}). We further find that their impact on accuracy remains stable across training stages but varies substantially with decoding temperature (\textbf{RQ2}). Finally, we find that reasoning shifts concentrate in high-entropy traces, but are not reliably helpful; however \emph{externally triggered} reconsideration under high entropy improves accuracy across benchmarks, including a \textbf{{FORCED_DELTA_MATH_PP}}\ improvement on \textit{MATH-500}; \textbf{{FORCED_DELTA_XWORD_PP}}\ Xword; \textbf{{FORCED_DELTA_RHOUR_PP}}\ RHour). Our results are robust across datasets, prompts, and model families.
+
+\vspace{2mm}
+\noindent
+\textbf{Contributions.}
+We make three key contributions:
+
+\vspace{1mm}
+\begin{enumerate}
+    \item Formalizing ``Aha!'' moments and introducing a dataset and experimental framework to study insight in reasoning models.
+    \item Showing that reasoning shifts are rare, seldom improve accuracy, and occur primarily when models are uncertain, challenging the view that they reflect genuine insight.
+    \item Developing an entropy-based intervention that artificially induces reasoning shifts, yielding measurable accuracy gains.
+\end{enumerate}
+
+
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Emergent Capabilities.}
+Large language models often appear to acquire new abilities abruptly with scale---such as multi-step reasoning or planning \citep{wei2022emergent, berti2025emergent}---but it remains debated whether these shifts reflect intrinsic cognitive change or artifacts of evaluation~\citep{schaeffer2023mirage, shojaee2025illusionthinkingunderstandingstrengths}. Many behaviors labeled as ``emergent'' arise only under \textit{extrinsic} scaffolds. Structured prompts---e.g., Chain-of-Thought \citep{wei2022chainofthought}, the zero-shot cue ``Let's think step by step'' \citep{kojima2022large}, or Least-to-Most prompting \citep{zhou2023leasttomostpromptingenablescomplex}---elicit intermediate reasoning that models rarely produce on their own. Optimization methods such as SFT \citep{wolfe2023sft}, RLHF \citep{ouyang2022training}, and GRPO \citep{shao2024deepseekmathpushinglimitsmathematical} reinforce these externally induced behaviors, potentially amplifying the appearance of intrinsic ability gains.
+
+\vspace{2mm}
+\noindent
+\textbf{Self-Correction and ``Aha!'' Moments.}
+Self-correction in reasoning models can arise through \textit{extrinsic} mechanisms---such as verifier models or tool calls \citep{lightman2024letsverifystepstep, li2024selfpromptinglargelanguagemodels}---or through \textit{intrinsic} shifts that occur without any external intervention \citep{liu2024largelanguagemodelsintrinsic}. Recent work has examined these dynamics, including frameworks for trained self-correction \citep{kumar2024traininglanguagemodelsselfcorrect} and benchmarks for iterative refinement \citep{madaan2023selfrefine, tsui2025selfcorrectionbenchrevealingaddressing}, and analyses of mid-inference adjustments \citep{wu-etal-2024-large}. Studies of models such as DeepSeek-R1 \citep{deepseekai2025deepseekr1incentivizingreasoningcapability} suggest that reward optimization can induce \emph{intrinsic} reflection-like artifacts. However, other works have raised doubts about whether observed reasoning shifts reflect genuine insight or superficial self-reflection \citep{liu2025there, ton2025infotheory}. Yet, there has been no systematic evaluation of whether RL-trained models exhibit true intrinsic ``Aha!''-style self-correction.
+
+\vspace{2mm}
+\noindent
+\textbf{Insight Characterization.}
+In cognitive psychology, insight is classically defined as an abrupt restructuring of the problem space, exemplified by \citet{kohler1921intelligenzpruefungen}'s chimpanzees stacking boxes to reach bananas. Recent work seeks analogous phenomena in reasoning models: mid-trace uncertainty spikes---sometimes described as ``Gestalt re-centering''---have been associated with shifts in reasoning strategy \citep{ton2025infotheory, yang2025understandingahamomentsexternal}. Metrics such as RASM aim to identify linguistic or uncertainty-based signatures of genuine insight \citep{yang2025understandingahamomentsexternal}, yet existing approaches misclassify superficial hesitations as insight at high rates (up to 30\%) \citep{zheng-etal-2023-chain, xia2025reasoneval}. These limitations highlight the need for rigorous criteria to distinguish genuine restructurings from superficial reflection.
+
+\vspace{2mm}
+\noindent
+\textbf{Safety, Faithfulness, and Alignment.}
+Transparent reasoning traces are central to alignment and faithfulness, as they allow human oversight of not only a model's outputs but the process that produces them \citep{uesato2022solving, openai2023processsupervision}. When self-corrections occur without oversight, they raise concerns about hidden objective shifts or deceptive rationales that can mislead users \citep{su2025surveyautonomyinducedsecurityrisks, baker2025monitoring, lanham2023measuringfaithfulness, zhang-etal-2025-understanding}. Process supervision---rewarding intermediate reasoning steps rather than only final answers---has been shown to improve both performance and interpretability in math reasoning tasks \citep{uesato2022solving, openai2023processsupervision}. Complementing this, uncertainty-aware methods help models detect and respond to unreliable reasoning (e.g., via abstention or filtering when uncertainty is high), improving robustness and trustworthiness~\citep{zhou2025safekey, skaf2025largelanguagemodelslearn}. Understanding whether mid-trace shifts reflect genuine correction or uncertainty-driven artifacts is therefore directly relevant to evaluating the safety and reliability of reasoning models.
+
+\section{Formalizing ``Aha!'' Moments}
+\label{subsec:aha-moment-def}
+
+We define an ``Aha!'' moment as a discrete point within a model's chain-of-thought where the model abandons its initial reasoning strategy and adopts a qualitatively different one that improves performance. 
+We formalize this notion below.
+
+Let $\{f_{\theta_k}\}_{k=0}^K$ denote a sequence of checkpointed reasoning models. 
+At checkpoint $k$, the model defines a policy $\pi_{\theta_k}(a_t \mid a_{<t}, q)$ over token actions $a_t \in \mathcal{V}$. A reasoning trace is a trajectory $\tau = (a_1,\ldots,a_T)$ whose quality is measured by its correctness $R(\tau)$. For a question $q_j$, let
+\[
+P_{\theta_k}(\checkmark \mid q_j) = \mathbb{E}_{\tau \sim \pi_{\theta_k}}[R(\tau)]
+\]
+denote expected correctness. Let $S_{q_j,k} \in \{0,1\}$ indicate whether a mid-trace shift occurs in a given trajectory. This binary label is produced by our shift-detection pipeline, which identifies lexical and structural changes in reasoning strategy (detailed in App.~\ref{sec:app-algorithm}).
+
+\begin{definition}[``Aha!'' Moment]\label{def:aha-moment-lrms}
+Let $\delta_1,\delta_2,\delta_3 \in [0,1]$ be thresholds for prior failure, prior stability, and required performance gains. An ``Aha!'' moment occurs for $(q_j,k)$ iff:
+\begin{enumerate}[leftmargin=*]
+  \item $\forall i < k,\; P_{\theta_i}(\checkmark \mid q_j) < \delta_1$ \quad (\textit{Prior failures}),
+  \item $\forall i < k,\; P(S_{q_j,i}=1) < \delta_2$ \quad (\textit{Prior stability}),
+  \item $P_{\theta_k}(\checkmark \mid q_j, S_{q_j,k}=1) - P_{\theta_k}(\checkmark \mid q_j) > \delta_3$ \quad (\textit{Performance gain}).
+\end{enumerate}
+\end{definition}
+
+
+In plain terms, a checkpoint $k$ qualifies as an ``Aha!'' moment for $q_j$ if: (1) all earlier checkpoints consistently fail on the problem (\textit{prior failures}); (2) earlier checkpoints show little evidence of mid-trace shifts (\textit{prior stability}); and (3) at checkpoint $k$, traces containing a detected shift yield a strictly higher correctness rate than traces overall (\textit{performance gain}). \footnote{Formal ``Aha!'' events are defined over problem--checkpoint pairs \((q_j,k)\) (i.e., a checkpoint-level comparison for a fixed problem), not over individual sampled traces.} Together, these conditions ensure that a detected shift is both \emph{novel} and \emph{beneficial}, preventing superficial or noisy variations from being counted as insight-like events. Figure~\ref{fig:aha-moment} illustrates this behavior. Algorithm~\ref{alg:aha-moment} in App.~\ref{sec:app-algorithm} formalizes the detection procedure.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{aha_moments.pdf}
+    \caption{\textbf{Schematic of our operational ``Aha!'' definition.}
+    For a fixed problem $q_j$ (horizontal axis: checkpoint index $i$), the figure visualizes the three criteria in Def.~\ref{def:aha-moment-lrms}. 
+    (1) \textit{Prior failures}: empirical correctness $\hat P_{\theta_i}(\checkmark \mid q_j)$ remains below $\delta_1$ at all checkpoints $i<k$. 
+    (2) \textit{Prior stability}: the shift rate $\hat\pi_i = \Pr[S_{q_j,i}=1]$ stays below $\delta_2$ for all $i<k$. 
+    (3) \textit{Performance gain}: at checkpoint $k$, correctness on traces \emph{with} a detected shift (red) exceeds correctness over \emph{all} traces (black) by more than $\delta_3$.}
+    
+    \label{fig:aha-moment}
+\end{figure}
+
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\linewidth]{latex/data.pdf}
+    \caption{\textbf{Three reasoning lenses and example instances.}
+    Each row illustrates one evaluation domain and how it instantiates the three ``reasoning lenses'' introduced in \S\ref{sec:data}. 
+    \emph{Left (representation change):} a cryptic Xwords clue with definition and wordplay; shifts correspond to re-parsing the clue (e.g., switching from anagram to charade or hidden-word).
+    \emph{Center (progress monitoring):} a math problem with explicit chain-of-thought and checks; shifts occur when the model abandons an inconsistent derivation and restarts with a new method.
+    These domains form complementary testbeds for studying when mid-trace shifts (our ``Aha!'' events; Def.~\ref{def:aha-moment-lrms}) co-occur with changes in uncertainty and accuracy.
+    \emph{Right (spatial manipulation):} a RHour puzzle requiring a planned sequence of legal moves; mid-trace shifts reflect abandoning one move plan for another.
+    }
+    \label{fig:triad-overview}
+    \vspace{-3mm}
+\end{figure*}
+
+
+The thresholds $(\delta_1,\delta_2,\delta_3)$ act as tunable criteria: stricter values prioritize precision by requiring consistent prior failure and rare prior shifts, while looser values increase recall. In our experiments, we select these thresholds on a held-out development slab and validate robustness using bootstrap confidence intervals (App.~\ref{app:formal-threshold-search-q15b}).
+
+This definition parallels the classical cognitive characterization of insight: a sudden restructuring of the problem space that enables solution \citep{jones2003insight, kohler1921intelligenzpruefungen, duncker1945problem, kaplan1959dunkercandleproblem}. Hallmarks of such shifts include explicit self-reflective cues (e.g., ``wait,'' ``let's reconsider'') and an observable pivot in strategy \citep{deepseekai2025deepseekr1incentivizingreasoningcapability}. 
+Theoretical accounts such as representational change theory \citep{o1987insightproblemrepresentationalchangetheory}, progress monitoring theory \citep{macgregor2001progress}, and Gestalt perspectives on problem-solving \citep{metcalfe1987insight} provide complementary lenses for interpreting analogous shifts in reasoning models.
+
+\section{Data}
+\label{sec:data}
+
+Our evaluation suite spans three complementary reasoning lenses (Fig.~\ref{fig:triad-overview}): representational change in cryptic Xwords (\textit{left}), quantitative problem solving (\textit{center}), and spatial reasoning in RHour--style puzzles (\textit{right}). Each domain offers automatic correctness checks, natural opportunities for mid-trace verification, and structured signals of strategy. %(e.g., algebraic vs.\ geometric in math; device tags in Xwords; operator plans in RHour).
+All data are in English; statistics, filtering procedures, and scoring rules are provided in App.~\ref{app:data-details}.
+
+\vspace{1.5mm}\noindent
+\textbf{Cryptic Xwords.}
+Cryptic Xwords clues hide a wordplay instruction (e.g., anagram, abbreviation, homophone) beneath a misleading surface reading, requiring representational shifts to solve. We train on natural clues from \textsc{Cryptonite}~\citep{efrat-etal-2021-cryptonite} and evaluate on synthetic ones, scoring by normalized exact match.
+
+\vspace{1.5mm}\noindent
+\textbf{Math.}
+Math word problems test symbolic manipulation and multi-step deduction, with reasoning progress naturally expressed step-by-step. We train on \texttt{openR1 Math-220k}~\citep{openr1} and evaluate on \textsc{MATH-500}~\citep{lightman2024letsverifystepstep}, ensuring no train/eval leakage. Answers are scored by normalized exact match.
+
+\vspace{1.5mm}\noindent
+\textbf{RHour.}
+We synthetically generate \textsc{RHour} sliding-block puzzles, where the goal is to free a target car from a crowded grid by moving obstructing vehicles. We generate balanced $4{\times}4$, $5{\times}5$, and $6{\times}6$ boards and evaluate on $6{\times}6$. Boards are solved optimally via BFS with per-size node caps, discarding timeouts~\citep{fogleman2018rushhour}. We filter trivial cases and stratify remaining instances into easy ($<$4 moves), medium ($<$6), and hard ($\geq$6) buckets by solution length.
+
+\section{Methods} 
+\label{sec:methods} 
+
+We fine-tune reasoning models with GRPO across evaluation domains (\S\ref{ss:mat}); collect and annotate reasoning traces during training (\S\ref{ss:rtc}); and estimate model uncertainty to trigger entropy-based interventions (\S\ref{ss:unc}).
+
+\subsection{Models and Training}
+\label{ss:mat}
+
+Motivated by claims of mid-trace ``Aha!'' behavior in DeepSeek-R1~\citep{deepseekai2025deepseekr1incentivizingreasoningcapability}, we adopt Group Relative Policy Optimization (GRPO)~\citep{shao2024deepseekmathpushinglimitsmathematical} as our fine-tuning method. GRPO is an RLHF-style algorithm~\citep{ouyang2022training} that optimizes chain-of-thought generation by comparing groups of sampled completions and extends PPO~\cite{schulman2017ppo} with group-normalized advantages and KL regularization to a frozen reference policy. Full implementation details appear in App.~\ref{app:grpo-setup}.
+
+We fine-tune Qwen2.5~\citep{qwen2p5} and Llama~3.1~\citep{dubey2024llama3herd} models on each domain for up to 1{,}000 steps. Our primary experiments use Qwen2.5-1.5B trained for 1{,}000 steps ($\approx$2.5--3 epochs per domain), while larger models (Qwen2.5-7B and Llama 3.1-8B) are evaluated at 500 steps due to compute constraints. To verify that models improve during training, we evaluate at multiple checkpoints and report accuracy at initialization (Step~0) and at the final checkpoint. Table~\ref{tab:models-tasks} summarizes coverage and accuracy gains.
+
+We use lightweight, task-specific prompts that structure reasoning into a \texttt{<think>} block and a concise final answer in \texttt{<answer>}, with domain-level checks that invite reconsideration (App.~\ref{app:system-level-prompts}). Informed by established strategies---zero-shot CoT, self-consistency, and reflection routines \citep{kojima2022large,wang2023selfconsistency,madaan2023selfrefine,shinn2023reflexion}---these prompts standardize mid-trace events as reasoning shifts (Def.~\ref{def:aha-moment-lrms}; Alg.~\ref{alg:aha-moment}), enabling consistent comparison across models, tasks, and checkpoints.
+
+
+{{MODELS_TASKS_TABLE}}
+
+\subsection{Trace Collection and Annotation}
+\label{ss:rtc}
+
+We evaluate each model at a fixed cadence of \emph{every 50 training steps} from initialization (Step~0) to Step~950, yielding \emph{20 checkpoints per run}. At each checkpoint, we generate \textbf{$G{=}8$} completions per problem using a fixed decoding policy (temperature $\{0, 0.05, 0.3, 0.7\}$, top-$p{=}0.95$). Each completion follows a two-part structure: a \texttt{<think>} block (cap: 750 tokens) and a \texttt{<answer>} block (cap: 50 tokens), terminated by explicit \texttt{</think>} and \texttt{</answer>} markers.
+
+Evaluation sets are held fixed across checkpoints: \textbf{500} problems for \textsc{MATH-500}, \textbf{130} synthetic clues for Xwords, and \textbf{500} $6{\times}6$ RHour boards. For our Qwen2.5-1.5B models, because each item is evaluated at all 20 checkpoints across T{=}4 temperature, with G{=}8 samples, each run yields 320{,}000 Math traces, 83{,}200 Xwords traces, and 320{,}000 RHour traces. This longitudinal structure allows us to track how mid-trace behavior evolves during RL fine-tuning. We additionally produce 160{,}000 Qwen2.5-7B traces and 160{,}000 Llama3.1-8B traces for \textsc{MATH-500} across 10 checkpoints to investigate behavior across architecture and model size. Details about our training and evaluation setup appear in App.~\ref{app:data-details}
+
+To identify reasoning shifts at scale, we use GPT-4o as an LLM-as-judge. Following evidence that rubric-prompted LLMs approximate human evaluation~\citep{zheng2023mtbench, liu2023geval, fu2023gptscore}, we supply a fixed rubric that scores each trajectory for (i) correctness, (ii) presence of a mid-trace reasoning shift, and (iii) whether the shift improved correctness. 
+
+To reduce known sources of judge bias---position, length, and model identity effects~\citep{Wang2024FairEval,shi2024positionbias,li-etal-2024-split}---we randomize sample order, use split--merge aggregation, enforce structured JSON outputs, and ensemble across prompt variants. Agreement is high: on \textsc{MATH-500}, GPT-4o achieves $\kappa\!\approx\!0.726$ across prompt variants and $\kappa=0.79$ relative to human majority vote, comparable to expert--expert reliability \citep{Artstein2008IAA}. For additional details, see App.~\ref{app:kappa-agreement}. For qualitative examples, see App.~\ref{app:qualitative-formal-aha}.
+
+\subsection{Uncertainty Measure and Intervention}
+\label{ss:unc}
+
+To relate reasoning shifts to model uncertainty, we measure token-level entropy throughout each response. At generation step $t$, with next-token distribution $\mathbf{p}_t$, we compute Shannon entropy $H_t = -\sum_v p_t(v)\log p_t(v)$. For each completion, we summarize uncertainty by averaging entropy over the \texttt{<think>} and \texttt{<answer>} segments (e.g., $\bar H_{\text{think}}$ and $\bar H_{\text{ans}}$), and use these sequence-level scores in downstream analyses.
+
+We also study whether uncertainty can be exploited to improve performance via \emph{artificially triggered} reflection. In a follow-up experiment, we test three semantically similar but lexically distinct reconsideration cues (C1--C3), for example: \emph{(C3) ``Wait, something is not right, we need to reconsider. Let's think this through step by step.''} For each cue, we first obtain the model's baseline completion, then re-query the model with the same parameters while appending the reconsideration cue, and compare accuracy under different uncertainty levels. Cue-specific results and regressions are reported in App.~\ref{app:uncertainty-interventions}.
+
+
+\section{Results}
+
+We show that spontaneous reasoning shifts are rare and generally harmful to accuracy, and that formal ``Aha'' events are vanishingly rare (\textbf{RQ1}; \S\ref{sec:results-rq1}); that this negative effect remains stable across training stages but varies systematically with decoding temperature (\textbf{RQ2}; \S\ref{sec:results-rq2}); and that extrinsically triggered shifts reliably improve performance, especially on high-entropy instances (\textbf{RQ3}; \S\ref{sec:rq3-uncertainty}).
+
+{{SECTION_RQ1}}
+
+{{SECTION_RQ2}}
+
+{{SECTION_RQ3}}
+
+\section{Discussion and Future Work}
+\label{Discussion}
+
+We formalize and empirically test the notion of intrinsic ``Aha!'' moments, mid-trace reasoning shifts that appear to reflect sudden insight. We find that they are vanishingly rare and that mid-trace reasoning shifts are typically unhelpful, even in states of high uncertainty. However, by intervening to trigger reconsideration under high-entropy conditions, we demonstrate that uncertainty can be converted into productive reflection, resulting in measurable accuracy gains.
+
+This reframes reasoning shifts not as an emergent cognitive ability, but as a mechanistic behavior---a byproduct of the model's inference dynamics that can nonetheless be harnessed and controlled.
+Rather than asking whether models have insight, it may be more useful to ask how and when they can be made to simulate it. This shift in perspective bridges recent work on uncertainty-aware decoding~\cite{ton2025infotheory, zhou2025safekey}, process supervision~\cite{uesato2022solving, openai2023processsupervision}, and self-correction~\citep{madaan2023selfrefine, kumar2024traininglanguagemodelsselfcorrect, tsui2025selfcorrectionbenchrevealingaddressing}, positioning mid-trace reasoning as a manipulable mechanism for improving reliability rather than genuine insight.
+
+Our findings open several directions for further investigation.
+First, the link we uncover between uncertainty and the usefulness of mid-reasoning shifts invites new forms of process-level supervision that explicitly condition reflection on entropy or confidence estimates \citep{uesato2022solving, openai2023processsupervision}.
+Second, future work should examine whether RL-based objectives that reward models for revising earlier answers truly improve reasoning or merely reinforce uncertainty-responsive heuristics.
+While recent approaches such as \citet{kumar2024traininglanguagemodelsselfcorrect} demonstrate that self-correction can be trained, our results highlight the need for  analyses that disentangle the learning of reflection-like language from genuine representational changes. It would be valuable to investigate what the observed dynamics between uncertainty and mid-reasoning shifts reveal about human insight---whether uncertainty-driven reconsideration in models mirrors metacognitive signals in people, or whether the resemblance is purely linguistic. Bridging computational and cognitive accounts of ``Aha!'' phenomena could help identify which internal mechanisms, if any, correspond to genuine insight. Finally, we hope that this piece inspires more fundamental research into the impact of RL post-training on model performance: why do algorithms like GRPO lead to a performance shift if not from improved reasoning?
+
+
+\section{Limitations}
+While our study offers the first systematic analysis of ``Aha!'' phenomena in reasoning models, it has several limitations. 
+First, our detection of reasoning shifts relies on \textit{explicit linguistic cues} (e.g., ``wait,'' ``actually'') and measurable plan changes. This makes our estimates conservative: models may undergo unlexicalized representational changes that our detector misses, while some detected shifts may instead reflect superficial hedges. Future work could incorporate hidden-state dynamics or token-level embeddings to better identify implicit restructurings. 
+Second, our evaluation spans three reasoning domains but remains limited to tasks with well-defined correctness signals (math, Xwords, spatial puzzles). Whether similar patterns hold for open-ended reasoning or multi-turn interaction remains an open question. 
+Third, our intervention experiments manipulate model behavior via prompt-level cues rather than modifying training objectives. Thus, while we demonstrate that uncertainty-gated reconsideration can improve accuracy, this does not establish a causal mechanism of internal insight. Extending our analysis to training-time interventions or process supervision would help clarify how reflection-like behaviors emerge and generalize.
+Finally, as with most large-model studies, our results depend on a small set of families (Qwen, Llama) and inference hyperparameters (e.g., temperature, sampling policy). Broader replications across architectures, decoding methods, larger sizes, and reinforcement-learning setups are necessary to test the generality of our conclusions.
+
+
+\section{Ethical Considerations}
+
+Our study analyzes the internal reasoning behavior of large language models and does not involve human subjects or personally identifiable data. 
+All datasets used---\textsc{MATH-500}~\citep{lightman2024letsverifystepstep}, \textsc{Cryptonite}~\citep{efrat-etal-2021-cryptonite}, and synthetic \textsc{RHour} puzzles---are publicly available and contain no sensitive content. 
+We follow the terms of use for each dataset and model.
+
+Because our work involves interpreting and modifying model reasoning traces, it carries two potential ethical implications. 
+First, methods that manipulate mid-trace behavior could be misused to steer reasoning models toward undesirable or deceptive outputs if deployed irresponsibly. 
+Our interventions are limited to controlled research settings and designed to study model uncertainty, not to conceal reasoning or produce persuasive content. 
+Second, interpretability claims about ``insight'' or ``self-correction'' risk overstating model understanding. 
+We therefore emphasize that our findings concern statistical behavior, not human-like cognition or consciousness.
+
+Generative AI tools were used to enhance the search for related works and to refine the writing and formatting of this manuscript. 
+We followed the recommendations of~\citet{schroeder2025llmsqual}, who provide guidance for legitimate uses of AI in research while safeguarding qualitative sensemaking. 
+Specifically, Claude, ChatGPT, and Elicit were used to identify relevant research papers for the Related Work and Discussion sections (alongside non-generative tools such as Google Scholar and Zotero). 
+After the Discussion had been written, ChatGPT was used to streamline and refine the prose, which was then manually edited by the authors. 
+Claude and ChatGPT were additionally used for formatting tasks, such as generating table templates and translating supplementary materials to \LaTeX. 
+Where generative AI was used, the authors certify that they have reviewed, adapted, and corrected all text and stand fully behind the final content.
+
+All model runs, including training and inference, were conducted on NVIDIA A100 GPUs or NVIDIA A6000 GPUs, with resource management, access controls, and energy considerations in place. We estimate the total carbon footprint of all experiments at approximately~110~kg~CO\textsubscript{2}e, following the methodology of~\citet{luccioni2019carbon}.
+
+\section*{Acknowledgments}
+This work was supported by a First-Year Fellowship from the Princeton University Graduate School. We are grateful for computational resources provided by the Beowulf cluster, and we thank the ML Theory Group for generously sharing additional compute. We also acknowledge the support of the Center for Information Technology Policy (CITP) and the Department of Computer Science at Princeton University. We thank our volunteer annotators and the broader Princeton community. Special thanks to Cannoli, our lab dog, and to the musical artist, Doechii.

@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l r r r @{}}
+\toprule
+\textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+\midrule
+$N$ & 63{,}404 & 102{,}232 & 165{,}636 \\
+$\beta_{\mathrm{ent}}$ & +0.012 & -0.075 & -0.033 \\
+$\mathrm{OR}_{1\sigma}$ & 1.01 & 0.93 & 0.97 \\
+$\mathrm{AME}$ (pp) & +0.07 & -1.00 & -0.36 \\
+$p$ & 0.7586 & 0.005146 & 0.1049 \\
+\bottomrule
+\end{tabular*}
+\caption{\textbf{Pass-2 accuracy rises with pass-1 entropy (Qwen2.5-7B/Llama3.1-8B).} We regress pass-2 correctness on standardized pass-1 entropy, controlling for pass-1 correctness and problem fixed effects. Combined rows re-standardize entropy using a pooled mean/SD across models.}
+\label{tab:pass2-entropy-regression-7b8b}
+\end{table}

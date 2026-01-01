@@ -1,0 +1,55 @@
+\subsection{Formal Threshold Search (Qwen2.5--1.5B)}
+\label{app:formal-threshold-search-q15b}
+
+To make our threshold-selection procedure concrete, we ran the new grid/bootstrapped threshold search script
+(\texttt{src/analysis/threshold\_search.py}) across the stored Qwen2.5--1.5B evaluation outputs for each domain and temperature.
+We used the convenience runner \texttt{tools/run\_threshold\_search\_q15b\_all.sh} with \texttt{bootstrap\_draws=500}, which writes per-root CSVs and logs under \texttt{artifacts/threshold\_search\_q15b/}.
+
+For each domain$\times$temperature root, we searched a small grid
+$\delta_1,\delta_2\in\{0,1/8,2/8\}$ and $\delta_3\in\{\text{None},0,0.05,0.125\}$ (with \texttt{min\_prior\_steps=2}),
+and selected the ``best'' configuration according to the script's default ranking
+(maximize the bootstrap lower CI bound for the mean gain; ties broken by prevalence and mean gain).
+Table~\ref{tab:formal-threshold-search-q15b} reports the best row per root. We report mean gain as
+$100\cdot\mathbb{E}[\hat P(\checkmark\mid S{=}1)-\hat P(\checkmark)]$ in percentage points (pp), with a 95\% bootstrap CI over flagged pairs;
+entries are ``--'' when no events are found or when $N$ is too small to form a stable CI.
+
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{l r c c c r r r l}
+\toprule
+\textbf{Domain} & \textbf{$T$} & $\boldsymbol{\delta_1}$ & $\boldsymbol{\delta_2}$ & $\boldsymbol{\delta_3}$ &
+\textbf{events/pairs} & \textbf{prev (\%)} & \textbf{gain (pp)} & \textbf{CI (pp)} \\
+\midrule
+Math  & 0    & 1/8 & 1/8 & -- & 8/16000  & 0.05 & +0.00 & {[}+0.00, +0.00{]} \\
+Math  & 0.05 & 2/8 & 2/8 & -- & 41/16000 & 0.26 & -2.74 & {[}-5.79, -0.30{]} \\
+Math  & 0.3  & 2/8 & 2/8 & -- & 43/10000 & 0.43 & -2.62 & {[}-4.65, -1.16{]} \\
+Math  & 0.7  & 2/8 & 2/8 & -- & 92/16000 & 0.57 & +1.22 & {[}-1.77, +4.76{]} \\
+\midrule
+Xword & 0    & 0   & 0   & -- & 0/3120   & 0.00 & --    & -- \\
+Xword & 0.05 & 1/8 & 1/8 & -- & 3/3120   & 0.10 & +0.00 & {[}+0.00, +0.00{]} \\
+Xword & 0.3  & 1/8 & 1/8 & -- & 7/3120   & 0.22 & +0.00 & {[}+0.00, +0.00{]} \\
+Xword & 0.7  & 2/8 & 2/8 & -- & 18/3120  & 0.58 & +0.00 & {[}+0.00, +0.00{]} \\
+\midrule
+RHour & 0    & 1/8 & 1/8 & -- & 1/503    & 0.20 & +0.00 & -- \\
+RHour & 0.05 & 1/8 & 1/8 & -- & 1/498    & 0.20 & -0.07 & -- \\
+RHour & 0.3  & 1/8 & 1/8 & -- & 7/498    & 1.41 & -0.01 & {[}-0.01, +0.00{]} \\
+RHour & 0.7  & 1/8 & 1/8 & -- & 18/513   & 3.51 & -0.01 & {[}-0.02, -0.00{]} \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Grid/bootstrapped threshold search on Qwen2.5--1.5B stored evaluation outputs (best row per root).}
+Each row summarizes the top-ranked threshold setting for the corresponding domain$\times$temperature root when running \texttt{tools/run\_threshold\_search\_q15b\_all.sh} with \texttt{bootstrap\_draws=500}.
+``events/pairs'' counts flagged formal pairs out of all (problem, step) pairs in that root, and ``prev'' is the corresponding percentage.
+``gain'' is the mean gain at shifted traces (pp) over flagged pairs, and ``CI'' is the 95\% bootstrap percentile interval.
+}
+\label{tab:formal-threshold-search-q15b}
+\vspace{-4mm}
+\end{table*}
+
+\paragraph{Takeaway.}
+Across these stored outputs, the selected thresholds yield extremely low event prevalence, and gains are generally small, unstable, or negative.
+In particular, for Math at $T\in\{0.05,0.3\}$ the best available configurations (under this search) have \emph{negative} bootstrap lower bounds, indicating no robust evidence that shifted traces outperform the baseline on the flagged pairs.
+
+\input{paper_figs/threshold_search/q15b_formal_aha_qualitative}

@@ -1,0 +1,186 @@
+\subsection{Qwen-7B and Llama-8B Regressions}
+\label{app:qwen-llama}
+
+We extend the main-text analysis to probe the role of model \emph{family} and \emph{size}.
+Replicating the raw-effect analyses for \textbf{Qwen2.5-7B} and \textbf{Llama3.1-8B} on \textsc{Math}, we observe the same qualitative pattern reported for \textbf{Qwen2.5-1.5B}: mid-trace reasoning shifts are consistently detrimental across training steps and remain negative across decoding temperatures (magnitudes vary, not the sign), matching Fig.~\ref{fig:raw-effect-overlay} and Table~\ref{tab:rs} in the main text.
+
+We begin by checking whether the core RQ1 finding about \emph{rarity} generalizes across model family and size. Using the same formal detector (Def.~\ref{def:aha-moment-lrms}) and threshold grid as in the main text, we compute the fraction of problem--checkpoint pairs that qualify as ``Aha!'' events. Fig.~\ref{fig:aha-heatmap-overall-7b8b} shows that these events remain extremely sparse for both Qwen2.5--7B and Llama\,3.1--8B (\textsc{Math}, $T{=}0.7$).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{latex/aha_heatmaps/Q7B_L8B_Math_T0.7/aha_heatmap_overall.pdf}
+  \caption{\textbf{Prevalence of formal ``Aha!'' events for Qwen-7B, Llama-7B (Math, T{=}0.7).} Each cell shows the fraction (and count) of problem--checkpoint pairs
+  \((q_j,k)\) that satisfy Def.~\ref{def:aha-moment-lrms} under varying
+  thresholds for prior failures ($\delta_1$) and prior stability ($\delta_2$),
+  with $\delta_3=\epsilon>0$. Even under lenient settings, formal ``Aha!''
+  events are exceedingly rare. Per-domain, per temperature breakdowns appear in
+  App.~\ref{sec:app-formal-aha-temp}.}
+  \label{fig:aha-heatmap-overall-7b8b}
+  \vspace{-5mm}
+\end{figure}
+
+\subsubsection{Step and Temperature Analysis}
+
+We then repeat the regression analysis from Table~\ref{tab:rs} for these models. Estimates in Table~\ref{tab:rs-7b8b} confirm the same direction and significance profile as in the main-text Qwen2.5-1.5B analysis.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{latex/raw_effect_per_step_overlay_linear-llama.pdf}
+  \caption{Raw effect by training step at $T{=}0.7$ (\textsc{Math}).}
+  \label{fig:raw-effect-overlay-7b8b:a}
+\end{subfigure}
+
+\vspace{4pt}
+
+\begin{subfigure}[t]{\linewidth}
+  \centering
+  \includegraphics[width=\linewidth]{latex/raw_effects_plot__MIXED__7B_vs_8B.pdf}
+  \caption{Raw effect vs.\ decoding temperature (\textsc{Math}).}
+  \label{fig:raw-effect-overlay-7b8b:b}
+\end{subfigure}
+
+\caption{\textbf{Qwen2.5-7B vs.\ Llama3.1-8B on \textsc{Math}.}
+Raw accuracy difference $\Delta\%=\widehat{p}_{Y\mid S=1}-\widehat{p}_{Y\mid S=0}$.
+(a) Across training steps at $T{=}0.7$, the effect is stable and negative for both models, mirroring the main-text Qwen2.5-1.5B result.
+(b) Across temperatures $T\in\{0.0, 0.05, 0.3, 0.7\}$ the effect remains negative; Llama3.1-8B exhibits a somewhat smaller penalty than Qwen2.5-7B.}
+\label{fig:raw-effect-overlay-7b8b}
+\vspace{-5mm}
+\end{figure}
+
+{{TABLE_RS_7B8B}}
+
+
+\subsubsection{Uncertainty Analysis}
+\label{app:uncertainty-analysis}
+
+This appendix extends the main-text uncertainty analysis to larger model families on \textsc{Math}, using traces from \textbf{Qwen2.5-7B} and \textbf{Llama3.1-8B}. Our goal is to test a simple hypothesis: if reasoning shifts are primarily an \emph{uncertainty response} (the model ``notices'' it may be wrong and pivots), then shifts should become \emph{more likely} as uncertainty rises. We operationalize uncertainty using each trace's \emph{sequence-level entropy} (computed from the model's token-level predictive distribution, aggregated to the sequence), and we use the same GPT-derived binary shift indicator as in the main text.
+
+\paragraph{Shift prevalence vs.\ entropy.}
+For each decoding temperature $T$, we regress the shift indicator on standardized sequence entropy with problem fixed effects and cluster-robust standard errors clustered by problem. Concretely, letting $\texttt{shift}_{i}$ denote whether trace $i$ contains a GPT-labeled reasoning shift and $\texttt{std\_entropy}_{i}$ denote within-setting standardized sequence entropy, we estimate:
+\[
+\texttt{shift} \sim \texttt{C(problem)} + \texttt{std\_entropy},
+\]
+using a Binomial(logit) GLM and cluster-robust SEs (problem-level clustering). Problem fixed effects ensure the entropy association is identified from within-problem variation rather than cross-problem difficulty differences.
+
+Across both model families, we again find a \emph{non-positive} association between entropy and shift prevalence. In particular, at $T{=}0.05$ and $T{=}0.7$, a 1 SD increase in entropy significantly \emph{reduces} the odds of a detected shift (OR$_{1\sigma}{=}{{OR_005}}$, $p={{P_005}}$; OR$_{1\sigma}{=}{{OR_07}}$, $p={{P_07}}$), while the estimates at $T{=}0$ and $T{=}0.3$ are not distinguishable from zero. This pattern mirrors our smaller \textbf{Qwen2.5-1.5B} \textsc{Math} models: shifts are not more common in high-entropy regimes, and when a dependence is detectable, it points in the opposite direction.
+
+\paragraph{Entropy-stratified shift effects on accuracy.}
+To complement the prevalence analysis, Table~\ref{tab:shift-entropy-strata-7b8b} stratifies the \emph{raw} shift effect on correctness by entropy: we report the accuracy gap
+$\Delta = \hat p(\checkmark\mid S{=}1) - \hat p(\checkmark\mid S{=}0)$
+for all traces, for the top-entropy quintile (top 20\%), and for the remaining traces (bottom 80\%), pooling temperatures and restricting to early training steps (steps $\le\!450$). The qualitative picture is consistent across strata: shifts are strongly associated with \emph{lower} accuracy, and the magnitude remains substantially negative even within the high-entropy slice. In other words, the ``shift penalty'' is not confined to low-entropy, overconfident decoding; it persists when the model is most uncertain.
+
+\paragraph{Forced reconsideration as a separate mechanism.}
+Finally, Table~\ref{tab:forced-aha-math-7b8b} reports paired sample-level results for \emph{triggered reconsideration} (our forced second pass). This manipulation differs from spontaneous shifts: it explicitly prompts the model to re-evaluate, potentially inducing additional search even when the first pass is confident. We therefore view forced reconsideration as probing a \emph{capability to revise} rather than the natural prevalence of mid-trace pivots. On \textsc{Math}, forced reconsideration yields a clear positive gain for \textbf{Qwen2.5-7B} but not for \textbf{Llama3.1-8B} in this slice, suggesting that ``being prompted to look again'' can help some models, even though naturally occurring reasoning shifts are not enriched at high entropy and are typically associated with worse outcomes.
+
+{{TABLE_SHIFT_ENTROPY_7B8B}}
+
+{{TABLE_FORCED_AHA_7B8B}}
+
+\subsection{Entropy-Gated Interventions with Multiple Cues}
+\label{app:uncertainty-interventions}
+
+To test whether the effect of artificially triggered reflection depends on the specific reconsideration cue used, we evaluate three semantically similar but lexically distinct prompts:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{C1:} ``Hold on, this reasoning might be wrong. Let's go back and check each step carefully.''
+    \item \textbf{C2:} ``Actually, this approach doesn't look correct. Let's restart and work through the solution more systematically.''
+    \item \textbf{C3:} ``Wait, something is not right; we need to reconsider. Let's think this through step by step.''
+\end{itemize}
+
+For each cue, we re-run $8\times$ 500 Math problems (Qwen2.5--1.5B, final checkpoint) with 1-shot decoding at $T{=}0.1$, obtaining $500$ paired baseline and cued completions per cue. We then fit a logistic regression for each cue, controlling for baseline correctness and problem identity.\footnote{In R-style notation:
+\(
+\texttt{correct} \sim \texttt{entropy\_std} + \texttt{baseline\_correct} + \texttt{C(problem)}.
+\)
+Here \texttt{entropy\_std} is the within-domain standardized sequence-level entropy defined in \S\ref{ss:unc}.}
+
+Across all cues, higher entropy is strongly associated with improved post-intervention accuracy. Table~\ref{tab:cue-regressions} reports standardized entropy coefficients, unit odds ratios (raw entropy), and odds ratios for a 1 SD increase in entropy.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular*}{0.92\linewidth}{@{\extracolsep{\fill}} l r r r @{}}
+\toprule
+\textbf{Cue} & \textbf{$\beta$ (std.\ ent.)} & \textbf{OR} & \textbf{OR$_{1\sigma}$} \\
+\midrule
+C1 & 0.79 & 3.64 & 2.21 \\
+   & {\scriptsize[0.59, 1.00]} & {\scriptsize[2.60, 5.09]} & {\scriptsize[1.80, 2.72]} \\
+C2 & 0.86 & 4.32 & 2.36 \\
+   & {\scriptsize[0.65, 1.07]} & {\scriptsize[3.03, 6.17]} & {\scriptsize[1.92, 2.91]} \\
+C3 & 0.91 & 4.09 & 2.49 \\
+   & {\scriptsize[0.71, 1.12]} & {\scriptsize[2.98, 5.62]} & {\scriptsize[2.03, 3.06]} \\
+\bottomrule
+\end{tabular*}
+\caption{\textbf{Entropy-gated improvement under three reconsideration cues.}
+$\beta$ is the coefficient on standardized entropy from a logistic regression controlling for baseline correctness and problem fixed effects; brackets give 95\% CIs. OR is the unit odds ratio (raw entropy), and OR$_{1\sigma}$ is the odds ratio for a $1$ SD increase in entropy.}
+\label{tab:cue-regressions}
+\vspace{-2mm}
+\end{table}
+
+
+All three cues show the same qualitative pattern: a one--standard deviation increase in entropy substantially increases the odds of correctness after the reconsideration cue (2.2$\times$--2.5$\times$ across cues). C2 yields the strongest effect, but the differences are modest, indicating that the intervention's success is tied to \emph{uncertainty} rather than to any particular lexical phrasing. These results demonstrate that entropy-gated reconsideration is robust to cue choice and that induced shifts reliably outperform spontaneous ones under high-uncertainty conditions.
+
+\subsection{Reasoning Shifts at Scale}
+\label{app:external-models}
+
+To verify that our findings are not an artifact of the GRPO\textendash tuned models studied in the main paper, we evaluate two widely discussed reasoning models---DeepSeek\textendash R1 and GPT\textendash 4o---under our shift\textendash detection protocol. These models have been cited as exhibiting frequent ``Aha!'' moments or dramatic mid\textendash trace realizations \citep{deepseekai2025deepseekr1incentivizingreasoningcapability}, making them a natural stress test for our methodology.
+
+\paragraph{Experimental setup.}
+We evaluate both models on the full \textsc{MATH\textendash 500} benchmark with:
+\begin{itemize}[leftmargin=*]
+    \item 1\textendash shot decoding,
+    \item temperatures $T\in\{0, 0.05\}$,
+    \item identical prompting format (with \texttt{<think>} and \texttt{<answer>} tags),
+    \item no system\textendash level alterations or heuristics.
+\end{itemize}
+Each model generates exactly one chain\textendash of\textendash thought sample per problem, yielding $N{=}500$ traces per model per temperature.
+
+\paragraph{Shift detection.}
+We use the same annotation protocol as in \S\ref{ss:rtc} and App.~\ref{app:detecting-aha}:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Cue prefilter:} at least one explicit lexical cue of reconsideration (e.g., ``wait'', ``actually'', ``hold on''), using the whitelist in Table~\ref{tab:shift-cue-whitelist}.
+    \item \textbf{Material revision:} GPT\textendash 4o judges whether the post\textendash cue reasoning constitutes a genuine plan pivot (rejecting a candidate, switching method, resolving a contradiction), returning a strict JSON verdict.
+    \item Cases lacking either (A) lexical cue or (B) structural revision are labeled as \textbf{no shift}.
+\end{enumerate}
+
+\paragraph{Results.}
+Table~\ref{tab:external-models} shows shift prevalence and conditional accuracy by decoding temperature. Despite anecdotal impressions of frequent ``Aha!'' behavior, both models exhibit \emph{very low} canonical shift rates under our shift definition.
+
+{{TABLE_EXTERNAL_MODELS}}
+
+At $T{=}0.05$, DeepSeek\textendash R1 exhibits only 2 shifts out of 500 traces; conditional accuracy is $0.50$, but the sample size is too small for meaningful inference. GPT\textendash 4o exhibits more shifts (11/500 at $T{=}0.05$), but conditional correctness among shifted traces is substantially \emph{worse} than its baseline rate (0.18 vs.\ 0.40). At $T{=}0$, GPT\textendash 4o's conditional accuracy among shifted traces is higher (0.60), but the shift base rate remains low (3.0\%), and the direction is not stable across temperatures.
+
+\paragraph{Interpretation.}
+These results reinforce two conclusions:
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Low base rate of canonical shifts.}
+    Even high\textendash capability reasoning models produce genuine, criteria\textendash satisfying mid\textendash trace pivots only rarely.
+    \item \textbf{Canonical shifts do not reliably improve accuracy.}
+    Conditional accuracy given a shift is unstable across temperatures and does not show a consistent benefit.
+\end{enumerate}
+Overall, these sanity checks suggest that the rarity and limited utility of detected reasoning shifts are \emph{not} artifacts of model size, training method, or family.
+
+\paragraph{Data release.}
+We release the full set of model outputs and shift annotations used in this analysis on Hugging Face, see Table \ref{tab:external-datasets}.
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.05}
+  \begin{tabular}{@{}l l@{}}
+    \toprule
+    \textbf{Model} & \textbf{Dataset (Hugging Face)} \\
+    \midrule
+    GPT\textendash 4o      & \texttt{od2961/gpt4o-math500-t0} \\
+    GPT\textendash 4o      & \texttt{od2961/gpt4o-math500-t005} \\
+    DeepSeek\textendash R1 & \texttt{od2961/deepseek-r1-math500-t0} \\
+    DeepSeek\textendash R1 & \texttt{od2961/deepseek-r1-math500-t005} \\
+    \bottomrule
+  \end{tabular}
+  \caption{\textbf{Released external-model outputs.} Hugging Face datasets containing 1-shot \textsc{MATH-500} traces used in App.~\S\ref{app:external-models}, for $T\in\{0,0.05\}$.}
+  \label{tab:external-datasets}
+  \vspace{-3mm}
+\end{table}

@@ -251,7 +251,7 @@ accelerate launch \
   --run_name "'"${RUN_NAME}-${TIMESTAMP}"'" \
   --ignore_data_skip \
   --overwrite_output_dir false \
-  --resume_from_checkpoint "${RESUME_CKPT:-$PROJECT_ROOT/artifacts/models/open-r1/Qwen2.5-1.5B-Open-R1-GRPO-math-v1/checkpoint-850}" \
+  --resume_from_checkpoint "${RESUME_CKPT:-$PROJECT_ROOT/artifacts/models/Qwen2.5-1.5B/Qwen2.5-1.5B-Open-R1-GRPO-math-v1/checkpoint-850}" \
   --seed 42 \
   > "$TRAINING_LOG" 2>&1
 

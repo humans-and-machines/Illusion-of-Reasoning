@@ -1,0 +1,18 @@
+\begin{table}[t]
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}} l r r r @{}}
+\toprule
+{\textbf{Model}} & {\textbf{Temp}} & {\(\%S\)} & {\scriptsize \(P(\checkmark\mid S{=}0)\)} & {\scriptsize \(P(\checkmark\mid S{=}1)\)} \\
+\midrule
+DeepSeek\textendash R1 & 0 & 0.60 & 0.569 & 0.667 \\
+ & 0.05 & 0.40 & 0.598 & 0.500 \\
+\midrule
+GPT\textendash 4o & 0 & 3.00 & 0.724 & 0.600 \\
+ & 0.05 & 2.20 & 0.724 & 0.182 \\
+\midrule
+\bottomrule
+\end{tabular*}
+\caption{\textbf{External models on \textsc{MATH\textendash 500}.} Canonical shift rates and conditional accuracy by decoding temperature.}
+\label{tab:external-models}
+\end{table}

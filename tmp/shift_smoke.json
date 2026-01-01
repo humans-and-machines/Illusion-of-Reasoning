@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "grid": [
+      {
+        "dir_template": "GRPO-1.5B-math-temp-{temp}",
+        "domain": "Math",
+        "key": "qwen15b_math",
+        "max_step": 950,
+        "model": "Qwen-1.5B",
+        "zero_temp_candidates": [
+          "0.0",
+          "0"
+        ]
+      }
+    ],
+    "label_key": "shift_in_reasoning_v1",
+    "max_step_cap": 0,
+    "min_step": 0,
+    "missing_roots": [],
+    "pass_key": "pass1",
+    "results_base": "artifacts/results",
+    "split": "test",
+    "temps": [
+      0.0
+    ]
+  },
+  "rows": [
+    {
+      "domain": "Math",
+      "experiment": "qwen15b_math",
+      "label_coverage_pct": 100.0,
+      "label_key": "shift_in_reasoning_v1",
+      "max_step": 0,
+      "min_step": 0,
+      "model": "Qwen-1.5B",
+      "n_labeled": 4000,
+      "n_total": 4000,
+      "pass_key": "pass1",
+      "root": "artifacts/results/GRPO-1.5B-math-temp-0.0",
+      "shift_count": 145,
+      "shift_pct": 3.625,
+      "split": "test",
+      "step": 0,
+      "temp": 0.0
+    }
+  ]
+}

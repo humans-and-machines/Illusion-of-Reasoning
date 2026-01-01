@@ -1,0 +1,45 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lrrr}
+\toprule
+\multicolumn{4}{c}{\textbf{Training stage at fixed decoding temperature $T=0$}} \\
+\midrule
+\textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+\midrule
+$N$                   & 40{,}000 & 40{,}160 & 80{,}160 \\
+$\%S$                 & 2.538    & 2.418    & 2.478  \\
+$\hat{p}_{Y\mid S=1}$ & 0.2039   & 0.1607   & 0.1828  \\
+$\Delta\mathrm{pp}$   & $-45.10$  & $-27.18$ & $-36.06$  \\
+$\mathrm{AME}$        & $-0.0659$& $-0.0597$& $-0.1450$\\
+$p$                   & $0.03314$ & $0.04043$ & $3.52\times10^{-6}$ \\
+\midrule
+\multicolumn{4}{c}{\textbf{Training stage at fixed decoding temperature $T=0.05$}} \\
+\midrule
+\textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+\midrule
+$N$                   & 40{,}000 & 40{,}208 & 80{,}208 \\
+$\%S$                 & 0.853    & 5.710    & 3.288  \\
+$\hat{p}_{Y\mid S=1}$ & 0.3284   & 0.3319   & 0.3314  \\
+$\Delta\mathrm{pp}$   & $-34.06$  & $-14.82$ & $-24.52$  \\
+$\mathrm{AME}$        & $-0.0401$& $-0.0436$& $-0.1283$\\
+$p$                   & $0.07879$ & $0.007971$ & $2.5\times10^{-8}$ \\
+\midrule
+\multicolumn{4}{c}{\textbf{Training stage at fixed decoding temperature $T=0.3$}} \\
+\midrule
+\textbf{Metric} & \textbf{Qwen2.5-7B} & \textbf{Llama3.1-8B} & \textbf{Combined} \\
+\midrule
+$N$                   & 40{,}000 & 40{,}192 & 80{,}192 \\
+$\%S$                 & 1.248    & 5.576    & 3.417  \\
+$\hat{p}_{Y\mid S=1}$ & 0.3387   & 0.2945   & 0.3026  \\
+$\Delta\mathrm{pp}$   & $-32.91$  & $-17.44$ & $-26.78$  \\
+$\mathrm{AME}$        & $-0.0788$& $-0.0540$& $-0.1501$\\
+$p$                   & $2.91\times10^{-4}$ & $4.4\times10^{-5}$ & $6.14\times10^{-23}$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Effect of detected reasoning shifts on accuracy (Qwen2.5-7B/Llama3.1-8B): training-stage analysis at fixed temperature.} For each fixed decoding temperature $T\in\{0.0,0.05,0.3\}$, we report shift prevalence (\%S), accuracy among shifted traces (\(\hat{p}_{Y\mid S=1}\)), the raw accuracy difference in percentage points (\(\Delta\mathrm{pp}\)), and the average marginal effect (\(\mathrm{AME}\)) from a logistic regression with problem fixed effects, a standardized training-step control, and cluster-robust SEs. Negative AME values indicate that shifted traces are less likely to be correct holding problem and training stage fixed.}
+\label{tab:rs_stage_T0005T03_7b8b}
+\vspace{-3mm}
+\end{table}
